@@ -7,7 +7,6 @@ linters:
     - unused
     - gosimple
     - ineffassign
-    - typecheck
     - gofmt
     - goimports
   settings:
