@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Declarative Agent Packaging DSL
+# Specification Quality Checklist: CI Pipeline
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-02-22
@@ -32,13 +32,6 @@
 ## Notes
 
 - All 16 checklist items pass.
-- Zero [NEEDS CLARIFICATION] markers — all ambiguities resolved via
-  the Assumptions section using reasonable defaults from init-spec.md.
+- Zero [NEEDS CLARIFICATION] markers — the feature is straightforward CI automation with clear requirements.
+- The Assumptions section documents reasonable defaults (GitHub Actions, golangci-lint, example file locations).
 - Spec is ready for `/speckit.clarify` or `/speckit.plan`.
-
-### Amendment 2026-02-22
-
-- Spec amended with naming conventions: IntentLang (ilang) for the language, AgentSpec for definition files, AgentPack for distributable bundles.
-- All references to "DSL", "definition file", and "package" updated to use new terminology where appropriate.
-- File extension changed from `.az` to `.il`, then amended to `.ias`.
-- Re-validated: all 16 checklist items still pass after amendments.
