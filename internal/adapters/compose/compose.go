@@ -67,32 +67,32 @@ func (a *Adapter) Export(_ context.Context, resources []ir.Resource, outDir stri
 		switch r.Kind {
 		case "Agent":
 			name := sanitizeName(r.Name)
-			sb.WriteString(fmt.Sprintf("  %s:\n", name))
-			sb.WriteString(fmt.Sprintf("    container_name: %s\n", name))
+			fmt.Fprintf(&sb, "  %s:\n", name)
+			fmt.Fprintf(&sb, "    container_name: %s\n", name)
 			if model, ok := r.Attributes["model"].(string); ok {
-				sb.WriteString(fmt.Sprintf("    environment:\n"))
-				sb.WriteString(fmt.Sprintf("      - MODEL=%s\n", model))
+				sb.WriteString("    environment:\n")
+				fmt.Fprintf(&sb, "      - MODEL=%s\n", model)
 				envVars["MODEL"] = model
 			}
-			sb.WriteString(fmt.Sprintf("    volumes:\n"))
-			sb.WriteString(fmt.Sprintf("      - ./config/%s:/app/config:ro\n", name))
+			sb.WriteString("    volumes:\n")
+			fmt.Fprintf(&sb, "      - ./config/%s:/app/config:ro\n", name)
 			sb.WriteString("\n")
 
 		case "MCPServer":
 			name := sanitizeName(r.Name)
-			sb.WriteString(fmt.Sprintf("  %s:\n", name))
-			sb.WriteString(fmt.Sprintf("    container_name: %s\n", name))
+			fmt.Fprintf(&sb, "  %s:\n", name)
+			fmt.Fprintf(&sb, "    container_name: %s\n", name)
 			if cmd, ok := r.Attributes["command"].(string); ok {
-				sb.WriteString(fmt.Sprintf("    command: %s\n", cmd))
+				fmt.Fprintf(&sb, "    command: %s\n", cmd)
 			}
 			if transport, ok := r.Attributes["transport"].(string); ok {
 				if transport == "sse" || transport == "streamable-http" {
-					sb.WriteString(fmt.Sprintf("    ports:\n"))
-					sb.WriteString(fmt.Sprintf("      - \"8080:8080\"\n"))
+					sb.WriteString("    ports:\n")
+					sb.WriteString("      - \"8080:8080\"\n")
 				}
 			}
-			sb.WriteString(fmt.Sprintf("    volumes:\n"))
-			sb.WriteString(fmt.Sprintf("      - ./config/%s:/app/config:ro\n", name))
+			sb.WriteString("    volumes:\n")
+			fmt.Fprintf(&sb, "      - ./config/%s:/app/config:ro\n", name)
 			sb.WriteString("\n")
 		}
 	}
@@ -112,7 +112,7 @@ func (a *Adapter) Export(_ context.Context, resources []ir.Resource, outDir stri
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			envSB.WriteString(fmt.Sprintf("%s=%s\n", k, envVars[k]))
+			fmt.Fprintf(&envSB, "%s=%s\n", k, envVars[k])
 		}
 		if err := os.WriteFile(filepath.Join(outDir, ".env"), []byte(envSB.String()), 0644); err != nil {
 			return err

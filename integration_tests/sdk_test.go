@@ -72,8 +72,12 @@ func TestSDKGenerateDeterminism(t *testing.T) {
 		out1 := filepath.Join(dir1, string(lang))
 		out2 := filepath.Join(dir2, string(lang))
 
-		generator.Generate(generator.Config{Language: lang, OutDir: out1})
-		generator.Generate(generator.Config{Language: lang, OutDir: out2})
+		if err := generator.Generate(generator.Config{Language: lang, OutDir: out1}); err != nil {
+			t.Fatalf("generate %s to out1 failed: %v", lang, err)
+		}
+		if err := generator.Generate(generator.Config{Language: lang, OutDir: out2}); err != nil {
+			t.Fatalf("generate %s to out2 failed: %v", lang, err)
+		}
 
 		// Compare all files
 		files1, _ := os.ReadDir(out1)

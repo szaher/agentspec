@@ -5,13 +5,7 @@ linters:
     - govet
     - staticcheck
     - unused
-    - gosimple
     - ineffassign
-    - gofmt
-    - goimports
-  settings:
-    gofmt:
-      simplify: true
 linters-settings:
   errcheck:
     check-type-assertions: true

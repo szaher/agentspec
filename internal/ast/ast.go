@@ -51,9 +51,9 @@ func (p *Package) stmtNode() {}
 
 // Import declares an external package dependency.
 type Import struct {
-	Path    string
-	Version string
-	SHA     string
+	Path     string
+	Version  string
+	SHA      string
 	StartPos Pos
 	EndPos   Pos
 }

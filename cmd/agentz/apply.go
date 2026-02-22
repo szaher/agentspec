@@ -13,8 +13,8 @@ import (
 	"github.com/szaher/designs/agentz/internal/state"
 
 	// Register adapters
-	_ "github.com/szaher/designs/agentz/internal/adapters/local"
 	_ "github.com/szaher/designs/agentz/internal/adapters/compose"
+	_ "github.com/szaher/designs/agentz/internal/adapters/local"
 )
 
 func newApplyCmd() *cobra.Command {
@@ -66,7 +66,7 @@ func newApplyCmd() *cobra.Command {
 				fmt.Print(plan.FormatText(p))
 				fmt.Print("\nDo you want to apply these changes? (yes/no): ")
 				var response string
-				fmt.Scanln(&response)
+				_, _ = fmt.Scanln(&response)
 				if response != "yes" {
 					fmt.Println("Apply cancelled.")
 					return nil

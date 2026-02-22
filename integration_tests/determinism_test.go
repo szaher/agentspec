@@ -65,8 +65,12 @@ func TestDeterminismExport(t *testing.T) {
 	dir1 := filepath.Join(t.TempDir(), "export1")
 	dir2 := filepath.Join(t.TempDir(), "export2")
 
-	adapter.Export(context.Background(), doc.Resources, dir1)
-	adapter.Export(context.Background(), doc.Resources, dir2)
+	if err := adapter.Export(context.Background(), doc.Resources, dir1); err != nil {
+		t.Fatalf("export to dir1 failed: %v", err)
+	}
+	if err := adapter.Export(context.Background(), doc.Resources, dir2); err != nil {
+		t.Fatalf("export to dir2 failed: %v", err)
+	}
 
 	files1, _ := os.ReadDir(dir1)
 	for _, f := range files1 {

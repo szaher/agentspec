@@ -56,7 +56,7 @@ func (h *Host) LoadPlugin(ctx context.Context, path string) (*LoadedPlugin, erro
 	if err != nil {
 		return nil, fmt.Errorf("instantiating plugin %s: %w", path, err)
 	}
-	defer mod.Close(ctx)
+	defer func() { _ = mod.Close(ctx) }()
 
 	// Call manifest export
 	manifestFn := mod.ExportedFunction("manifest")

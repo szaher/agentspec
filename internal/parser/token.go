@@ -20,14 +20,14 @@ const (
 	TokenBool
 
 	// Delimiters
-	TokenLBrace    // {
-	TokenRBrace    // }
-	TokenLBracket  // [
-	TokenRBracket  // ]
-	TokenLParen    // (
-	TokenRParen    // )
-	TokenComma     // ,
-	TokenDot       // .
+	TokenLBrace   // {
+	TokenRBrace   // }
+	TokenLBracket // [
+	TokenRBracket // ]
+	TokenLParen   // (
+	TokenRParen   // )
+	TokenComma    // ,
+	TokenDot      // .
 
 	// Keywords
 	TokenPackage

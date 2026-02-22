@@ -10,7 +10,7 @@ import (
 
 // Plan represents a computed set of changes.
 type Plan struct {
-	Actions   []adapters.Action
+	Actions       []adapters.Action
 	TargetBinding string
 	HasChanges    bool
 }

@@ -2,12 +2,9 @@
 package generator
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-	"text/template"
 )
 
 // Language represents a target SDK language.
@@ -475,30 +472,4 @@ func (c *Client) toSummaries(kind string, entries []StateEntry) []ResourceSummar
 	}
 
 	return nil
-}
-
-// executeTemplate is a helper for template rendering.
-func executeTemplate(tmplStr string, data interface{}) (string, error) {
-	tmpl, err := template.New("").Parse(tmplStr)
-	if err != nil {
-		return "", err
-	}
-	var sb strings.Builder
-	if err := tmpl.Execute(&sb, data); err != nil {
-		return "", err
-	}
-	return sb.String(), nil
-}
-
-// loadIRSchema loads the IR schema from a JSON file.
-func loadIRSchema(path string) (map[string]interface{}, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var schema map[string]interface{}
-	if err := json.Unmarshal(data, &schema); err != nil {
-		return nil, err
-	}
-	return schema, nil
 }
