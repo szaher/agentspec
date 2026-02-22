@@ -1,0 +1,34 @@
+package "multi-env" version "0.1.0" lang "1.0"
+
+prompt "greeting" {
+  content "You are a helpful assistant."
+}
+
+skill "search" {
+  description "Search"
+  input { query string required }
+  output { results string }
+  execution command "search-tool"
+}
+
+agent "assistant" {
+  uses prompt "greeting"
+  uses skill "search"
+  model "claude-sonnet-4-20250514"
+}
+
+environment "dev" {
+  agent "assistant" {
+    model "claude-haiku-latest"
+  }
+}
+
+environment "prod" {
+  agent "assistant" {
+    model "claude-sonnet-4-20250514"
+  }
+}
+
+binding "local" adapter "local-mcp" {
+  default true
+}

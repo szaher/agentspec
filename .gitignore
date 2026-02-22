@@ -1,0 +1,37 @@
+# Binaries
+agentz
+*.exe
+*.test
+*.out
+
+# Vendor (if used)
+vendor/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Environment
+.env
+.env.*
+
+# State files
+.agentz.state.json
+
+# Build output
+dist/
+build/
+
+# Coverage
+coverage.out
+coverage.html
+
+# Temporary
+tmp/

@@ -1,0 +1,24 @@
+package "plugin-demo" version "0.1.0" lang "1.0"
+
+plugin "monitor" version "1.0.0"
+
+prompt "ops" {
+  content "You are an operations assistant."
+}
+
+skill "check-health" {
+  description "Check service health"
+  input { service string required }
+  output { status string }
+  execution command "health-check"
+}
+
+agent "ops-bot" {
+  uses prompt "ops"
+  uses skill "check-health"
+  model "claude-sonnet-4-20250514"
+}
+
+binding "local" adapter "local-mcp" {
+  default true
+}

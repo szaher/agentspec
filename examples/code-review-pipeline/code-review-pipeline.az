@@ -1,0 +1,92 @@
+package "code-review" version "0.1.0" lang "1.0"
+
+# A code review pipeline with separate agents for static analysis,
+# security scanning, and review summarization. Demonstrates multiple
+# agents collaborating through MCP transport.
+
+prompt "analyzer" {
+  content "You are a code analysis expert. Identify code smells,
+           anti-patterns, and suggest improvements. Focus on
+           readability, maintainability, and performance."
+}
+
+prompt "security-reviewer" {
+  content "You are a security expert. Scan code for vulnerabilities
+           including injection flaws, authentication issues, and
+           data exposure risks. Reference OWASP Top 10 where applicable."
+}
+
+prompt "summarizer" {
+  content "You are a review summarizer. Combine analysis and security
+           findings into a concise, actionable review. Prioritize
+           issues by severity: critical, high, medium, low."
+}
+
+skill "read-diff" {
+  description "Read a git diff or pull request"
+  input { pr_url string required }
+  output { diff string }
+  execution command "git-diff-reader"
+}
+
+skill "analyze-code" {
+  description "Run static analysis on code"
+  input { code string required }
+  output { findings string }
+  execution command "static-analyzer"
+}
+
+skill "scan-security" {
+  description "Scan code for security vulnerabilities"
+  input { code string required }
+  output { vulnerabilities string }
+  execution command "security-scanner"
+}
+
+skill "post-review" {
+  description "Post review comments to a pull request"
+  input { pr_url string required }
+  output { comment_id string }
+  execution command "pr-commenter"
+}
+
+agent "code-analyzer" {
+  uses prompt "analyzer"
+  uses skill "read-diff"
+  uses skill "analyze-code"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "security-scanner" {
+  uses prompt "security-reviewer"
+  uses skill "read-diff"
+  uses skill "scan-security"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "review-summarizer" {
+  uses prompt "summarizer"
+  uses skill "post-review"
+  model "claude-sonnet-4-20250514"
+}
+
+server "review-server" {
+  transport "stdio"
+  command "review-mcp-server"
+  exposes skill "read-diff"
+  exposes skill "analyze-code"
+  exposes skill "scan-security"
+  exposes skill "post-review"
+}
+
+client "review-client" {
+  connects to server "review-server"
+}
+
+binding "local" adapter "local-mcp" {
+  default true
+}
+
+binding "ci" adapter "docker-compose" {
+  output_dir "./ci-deploy"
+}

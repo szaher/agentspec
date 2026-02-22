@@ -1,0 +1,14 @@
+package "basic-agent" version "0.1.0" lang "1.0"
+
+prompt "system" {
+  content "You are a helpful assistant."
+}
+
+agent "helper" {
+  uses prompt "system"
+  model "claude-sonnet-4-20250514"
+}
+
+binding "local" adapter "local-mcp" {
+  default true
+}

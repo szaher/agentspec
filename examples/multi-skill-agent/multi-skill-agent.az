@@ -1,0 +1,38 @@
+package "multi-skill" version "0.1.0" lang "1.0"
+
+prompt "research" {
+  content "You are a research assistant with multiple capabilities."
+}
+
+skill "web-search" {
+  description "Search the web"
+  input { query string required }
+  output { results string }
+  execution command "search-tool"
+}
+
+skill "summarize" {
+  description "Summarize text"
+  input { text string required }
+  output { summary string }
+  execution command "summarize-tool"
+}
+
+skill "translate" {
+  description "Translate text"
+  input { text string required }
+  output { translated string }
+  execution command "translate-tool"
+}
+
+agent "researcher" {
+  uses prompt "research"
+  uses skill "web-search"
+  uses skill "summarize"
+  uses skill "translate"
+  model "claude-sonnet-4-20250514"
+}
+
+binding "local" adapter "local-mcp" {
+  default true
+}

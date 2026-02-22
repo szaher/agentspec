@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentz.dev/ir/1.0/schema",
+  "title": "Agentz IR Document",
+  "type": "object",
+  "required": ["ir_version", "lang_version", "package", "resources"],
+  "properties": {
+    "ir_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "lang_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "package": {
+      "$ref": "#/$defs/Package"
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Resource"
+      }
+    },
+    "policies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Policy"
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Binding"
+      }
+    }
+  },
+  "$defs": {
+    "Package": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "Resource": {
+      "type": "object",
+      "required": ["kind", "name", "fqn", "attributes", "hash"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["Agent", "Prompt", "Skill", "MCPServer", "MCPClient", "Environment", "Secret"]
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "fqn": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+/[A-Z][a-zA-Z]+/[a-z0-9-]+$"
+        },
+        "attributes": { "type": "object" },
+        "references": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "metadata": { "type": "object" }
+      }
+    },
+    "Policy": {
+      "type": "object",
+      "required": ["name", "rules"],
+      "properties": {
+        "name": { "type": "string" },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          }
+        }
+      }
+    },
+    "Rule": {
+      "type": "object",
+      "required": ["action", "resource", "subject"],
+      "properties": {
+        "action": { "type": "string", "enum": ["allow", "deny", "require"] },
+        "resource": { "type": "string" },
+        "subject": { "type": "string" }
+      }
+    },
+    "Binding": {
+      "type": "object",
+      "required": ["name", "adapter"],
+      "properties": {
+        "name": { "type": "string" },
+        "adapter": { "type": "string" },
+        "default": { "type": "boolean" },
+        "config": { "type": "object" }
+      }
+    }
+  }
+}

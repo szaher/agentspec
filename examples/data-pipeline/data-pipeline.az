@@ -1,0 +1,90 @@
+package "data-pipeline" version "0.1.0" lang "1.0"
+
+# A data processing pipeline agent that can extract, transform,
+# and load data. Shows policy enforcement to restrict which
+# models can be used and require secrets for database access.
+
+prompt "etl" {
+  content "You are a data engineering assistant. Help users extract
+           data from sources, transform it according to rules, and
+           load it into target systems. Always validate data quality
+           before loading."
+}
+
+skill "extract" {
+  description "Extract data from a source system"
+  input { source string required }
+  output { raw_data string }
+  execution command "data-extract"
+}
+
+skill "transform" {
+  description "Transform data according to mapping rules"
+  input { data string required }
+  output { transformed string }
+  execution command "data-transform"
+}
+
+skill "load" {
+  description "Load data into the target database"
+  input { data string required }
+  output { rows_inserted string }
+  execution command "data-load"
+}
+
+skill "validate" {
+  description "Run data quality checks"
+  input { data string required }
+  output { report string }
+  execution command "data-validate"
+}
+
+agent "etl-bot" {
+  uses prompt "etl"
+  uses skill "extract"
+  uses skill "transform"
+  uses skill "load"
+  uses skill "validate"
+  model "claude-sonnet-4-20250514"
+}
+
+secret "db-connection" {
+  store "env"
+  env "DATABASE_URL"
+}
+
+secret "source-api-key" {
+  store "env"
+  env "SOURCE_API_KEY"
+}
+
+policy "production-safety" {
+  deny model "claude-haiku-latest"
+  require secret "db-connection"
+}
+
+environment "dev" {
+  agent "etl-bot" {
+    model "claude-haiku-latest"
+  }
+}
+
+environment "staging" {
+  agent "etl-bot" {
+    model "claude-sonnet-4-20250514"
+  }
+}
+
+environment "prod" {
+  agent "etl-bot" {
+    model "claude-sonnet-4-20250514"
+  }
+}
+
+binding "local" adapter "local-mcp" {
+  default true
+}
+
+binding "compose" adapter "docker-compose" {
+  output_dir "./pipeline-deploy"
+}

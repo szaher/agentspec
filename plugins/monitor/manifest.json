@@ -1,0 +1,49 @@
+{
+  "name": "monitor",
+  "version": "1.0.0",
+  "description": "Adds monitoring resource type with threshold validation",
+  "capabilities": {
+    "resource_types": [
+      {
+        "kind": "Monitor",
+        "schema": {
+          "type": "object",
+          "required": ["name", "target", "threshold"],
+          "properties": {
+            "name": { "type": "string" },
+            "target": { "type": "string" },
+            "threshold": { "type": "number" },
+            "interval": { "type": "string" }
+          }
+        }
+      }
+    ],
+    "validators": [
+      {
+        "name": "monitor-threshold",
+        "applies_to": ["Monitor"],
+        "description": "Validates that threshold is between 0 and 100"
+      }
+    ],
+    "transforms": [
+      {
+        "name": "monitor-to-alerts",
+        "stage": "compile",
+        "input_kind": "Monitor",
+        "description": "Expands Monitor into alert configurations"
+      }
+    ],
+    "hooks": [
+      {
+        "stage": "pre-apply",
+        "name": "monitor-preflight",
+        "description": "Checks monitoring endpoint reachability before apply"
+      }
+    ]
+  },
+  "wasm": {
+    "min_memory_pages": 16,
+    "max_memory_pages": 256,
+    "capabilities": ["wasi_snapshot_preview1"]
+  }
+}

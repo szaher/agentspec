@@ -1,0 +1,39 @@
+package "demo" version "0.1.0" lang "1.0"
+
+prompt "greeting" {
+  content "You are a helpful research assistant.\nAnswer questions clearly and concisely."
+}
+
+skill "web-search" {
+  description "Search the web for information"
+  input {
+    query string required
+  }
+  output {
+    results string
+  }
+  execution command "search-tool"
+}
+
+skill "summarize" {
+  description "Summarize a block of text"
+  input {
+    text string required
+  }
+  output {
+    summary string
+  }
+  execution command "summarize-tool"
+}
+
+agent "research-assistant" {
+  uses prompt "greeting"
+  uses skill "web-search"
+  uses skill "summarize"
+  model "claude-sonnet-4-20250514"
+}
+
+binding "local" adapter "local-mcp" {
+  default true
+  output_dir "./deploy"
+}

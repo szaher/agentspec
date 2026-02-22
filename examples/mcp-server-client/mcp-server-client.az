@@ -1,0 +1,33 @@
+package "mcp-example" version "0.1.0" lang "1.0"
+
+prompt "assistant" {
+  content "You are an assistant connected to MCP servers."
+}
+
+skill "file-read" {
+  description "Read files from disk"
+  input { path string required }
+  output { content string }
+  execution command "file-reader"
+}
+
+server "file-server" {
+  transport "stdio"
+  command "file-mcp-server"
+  exposes skill "file-read"
+}
+
+client "my-client" {
+  connects to server "file-server"
+}
+
+agent "file-assistant" {
+  uses prompt "assistant"
+  uses skill "file-read"
+  connects to client "my-client"
+  model "claude-sonnet-4-20250514"
+}
+
+binding "local" adapter "local-mcp" {
+  default true
+}
