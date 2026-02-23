@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/szaher/designs/agentz/internal/adapters"
 	"github.com/szaher/designs/agentz/internal/apply"
-	"github.com/szaher/designs/agentz/internal/cli"
 	"github.com/szaher/designs/agentz/internal/events"
 	"github.com/szaher/designs/agentz/internal/plan"
 	"github.com/szaher/designs/agentz/internal/state"
@@ -16,6 +15,7 @@ import (
 	// Register adapters
 	_ "github.com/szaher/designs/agentz/internal/adapters/compose"
 	_ "github.com/szaher/designs/agentz/internal/adapters/local"
+	_ "github.com/szaher/designs/agentz/internal/adapters/process"
 )
 
 func newApplyCmd() *cobra.Command {
@@ -30,15 +30,9 @@ func newApplyCmd() *cobra.Command {
 		Use:   "apply",
 		Short: "Apply desired state idempotently",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			files, err := resolveAZFiles(args)
+			files, err := resolveFiles(args)
 			if err != nil {
 				return err
-			}
-
-			for _, file := range files {
-				if err := cli.CheckExtensionDeprecation(file); err != nil {
-					return err
-				}
 			}
 
 			doc, err := parseAndLower(files)

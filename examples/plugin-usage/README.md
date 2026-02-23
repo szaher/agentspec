@@ -18,7 +18,7 @@ plugin "monitor" version "1.0.0"
 
 This declares a dependency on the `monitor` plugin at version `1.0.0`. The tool resolves plugins from:
 1. `./plugins/<name>/manifest.json` (local, project-scoped)
-2. `~/.agentz/plugins/<name>/manifest.json` (global, user-scoped)
+2. `~/.agentspec/plugins/<name>/manifest.json` (global, user-scoped)
 
 The version is pinned for reproducibility. If the installed plugin version doesn't match, the tool reports an error.
 
@@ -91,4 +91,4 @@ plugins/
 ## Next Steps
 
 - Build your own plugin: see the plugin manifest at `plugins/monitor/manifest.json`
-- Learn about the adapter interface: see [multi-binding](../multi-binding/)
+- Learn about the target interface: see [multi-binding](../multi-binding/)

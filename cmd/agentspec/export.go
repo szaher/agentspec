@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/szaher/designs/agentz/internal/adapters"
-	"github.com/szaher/designs/agentz/internal/cli"
 	"github.com/szaher/designs/agentz/internal/plan"
 )
 
@@ -21,15 +20,9 @@ func newExportCmd() *cobra.Command {
 		Use:   "export",
 		Short: "Export adapter-specific artifacts without applying",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			files, err := resolveAZFiles(args)
+			files, err := resolveFiles(args)
 			if err != nil {
 				return err
-			}
-
-			for _, file := range files {
-				if err := cli.CheckExtensionDeprecation(file); err != nil {
-					return err
-				}
 			}
 
 			doc, err := parseAndLower(files)

@@ -1,4 +1,4 @@
-package "multi-env" version "0.1.0" lang "1.0"
+package "multi-env" version "0.1.0" lang "2.0"
 
 prompt "greeting" {
   content "You are a helpful assistant."
@@ -12,7 +12,9 @@ skill "search" {
   output {
     results string
   }
-  execution command "search-tool"
+  tool command {
+    binary "search-tool"
+  }
 }
 
 agent "assistant" {
@@ -33,6 +35,6 @@ environment "prod" {
   }
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }

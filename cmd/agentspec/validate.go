@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/cli"
 	"github.com/szaher/designs/agentz/internal/parser"
 	"github.com/szaher/designs/agentz/internal/validate"
 )
@@ -18,7 +17,7 @@ func newValidateCmd() *cobra.Command {
 		Use:   "validate [files...]",
 		Short: "Validate IntentLang definitions (structural + semantic)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			files, err := resolveAZFiles(args)
+			files, err := resolveFiles(args)
 			if err != nil {
 				return err
 			}
@@ -26,10 +25,6 @@ func newValidateCmd() *cobra.Command {
 			var allErrors []*validate.ValidationError
 
 			for _, file := range files {
-				if err := cli.CheckExtensionDeprecation(file); err != nil {
-					return err
-				}
-
 				input, err := os.ReadFile(file)
 				if err != nil {
 					return fmt.Errorf("cannot read %s: %w", file, err)

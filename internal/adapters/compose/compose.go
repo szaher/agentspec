@@ -11,7 +11,6 @@ import (
 
 	"github.com/szaher/designs/agentz/internal/adapters"
 	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/state"
 )
 
 func init() {
@@ -29,11 +28,6 @@ func (a *Adapter) Name() string { return "docker-compose" }
 // Validate checks whether resources are compatible with Docker Compose.
 func (a *Adapter) Validate(_ context.Context, resources []ir.Resource) error {
 	return nil
-}
-
-// Plan computes changes needed.
-func (a *Adapter) Plan(_ context.Context, desired []ir.Resource, current []state.Entry) ([]adapters.Action, error) {
-	return nil, nil
 }
 
 // Apply executes the planned actions.

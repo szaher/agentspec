@@ -1,0 +1,62 @@
+package "delegation-demo" version "1.0.0" lang "2.0"
+
+prompt "router-prompt" {
+  content "You route requests to the appropriate agent."
+}
+
+prompt "search-prompt" {
+  content "You search for information."
+}
+
+prompt "calc-prompt" {
+  content "You perform calculations."
+}
+
+skill "web-search" {
+  description "Search the web"
+  input {
+    query string required
+  }
+  output {
+    results string
+  }
+  tool command {
+    binary "search-tool"
+  }
+}
+
+skill "calculate" {
+  description "Perform a calculation"
+  input {
+    expression string required
+  }
+  output {
+    result string
+  }
+  tool command {
+    binary "calc-tool"
+  }
+}
+
+agent "searcher" {
+  uses prompt "search-prompt"
+  uses skill "web-search"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "calculator" {
+  uses prompt "calc-prompt"
+  uses skill "calculate"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "router" {
+  uses prompt "router-prompt"
+  model "claude-sonnet-4-20250514"
+  delegate to agent "searcher" when "user asks for information"
+  delegate to agent "calculator" when "user asks for math"
+}
+
+deploy "local" target "process" {
+  default true
+}

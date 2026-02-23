@@ -1,4 +1,4 @@
-package "demo" version "0.1.0" lang "1.0"
+package "demo" version "0.1.0" lang "2.0"
 
 prompt "greeting" {
   content "You are a helpful research assistant.\nAnswer questions clearly and concisely."
@@ -12,7 +12,9 @@ skill "web-search" {
   output {
     results string
   }
-  execution command "search-tool"
+  tool command {
+    binary "search-tool"
+  }
 }
 
 skill "summarize" {
@@ -23,7 +25,9 @@ skill "summarize" {
   output {
     summary string
   }
-  execution command "summarize-tool"
+  tool command {
+    binary "summarize-tool"
+  }
 }
 
 agent "research-assistant" {
@@ -33,7 +37,6 @@ agent "research-assistant" {
   model "claude-sonnet-4-20250514"
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
-  output_dir "./deploy"
 }

@@ -7,15 +7,15 @@ The simplest possible IntentLang AgentSpec: a single agent with a system prompt 
 - **Package declaration** with name, version, and language version
 - **Prompt** resource defining the agent's system instructions
 - **Agent** resource that references the prompt and specifies a model
-- **Binding** to the `local-mcp` adapter as the default deployment target
+- **Deploy target** specifying the default deployment platform
 
 ## AgentSpec Structure
 
 ```
-package "basic-agent" version "0.1.0" lang "1.0"
+package "basic-agent" version "0.1.0" lang "2.0"
 ```
 
-Every `.ias` file starts with a package header. The `lang "1.0"` field pins the IntentLang language version for forward compatibility.
+Every `.ias` file starts with a package header. The `lang "2.0"` field pins the IntentLang language version for forward compatibility.
 
 ```
 prompt "system" {
@@ -35,12 +35,12 @@ agent "helper" {
 The agent ties together a prompt and a model. The `uses` keyword creates a reference — the validator checks that `"system"` exists as a prompt and will suggest corrections if you mistype the name.
 
 ```
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }
 ```
 
-A binding declares where the agent is deployed. The `default true` flag means `agentspec plan` and `agentspec apply` use this binding when no `--target` flag is provided.
+A deploy target declares where the agent is deployed. The `default true` flag means `agentspec plan` and `agentspec apply` use this target when no `--target` flag is provided.
 
 ## How to Run
 
@@ -51,7 +51,7 @@ A binding declares where the agent is deployed. The `default true` flag means `a
 # Validate
 ./agentspec validate examples/basic-agent.ias
 
-# Plan (shows 3 resources: Prompt, Agent, Binding)
+# Plan (shows 3 resources: Prompt, Agent, DeployTarget)
 ./agentspec plan examples/basic-agent.ias
 
 # Apply

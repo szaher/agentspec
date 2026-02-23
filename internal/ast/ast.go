@@ -83,8 +83,23 @@ type Agent struct {
 	Parameters map[string]string
 	Client     *Ref
 	Metadata   map[string]string
-	StartPos   Pos
-	EndPos     Pos
+
+	// IntentLang 2.0 runtime config
+	Strategy    string // "react", "plan-and-execute", "reflexion", "router", "map-reduce"
+	MaxTurns    int
+	Timeout     string
+	TokenBudget int
+	Temperature float64
+	HasTemp     bool // distinguish zero value from unset
+	Stream      *bool
+	OnError     string // "retry", "fail", "fallback"
+	MaxRetries  int
+	Fallback    string // fallback agent name
+	MemoryCfg   *MemoryConfig
+	Delegates   []*Delegate
+
+	StartPos Pos
+	EndPos   Pos
 }
 
 func (a *Agent) Pos() Pos  { return a.StartPos }
@@ -125,7 +140,8 @@ type Skill struct {
 	Description string
 	Input       []*Field
 	Output      []*Field
-	Execution   *Execution
+	Execution   *Execution  // IntentLang 1.0 execution
+	ToolConfig  *ToolConfig // IntentLang 2.0 tool block
 	Metadata    map[string]string
 	StartPos    Pos
 	EndPos      Pos
@@ -289,3 +305,170 @@ type Ref struct {
 
 func (r *Ref) Pos() Pos { return r.StartPos }
 func (r *Ref) End() Pos { return r.EndPos }
+
+// ToolConfig defines how a skill executes (IntentLang 2.0, replaces Execution).
+type ToolConfig struct {
+	Type string // "mcp", "http", "command", "inline"
+
+	// MCP variant
+	ServerTool string // "server-name/tool-name"
+
+	// HTTP variant
+	Method       string
+	URL          string
+	Headers      map[string]string
+	BodyTemplate string
+
+	// Command variant
+	Binary  string
+	Args    []string
+	Timeout string
+	Env     map[string]string
+	Secrets map[string]string
+
+	// Inline variant
+	Language    string
+	Code        string
+	MemoryLimit string
+
+	StartPos Pos
+	EndPos   Pos
+}
+
+func (t *ToolConfig) Pos() Pos { return t.StartPos }
+func (t *ToolConfig) End() Pos { return t.EndPos }
+
+// DeployTarget defines a deployment configuration (IntentLang 2.0, replaces Binding).
+type DeployTarget struct {
+	Name      string
+	Target    string // "process", "docker", "docker-compose", "kubernetes"
+	Default   bool
+	Port      int
+	Namespace string
+	Replicas  int
+	Image     string
+	Resources *ResourceLimits
+	Health    *HealthConfig
+	Autoscale *AutoscaleConfig
+	Env       map[string]string
+	Secrets   map[string]string
+	StartPos  Pos
+	EndPos    Pos
+}
+
+func (d *DeployTarget) Pos() Pos  { return d.StartPos }
+func (d *DeployTarget) End() Pos  { return d.EndPos }
+func (d *DeployTarget) stmtNode() {}
+
+// MemoryConfig specifies conversation memory settings.
+type MemoryConfig struct {
+	Strategy    string // "sliding_window", "summary"
+	MaxMessages int
+	StartPos    Pos
+	EndPos      Pos
+}
+
+func (m *MemoryConfig) Pos() Pos { return m.StartPos }
+func (m *MemoryConfig) End() Pos { return m.EndPos }
+
+// HealthConfig specifies health check settings.
+type HealthConfig struct {
+	Path     string
+	Interval string
+	Timeout  string
+	StartPos Pos
+	EndPos   Pos
+}
+
+func (h *HealthConfig) Pos() Pos { return h.StartPos }
+func (h *HealthConfig) End() Pos { return h.EndPos }
+
+// AutoscaleConfig specifies horizontal scaling rules.
+type AutoscaleConfig struct {
+	MinReplicas int
+	MaxReplicas int
+	Metric      string
+	Target      int
+	StartPos    Pos
+	EndPos      Pos
+}
+
+func (a *AutoscaleConfig) Pos() Pos { return a.StartPos }
+func (a *AutoscaleConfig) End() Pos { return a.EndPos }
+
+// ResourceLimits specifies CPU/memory constraints.
+type ResourceLimits struct {
+	CPU      string
+	Memory   string
+	StartPos Pos
+	EndPos   Pos
+}
+
+func (r *ResourceLimits) Pos() Pos { return r.StartPos }
+func (r *ResourceLimits) End() Pos { return r.EndPos }
+
+// Delegate defines an agent delegation rule.
+type Delegate struct {
+	AgentRef  string // target agent name
+	Condition string // natural language condition
+	StartPos  Pos
+	EndPos    Pos
+}
+
+func (d *Delegate) Pos() Pos { return d.StartPos }
+func (d *Delegate) End() Pos { return d.EndPos }
+
+// TypeDef defines a named type with fields, enums, or lists.
+type TypeDef struct {
+	Name     string
+	Fields   []*TypeField
+	EnumVals []string // non-empty for enum types
+	ListOf   string   // non-empty for list types
+	StartPos Pos
+	EndPos   Pos
+}
+
+func (t *TypeDef) Pos() Pos  { return t.StartPos }
+func (t *TypeDef) End() Pos  { return t.EndPos }
+func (t *TypeDef) stmtNode() {}
+
+// TypeField defines a field within a type definition.
+type TypeField struct {
+	Name     string
+	Type     string
+	Required bool
+	Default  string
+	StartPos Pos
+	EndPos   Pos
+}
+
+func (f *TypeField) Pos() Pos { return f.StartPos }
+func (f *TypeField) End() Pos { return f.EndPos }
+
+// Pipeline defines a multi-step agent workflow.
+type Pipeline struct {
+	Name     string
+	Steps    []*PipelineStep
+	StartPos Pos
+	EndPos   Pos
+}
+
+func (p *Pipeline) Pos() Pos  { return p.StartPos }
+func (p *Pipeline) End() Pos  { return p.EndPos }
+func (p *Pipeline) stmtNode() {}
+
+// PipelineStep defines a single step in a pipeline.
+type PipelineStep struct {
+	Name      string
+	Agent     string   // agent to invoke
+	Input     string   // input expression or reference
+	Output    string   // output variable name
+	DependsOn []string // step names this step depends on
+	Parallel  bool     // can run in parallel
+	When      string   // conditional execution expression
+	StartPos  Pos
+	EndPos    Pos
+}
+
+func (s *PipelineStep) Pos() Pos { return s.StartPos }
+func (s *PipelineStep) End() Pos { return s.EndPos }

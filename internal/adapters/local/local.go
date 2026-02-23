@@ -9,7 +9,6 @@ import (
 
 	"github.com/szaher/designs/agentz/internal/adapters"
 	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/state"
 )
 
 func init() {
@@ -27,12 +26,6 @@ func (a *Adapter) Name() string { return "local-mcp" }
 // Validate checks whether resources are compatible with local MCP.
 func (a *Adapter) Validate(_ context.Context, resources []ir.Resource) error {
 	return nil
-}
-
-// Plan computes changes needed.
-func (a *Adapter) Plan(_ context.Context, desired []ir.Resource, current []state.Entry) ([]adapters.Action, error) {
-	// Delegate to the shared plan engine
-	return nil, nil
 }
 
 // Apply executes the planned actions.

@@ -56,6 +56,8 @@ via pluggable adapters, and generates SDKs for multiple languages.`,
 	root.AddCommand(newExportCmd())
 	root.AddCommand(newSDKCmd())
 	root.AddCommand(newMigrateCmd())
+	root.AddCommand(newRunCmd())
+	root.AddCommand(newDevCmd())
 
 	return root
 }

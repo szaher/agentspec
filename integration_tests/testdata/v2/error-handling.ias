@@ -1,0 +1,33 @@
+package "test-errors" version "1.0.0" lang "2.0"
+
+prompt "system" {
+  content "You are a resilient agent."
+}
+
+prompt "fallback-system" {
+  content "You are the fallback agent. The primary agent encountered an error."
+}
+
+agent "primary" {
+  uses prompt "system"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 3
+  timeout "30s"
+  token_budget 10000
+  on_error "fallback"
+  fallback "backup"
+}
+
+agent "backup" {
+  uses prompt "fallback-system"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 2
+  on_error "fail"
+}
+
+deploy "local" target "process" {
+  port 8080
+  default true
+}

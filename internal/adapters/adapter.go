@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/state"
 )
 
 // ActionType represents the type of change for a resource.
@@ -54,9 +53,6 @@ type Adapter interface {
 
 	// Validate checks whether the IR resources are compatible.
 	Validate(ctx context.Context, resources []ir.Resource) error
-
-	// Plan computes the changes needed to reach desired state.
-	Plan(ctx context.Context, desired []ir.Resource, current []state.Entry) ([]Action, error)
 
 	// Apply executes the planned actions.
 	Apply(ctx context.Context, actions []Action) ([]Result, error)

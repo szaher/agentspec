@@ -7,7 +7,7 @@ A multi-agent code review system with separate agents for static analysis, secur
 - **Multiple agents** in a single AgentSpec, each with a specialized role
 - **Shared skills** referenced by multiple agents (`read-diff` is used by both analyzer and scanner)
 - **MCP server/client** wiring for inter-agent communication
-- **Dual bindings** for local development and CI/CD deployment
+- **Dual deploy targets** for local development and CI/CD deployment
 
 ## AgentSpec Structure
 
@@ -59,11 +59,11 @@ A single MCP server exposes all skills. The client connects to this server, prov
 ### Dual Deployment Targets
 
 ```
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }
 
-binding "ci" adapter "docker-compose" {
+deploy "ci" target "docker-compose" {
   output_dir "./ci-deploy"
 }
 ```

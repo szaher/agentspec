@@ -3,13 +3,16 @@ package state
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"sort"
+	"syscall"
 )
 
 // LocalBackend implements Backend using a local JSON file.
 type LocalBackend struct {
-	Path string
+	Path     string
+	lockFile *os.File
 }
 
 // NewLocalBackend creates a new local JSON state backend.
@@ -86,4 +89,36 @@ func (b *LocalBackend) List(status *Status) ([]Entry, error) {
 		}
 	}
 	return filtered, nil
+}
+
+// Lock acquires an exclusive file lock on the state file.
+// Returns an error if the lock is already held by another process.
+func (b *LocalBackend) Lock() error {
+	lockPath := b.Path + ".lock"
+	f, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		return fmt.Errorf("open lock file: %w", err)
+	}
+
+	// Try non-blocking exclusive lock
+	err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+	if err != nil {
+		_ = f.Close()
+		return fmt.Errorf("state file is locked by another process (concurrent apply not allowed)")
+	}
+
+	b.lockFile = f
+	return nil
+}
+
+// Unlock releases the file lock.
+func (b *LocalBackend) Unlock() error {
+	if b.lockFile == nil {
+		return nil
+	}
+	err := syscall.Flock(int(b.lockFile.Fd()), syscall.LOCK_UN)
+	_ = b.lockFile.Close()
+	b.lockFile = nil
+	_ = os.Remove(b.Path + ".lock")
+	return err
 }

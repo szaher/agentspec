@@ -1,4 +1,4 @@
-package "rag-chatbot" version "0.1.0" lang "1.0"
+package "rag-chatbot" version "0.1.0" lang "2.0"
 
 prompt "rag" {
   content "You are a knowledge assistant. Answer questions using only\n           the retrieved context. Always cite your sources with\n           [Source: document_name] notation. If the context does not\n           contain enough information, say so honestly rather than\n           guessing."
@@ -12,7 +12,9 @@ skill "embed-query" {
   output {
     vector string
   }
-  execution command "embed-tool"
+  tool command {
+    binary "embed-tool"
+  }
 }
 
 skill "vector-search" {
@@ -23,7 +25,9 @@ skill "vector-search" {
   output {
     documents string
   }
-  execution command "vector-search-tool"
+  tool command {
+    binary "vector-search-tool"
+  }
 }
 
 skill "rerank" {
@@ -34,7 +38,9 @@ skill "rerank" {
   output {
     ranked string
   }
-  execution command "rerank-tool"
+  tool command {
+    binary "rerank-tool"
+  }
 }
 
 agent "rag-bot" {
@@ -61,6 +67,6 @@ secret "vector-db-key" {
   env(VECTOR_DB_API_KEY)
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }

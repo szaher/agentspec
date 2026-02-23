@@ -206,7 +206,9 @@ The CLI MUST provide the following commands: `fmt`, `validate`,
 
 SDKs MUST be generated from a single source of truth:
 
-- If an API exists: OpenAPI MUST drive SDK generation.
+- If an API exists: a formal API contract (OpenAPI, protocol
+  definition, or equivalent structured specification) MUST drive
+  SDK generation.
 - If no API exists: a stable library API over state and artifacts
   MUST be provided.
 

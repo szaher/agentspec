@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/cli"
 	"github.com/szaher/designs/agentz/internal/plan"
 	"github.com/szaher/designs/agentz/internal/state"
 )
@@ -17,15 +16,9 @@ func newDiffCmd() *cobra.Command {
 		Use:   "diff",
 		Short: "Show drift between desired state and actual state",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			files, err := resolveAZFiles(args)
+			files, err := resolveFiles(args)
 			if err != nil {
 				return err
-			}
-
-			for _, file := range files {
-				if err := cli.CheckExtensionDeprecation(file); err != nil {
-					return err
-				}
 			}
 
 			doc, err := parseAndLower(files)

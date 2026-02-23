@@ -41,12 +41,73 @@ func ValidateSemantic(f *ast.File) []*ValidationError {
 						fmt.Sprintf("client %q not found", s.Client.Name), hint))
 				}
 			}
+			if s.Fallback != "" {
+				if !names["Agent"][s.Fallback] {
+					hint := suggestName(s.Fallback, names["Agent"])
+					errs = append(errs, posError(s.StartPos,
+						fmt.Sprintf("fallback agent %q not found", s.Fallback), hint))
+				}
+				if s.Fallback == s.Name {
+					errs = append(errs, posError(s.StartPos,
+						fmt.Sprintf("agent %q cannot fallback to itself", s.Name), ""))
+				}
+			}
+			for _, d := range s.Delegates {
+				if !names["Agent"][d.AgentRef] {
+					hint := suggestName(d.AgentRef, names["Agent"])
+					errs = append(errs, posError(d.StartPos,
+						fmt.Sprintf("delegate agent %q not found", d.AgentRef), hint))
+				}
+			}
+		case *ast.Skill:
+			if s.ToolConfig != nil && s.ToolConfig.Type == "mcp" && s.ToolConfig.ServerTool != "" {
+				parts := strings.SplitN(s.ToolConfig.ServerTool, "/", 2)
+				if len(parts) == 2 {
+					serverName := parts[0]
+					if !names["MCPServer"][serverName] {
+						hint := suggestName(serverName, names["MCPServer"])
+						errs = append(errs, posError(s.ToolConfig.StartPos,
+							fmt.Sprintf("MCP server %q not found in tool reference %q", serverName, s.ToolConfig.ServerTool), hint))
+					}
+				}
+			}
 		case *ast.MCPClient:
 			for _, server := range s.Servers {
 				if !names["MCPServer"][server.Name] {
 					hint := suggestName(server.Name, names["MCPServer"])
 					errs = append(errs, posError(server.StartPos,
 						fmt.Sprintf("server %q not found", server.Name), hint))
+				}
+			}
+		case *ast.Pipeline:
+			for _, step := range s.Steps {
+				if step.Agent != "" && !names["Agent"][step.Agent] {
+					hint := suggestName(step.Agent, names["Agent"])
+					errs = append(errs, posError(step.StartPos,
+						fmt.Sprintf("step %q references unknown agent %q", step.Name, step.Agent), hint))
+				}
+			}
+		case *ast.Prompt:
+			// Validate prompt variable references in content
+			if len(s.Variables) > 0 {
+				declaredVars := make(map[string]bool)
+				for _, v := range s.Variables {
+					declaredVars[v.Name] = true
+				}
+				// Check for {{var}} references in content
+				content := s.Content
+				for i := 0; i < len(content)-3; i++ {
+					if content[i] == '{' && content[i+1] == '{' {
+						end := strings.Index(content[i+2:], "}}")
+						if end >= 0 {
+							varName := strings.TrimSpace(content[i+2 : i+2+end])
+							if !declaredVars[varName] {
+								errs = append(errs, posError(s.StartPos,
+									fmt.Sprintf("prompt %q references undeclared variable {{%s}}", s.Name, varName),
+									"add variable declaration in the variables block"))
+							}
+						}
+					}
 				}
 			}
 		case *ast.MCPServer:
@@ -68,13 +129,13 @@ func ValidateSemantic(f *ast.File) []*ValidationError {
 	}
 
 	// Check for multiple default bindings
-	defaultCount := 0
+	defaultBindings := 0
 	for _, stmt := range f.Statements {
 		if b, ok := stmt.(*ast.Binding); ok && b.Default {
-			defaultCount++
+			defaultBindings++
 		}
 	}
-	if defaultCount > 1 {
+	if defaultBindings > 1 {
 		errs = append(errs, &ValidationError{
 			File:    f.Path,
 			Line:    1,
@@ -84,20 +145,40 @@ func ValidateSemantic(f *ast.File) []*ValidationError {
 		})
 	}
 
+	// Check for multiple default deploy targets
+	defaultDeploys := 0
+	for _, stmt := range f.Statements {
+		if d, ok := stmt.(*ast.DeployTarget); ok && d.Default {
+			defaultDeploys++
+		}
+	}
+	if defaultDeploys > 1 {
+		errs = append(errs, &ValidationError{
+			File:    f.Path,
+			Line:    1,
+			Column:  1,
+			Message: "multiple deploy targets marked as default",
+			Hint:    "only one deploy target may be the default",
+		})
+	}
+
 	return errs
 }
 
 func collectNames(f *ast.File) map[string]map[string]bool {
 	names := map[string]map[string]bool{
-		"Agent":       {},
-		"Prompt":      {},
-		"Skill":       {},
-		"MCPServer":   {},
-		"MCPClient":   {},
-		"Secret":      {},
-		"Environment": {},
-		"Policy":      {},
-		"Binding":     {},
+		"Agent":        {},
+		"Prompt":       {},
+		"Skill":        {},
+		"MCPServer":    {},
+		"MCPClient":    {},
+		"Secret":       {},
+		"Environment":  {},
+		"Policy":       {},
+		"Binding":      {},
+		"DeployTarget": {},
+		"Type":         {},
+		"Pipeline":     {},
 	}
 
 	for _, stmt := range f.Statements {
@@ -120,6 +201,12 @@ func collectNames(f *ast.File) map[string]map[string]bool {
 			names["Policy"][s.Name] = true
 		case *ast.Binding:
 			names["Binding"][s.Name] = true
+		case *ast.DeployTarget:
+			names["DeployTarget"][s.Name] = true
+		case *ast.TypeDef:
+			names["Type"][s.Name] = true
+		case *ast.Pipeline:
+			names["Pipeline"][s.Name] = true
 		}
 	}
 	return names

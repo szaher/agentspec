@@ -7,7 +7,7 @@ A data processing pipeline agent with extract, transform, load, and validate cap
 - **Policy rules** that restrict model usage and require secrets
 - **Multiple secrets** for database and API credentials
 - **Three environments** (dev, staging, prod) with different model configurations
-- **Dual bindings** for local development and containerized deployment
+- **Dual deploy targets** for local development and containerized deployment
 - **ETL workflow** modeled as skills
 
 ## AgentSpec Structure

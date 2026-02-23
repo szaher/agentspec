@@ -36,3 +36,11 @@ coverage.html
 
 # Temporary
 tmp/
+
+# Runtime artifacts
+*.pid
+runtime-config.json
+.agentspec.lock
+
+# Container build context
+.docker-build/
