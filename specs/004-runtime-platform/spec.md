@@ -203,7 +203,7 @@ As an operations engineer, I want deployed agents to emit structured metrics, tr
 
 #### Tool Execution
 
-- **FR-009**: The system MUST execute skills backed by MCP servers using the MCP protocol (stdio transport at minimum, SSE and streamable-HTTP as additional transports).
+- **FR-009**: The system MUST execute skills backed by MCP servers using the MCP protocol (stdio transport at minimum). SSE and streamable-HTTP transports are deferred to a follow-up iteration.
 - **FR-010**: The system MUST execute skills backed by HTTP APIs, making configured requests and returning response bodies.
 - **FR-011**: The system MUST execute skills backed by local commands, spawning subprocesses with input/output capture.
 - **FR-012**: When the LLM returns multiple tool calls in a single response, the system MUST execute them concurrently.

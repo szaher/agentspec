@@ -5,6 +5,7 @@ package adapters
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/szaher/designs/agentz/internal/ir"
@@ -45,6 +46,26 @@ type Result struct {
 	Artifact string
 }
 
+// ResourceStatus describes the runtime status of a deployed resource.
+type ResourceStatus struct {
+	FQN       string            `json:"fqn"`
+	Name      string            `json:"name"`
+	Kind      string            `json:"kind"`
+	State     string            `json:"state"` // running, stopped, failed, pending, unknown
+	Endpoint  string            `json:"endpoint,omitempty"`
+	Health    string            `json:"health,omitempty"` // healthy, unhealthy, unknown
+	Uptime    string            `json:"uptime,omitempty"`
+	Replicas  string            `json:"replicas,omitempty"`
+	ExtraInfo map[string]string `json:"extra_info,omitempty"`
+}
+
+// LogOptions configures log retrieval.
+type LogOptions struct {
+	Follow bool
+	Tail   int
+	Since  string
+}
+
 // Adapter translates IR resources into platform-specific
 // artifacts and applies them.
 type Adapter interface {
@@ -59,6 +80,15 @@ type Adapter interface {
 
 	// Export generates platform-specific artifacts without applying.
 	Export(ctx context.Context, resources []ir.Resource, outDir string) error
+
+	// Status returns the runtime status of deployed resources.
+	Status(ctx context.Context) ([]ResourceStatus, error)
+
+	// Logs streams logs from deployed resources to the provided writer.
+	Logs(ctx context.Context, w io.Writer, opts LogOptions) error
+
+	// Destroy tears down all deployed resources.
+	Destroy(ctx context.Context) ([]Result, error)
 }
 
 // AdapterFactory is a function that creates a new adapter instance.

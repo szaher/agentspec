@@ -4,6 +4,8 @@ package local
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -71,6 +73,22 @@ func (a *Adapter) Export(_ context.Context, resources []ir.Resource, outDir stri
 	}
 
 	return nil
+}
+
+// Status returns an empty status list for the local-mcp adapter.
+func (a *Adapter) Status(_ context.Context) ([]adapters.ResourceStatus, error) {
+	return nil, nil
+}
+
+// Logs is not supported for the local-mcp adapter.
+func (a *Adapter) Logs(_ context.Context, w io.Writer, _ adapters.LogOptions) error {
+	_, err := fmt.Fprintln(w, "Log streaming is not supported for local-mcp adapter.")
+	return err
+}
+
+// Destroy is a no-op for the local-mcp adapter.
+func (a *Adapter) Destroy(_ context.Context) ([]adapters.Result, error) {
+	return nil, nil
 }
 
 func writeJSON(path string, v interface{}) error {

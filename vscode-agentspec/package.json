@@ -1,0 +1,105 @@
+{
+  "name": "vscode-agentspec",
+  "displayName": "AgentSpec IntentLang",
+  "description": "Language support for IntentLang (.ias) files - syntax highlighting, snippets, diagnostics, and code intelligence",
+  "version": "0.1.0",
+  "publisher": "agentspec",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": [
+    "intentlang",
+    "agentspec",
+    "agents",
+    "llm",
+    "ias"
+  ],
+  "activationEvents": [
+    "onLanguage:intentlang"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "intentlang",
+        "aliases": [
+          "IntentLang",
+          "intentlang"
+        ],
+        "extensions": [
+          ".ias"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/intentlang-light.png",
+          "dark": "./icons/intentlang-dark.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "intentlang",
+        "scopeName": "source.intentlang",
+        "path": "./syntaxes/intentlang.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "intentlang",
+        "path": "./snippets/intentlang.json"
+      }
+    ],
+    "configuration": {
+      "title": "AgentSpec IntentLang",
+      "properties": {
+        "agentspec.executablePath": {
+          "type": "string",
+          "default": "agentspec",
+          "description": "Path to the agentspec CLI executable"
+        },
+        "agentspec.formatOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Format IntentLang files on save using agentspec fmt"
+        },
+        "agentspec.validateOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate IntentLang files on save using agentspec validate"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "agentspec.validate",
+        "title": "AgentSpec: Validate Current File"
+      },
+      {
+        "command": "agentspec.format",
+        "title": "AgentSpec: Format Current File"
+      },
+      {
+        "command": "agentspec.plan",
+        "title": "AgentSpec: Show Plan"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -54,6 +54,21 @@ type ServerConfig struct {
 	Args      []string `json:"args,omitempty"`
 }
 
+// PipelineConfig holds the runtime configuration for a pipeline.
+type PipelineConfig struct {
+	Name  string               `json:"name"`
+	Steps []PipelineStepConfig `json:"steps"`
+}
+
+// PipelineStepConfig holds the runtime configuration for a pipeline step.
+type PipelineStepConfig struct {
+	Name      string   `json:"name"`
+	AgentRef  string   `json:"agent_ref"`
+	Input     string   `json:"input,omitempty"`
+	Output    string   `json:"output,omitempty"`
+	DependsOn []string `json:"depends_on,omitempty"`
+}
+
 // RuntimeConfig is the complete runtime configuration parsed from IR.
 type RuntimeConfig struct {
 	PackageName string            `json:"package_name"`
@@ -61,6 +76,7 @@ type RuntimeConfig struct {
 	Skills      []SkillConfig     `json:"skills"`
 	MCPServers  []ServerConfig    `json:"mcp_servers"`
 	Prompts     map[string]string `json:"prompts"`
+	Pipelines   []PipelineConfig  `json:"pipelines,omitempty"`
 }
 
 // FromIR converts an IR Document into a RuntimeConfig.
@@ -156,6 +172,37 @@ func FromIR(doc *ir.Document) (*RuntimeConfig, error) {
 				}
 			}
 			config.MCPServers = append(config.MCPServers, server)
+
+		case "Pipeline":
+			p := PipelineConfig{Name: r.Name}
+			if steps, ok := r.Attributes["steps"].([]interface{}); ok {
+				for _, step := range steps {
+					if stepMap, ok := step.(map[string]interface{}); ok {
+						sc := PipelineStepConfig{}
+						if n, ok := stepMap["name"].(string); ok {
+							sc.Name = n
+						}
+						if a, ok := stepMap["agent"].(string); ok {
+							sc.AgentRef = a
+						}
+						if in, ok := stepMap["input"].(string); ok {
+							sc.Input = in
+						}
+						if out, ok := stepMap["output"].(string); ok {
+							sc.Output = out
+						}
+						if deps, ok := stepMap["depends_on"].([]interface{}); ok {
+							for _, d := range deps {
+								if ds, ok := d.(string); ok {
+									sc.DependsOn = append(sc.DependsOn, ds)
+								}
+							}
+						}
+						p.Steps = append(p.Steps, sc)
+					}
+				}
+			}
+			config.Pipelines = append(config.Pipelines, p)
 		}
 	}
 

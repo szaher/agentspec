@@ -14,6 +14,8 @@ import (
 
 	// Register adapters
 	_ "github.com/szaher/designs/agentz/internal/adapters/compose"
+	_ "github.com/szaher/designs/agentz/internal/adapters/docker"
+	_ "github.com/szaher/designs/agentz/internal/adapters/kubernetes"
 	_ "github.com/szaher/designs/agentz/internal/adapters/local"
 	_ "github.com/szaher/designs/agentz/internal/adapters/process"
 )

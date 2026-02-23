@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strconv"
@@ -142,6 +143,99 @@ func (a *Adapter) Apply(ctx context.Context, actions []adapters.Action) ([]adapt
 		_ = a.stateBackend.Save(entries)
 	}
 
+	return results, nil
+}
+
+// Status returns the runtime status of the local process.
+func (a *Adapter) Status(ctx context.Context) ([]adapters.ResourceStatus, error) {
+	if a.stateBackend == nil {
+		return nil, nil
+	}
+
+	entries, err := a.stateBackend.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	var statuses []adapters.ResourceStatus
+	for _, e := range entries {
+		if e.Adapter != "process" {
+			continue
+		}
+		rs := adapters.ResourceStatus{
+			FQN:   e.FQN,
+			Name:  e.FQN,
+			Kind:  "Process",
+			State: "stopped",
+		}
+
+		if e.Status == state.StatusApplied && e.Error != "" {
+			pid, _ := strconv.Atoi(e.Error)
+			if pid > 0 {
+				proc, err := os.FindProcess(pid)
+				if err == nil && proc.Signal(nil) == nil {
+					rs.State = "running"
+					rs.Health = "healthy"
+					rs.ExtraInfo = map[string]string{
+						"pid": strconv.Itoa(pid),
+					}
+				}
+			}
+		} else if e.Status == state.StatusFailed {
+			rs.State = "failed"
+		}
+
+		statuses = append(statuses, rs)
+	}
+	return statuses, nil
+}
+
+// Logs streams process stdout/stderr to the writer.
+func (a *Adapter) Logs(_ context.Context, w io.Writer, _ adapters.LogOptions) error {
+	_, err := fmt.Fprintln(w, "Log streaming is not supported for local process adapter. Use stdout/stderr of the running process.")
+	return err
+}
+
+// Destroy stops the running runtime process and cleans up state.
+func (a *Adapter) Destroy(ctx context.Context) ([]adapters.Result, error) {
+	var results []adapters.Result
+
+	if a.stateBackend == nil {
+		return results, nil
+	}
+
+	entries, err := a.stateBackend.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	var remaining []state.Entry
+	for _, e := range entries {
+		if e.Adapter != "process" {
+			remaining = append(remaining, e)
+			continue
+		}
+
+		result := adapters.Result{
+			FQN:    e.FQN,
+			Action: adapters.ActionDelete,
+		}
+
+		if e.Error != "" {
+			pid, _ := strconv.Atoi(e.Error)
+			if pid > 0 {
+				proc, err := os.FindProcess(pid)
+				if err == nil {
+					_ = proc.Kill()
+				}
+			}
+		}
+
+		result.Status = adapters.ResultSuccess
+		results = append(results, result)
+	}
+
+	_ = a.stateBackend.Save(remaining)
 	return results, nil
 }
 

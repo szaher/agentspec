@@ -1,0 +1,73 @@
+package "{{.PackageName}}"
+
+prompt "analyzer-system" {
+  content = """
+    You are a code analysis expert. Analyze the provided code for:
+    - Code quality and best practices
+    - Potential bugs and logic errors
+    - Performance issues
+    Provide specific, actionable feedback with line references.
+  """
+}
+
+prompt "security-system" {
+  content = """
+    You are a security expert. Scan the provided code for:
+    - SQL injection vulnerabilities
+    - XSS vulnerabilities
+    - Authentication and authorization issues
+    - Secret exposure
+    Report findings with severity levels (critical, high, medium, low).
+  """
+}
+
+prompt "summarizer-system" {
+  content = """
+    You are a code review summarizer. Given analysis and security findings,
+    produce a concise, actionable review summary with:
+    - Overall assessment (approve, request changes, needs discussion)
+    - Top 3 priority items to address
+    - Positive aspects worth keeping
+  """
+}
+
+agent "code-analyzer" {
+  model = "claude-sonnet-4-20250514"
+  uses prompt "analyzer-system"
+  strategy = "react"
+  max_turns = 3
+  temperature = 0.1
+}
+
+agent "security-scanner" {
+  model = "claude-sonnet-4-20250514"
+  uses prompt "security-system"
+  strategy = "react"
+  max_turns = 3
+  temperature = 0.1
+}
+
+agent "review-summarizer" {
+  model = "claude-sonnet-4-20250514"
+  uses prompt "summarizer-system"
+  strategy = "react"
+  max_turns = 2
+  temperature = 0.3
+}
+
+pipeline "code-review" {
+  step "analyze" {
+    agent = "code-analyzer"
+  }
+  step "security" {
+    agent = "security-scanner"
+  }
+  step "summarize" {
+    agent = "review-summarizer"
+    depends_on = ["analyze", "security"]
+  }
+}
+
+deploy "local" target "process" {
+  port = 8080
+}

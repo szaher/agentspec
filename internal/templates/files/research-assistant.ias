@@ -1,0 +1,45 @@
+package "{{.PackageName}}"
+
+prompt "research-system" {
+  content = """
+    You are a research assistant that helps users investigate topics thoroughly.
+    Use web search to find current information. Always verify claims from
+    multiple sources when possible. Provide citations and links to sources.
+    Summarize findings clearly and highlight areas of uncertainty.
+  """
+}
+
+skill "web-search" {
+  description = "Search the web for current information"
+  tool mcp {
+    server = "search-service"
+  }
+}
+
+skill "fetch-page" {
+  description = "Fetch and extract content from a web page URL"
+  tool http {
+    method = "GET"
+    url = "http://localhost:8000/fetch"
+  }
+}
+
+agent "researcher" {
+  model = "claude-sonnet-4-20250514"
+  uses prompt "research-system"
+  uses skill "web-search"
+  uses skill "fetch-page"
+
+  strategy = "plan_execute"
+  max_turns = 15
+  temperature = 0.4
+  stream = true
+  memory {
+    strategy = "summary"
+    max_messages = 50
+  }
+}
+
+deploy "local" target "process" {
+  port = 8080
+}

@@ -17,8 +17,7 @@ The implementation follows 5 phases: Language Foundation → Runtime Core → De
 - wazero v1.11.0 (existing — WASM plugin sandbox)
 - `github.com/anthropics/anthropic-sdk-go` v1.26.0 (new — LLM client)
 - `github.com/modelcontextprotocol/go-sdk/mcp` v1.3.1 (new — MCP client)
-- `github.com/moby/moby/client` v29.x (new — Docker operations)
-- `k8s.io/client-go` v0.35.1 (new — Kubernetes operations)
+- Docker CLI (`docker`) and `kubectl` — used via subprocess for deployment adapters (no Go client library dependencies)
 
 **Storage**: Local JSON state file (existing `.agentspec.state.json`). In-memory session store (new, default). Redis session store (new, opt-in).
 **Testing**: Integration tests in `integration_tests/` (existing pattern). Golden file regression. `go test ./... -count=1`.
@@ -274,7 +273,7 @@ templates/               # NEW — project scaffolding templates
 - Extend adapter interface with `Status()`, `Logs()`, `Destroy()` methods
 - Implement Docker adapter (Dockerfile generation, image build, container lifecycle, health checks)
 - Rewrite Docker Compose adapter (real compose files, stack management)
-- Implement Kubernetes adapter (manifest generation via client-go, Server-Side Apply, rollout wait)
+- Implement Kubernetes adapter (manifest generation, apply via `kubectl`, rollout wait)
 - Implement `agentspec status` command
 - Implement `agentspec logs` command
 - Implement `agentspec destroy` command
@@ -282,10 +281,7 @@ templates/               # NEW — project scaffolding templates
 
 **Dependencies**: Phase 2 (runtime must work locally first)
 
-**New dependencies added to go.mod**:
-- `github.com/moby/moby/client` v29.x
-- `k8s.io/client-go` v0.35.1
-- `k8s.io/api`, `k8s.io/apimachinery`
+**Implementation note**: Adapters use CLI-based subprocess calls (`docker` / `kubectl`) instead of Go client libraries for portability — no new Go module dependencies required for deployment adapters.
 
 **Constitution gates**: III (portability proven with 3 adapters), adapter contract (thin, IR-input)
 

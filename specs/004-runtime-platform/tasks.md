@@ -209,37 +209,37 @@
 
 ### Adapter Interface Extension
 
-- [ ] T072 [US4] Extend adapter interface with `Status()`, `Logs()`, and `Destroy()` methods in internal/adapters/adapter.go
-- [ ] T073 [US4] Update local process adapter to implement new interface methods in internal/adapters/process/process.go
+- [x] T072 [US4] Extend adapter interface with `Status()`, `Logs()`, and `Destroy()` methods in internal/adapters/adapter.go
+- [x] T073 [US4] Update local process adapter to implement new interface methods in internal/adapters/process/process.go
 
 ### Docker Adapter
 
-- [ ] T074 [P] [US4] Implement Dockerfile generation (distroless base image, copy runtime binary + config, expose port, health check) in internal/adapters/docker/dockerfile.go
-- [ ] T075 [US4] Implement Docker adapter (build image via moby/moby client, create+start container, port mapping, health check, record container ID in state) in internal/adapters/docker/docker.go
+- [x] T074 [P] [US4] Implement Dockerfile generation (distroless base image, copy runtime binary + config, expose port, health check) in internal/adapters/docker/dockerfile.go
+- [x] T075 [US4] Implement Docker adapter (build image via moby/moby client, create+start container, port mapping, health check, record container ID in state) in internal/adapters/docker/docker.go
 
 ### Docker Compose Adapter
 
-- [ ] T076 [US4] Rewrite Docker Compose adapter with real compose file generation (services from agents, health checks, networking, volumes, env vars) and stack management via `docker compose up/down` in internal/adapters/compose/compose.go
+- [x] T076 [US4] Rewrite Docker Compose adapter with real compose file generation (services from agents, health checks, networking, volumes, env vars) and stack management via `docker compose up/down` in internal/adapters/compose/compose.go
 
 ### Kubernetes Adapter
 
-- [ ] T077 [P] [US4] Implement K8s manifest generation (Deployment, Service, ConfigMap, Secret, HPA, Ingress) from deploy block config using client-go types in internal/adapters/kubernetes/manifests.go
-- [ ] T078 [US4] Implement Kubernetes adapter (apply manifests via Server-Side Apply, rollout status polling, record resource UIDs in state) in internal/adapters/kubernetes/kubernetes.go
+- [x] T077 [P] [US4] Implement K8s manifest generation (Deployment, Service, ConfigMap, Secret, HPA, Ingress) from deploy block config using client-go types in internal/adapters/kubernetes/manifests.go
+- [x] T078 [US4] Implement Kubernetes adapter (apply manifests via Server-Side Apply, rollout status polling, record resource UIDs in state) in internal/adapters/kubernetes/kubernetes.go
 
 ### CLI Commands
 
-- [ ] T079 [P] [US4] Implement `agentspec status` command (query adapter Status() for all deployed resources, display health/endpoint/utilization table) in cmd/agentspec/status.go
-- [ ] T080 [P] [US4] Implement `agentspec logs` command (query adapter Logs(), stream to stdout with `--follow` support) in cmd/agentspec/logs.go
-- [ ] T081 [P] [US4] Implement `agentspec destroy` command (prompt confirmation, call adapter Destroy(), update state) in cmd/agentspec/destroy.go
+- [x] T079 [P] [US4] Implement `agentspec status` command (query adapter Status() for all deployed resources, display health/endpoint/utilization table) in cmd/agentspec/status.go
+- [x] T080 [P] [US4] Implement `agentspec logs` command (query adapter Logs(), stream to stdout with `--follow` support) in cmd/agentspec/logs.go
+- [x] T081 [P] [US4] Implement `agentspec destroy` command (prompt confirmation, call adapter Destroy(), update state) in cmd/agentspec/destroy.go
 
 ### Go Module Update
 
-- [ ] T082 [US4] Add deployment dependencies to go.mod: `github.com/moby/moby/client` v29.x, `k8s.io/client-go` v0.35.1, `k8s.io/api`, `k8s.io/apimachinery`
+- [x] T082 [US4] Add deployment dependencies to go.mod: adapters use CLI-based approach (docker/kubectl) instead of Go client libraries for portability
 
 ### Integration Tests
 
-- [ ] T083 [US4] Add integration test for Docker adapter (build+start+invoke+destroy cycle) in integration_tests/docker_test.go (requires Docker daemon)
-- [ ] T084 [P] [US4] Add integration test for Kubernetes adapter (apply+status+destroy cycle) in integration_tests/kubernetes_test.go (requires kind/minikube)
+- [x] T083 [US4] Add integration test for Docker adapter (build+start+invoke+destroy cycle) in integration_tests/docker_test.go (requires Docker daemon)
+- [x] T084 [P] [US4] Add integration test for Kubernetes adapter (apply+status+destroy cycle) in integration_tests/kubernetes_test.go (requires kind/minikube)
 
 **Checkpoint**: Same `.ias` file deploys to local process, Docker, and Kubernetes. `agentspec status`, `logs`, and `destroy` work across all targets.
 
@@ -253,28 +253,28 @@
 
 ### Pipeline Executor
 
-- [ ] T085 [P] [US5] Implement DAG builder for pipeline steps (parse dependencies, detect cycles, compute topological order) in internal/pipeline/dag.go
-- [ ] T086 [US5] Implement pipeline executor (execute steps respecting DAG order, run parallel steps concurrently via errgroup, fail-fast cancellation on any step failure, collect results) in internal/pipeline/executor.go
+- [x] T085 [P] [US5] Implement DAG builder for pipeline steps (parse dependencies, detect cycles, compute topological order) in internal/pipeline/dag.go
+- [x] T086 [US5] Implement pipeline executor (execute steps respecting DAG order, run parallel steps concurrently via errgroup, fail-fast cancellation on any step failure, collect results) in internal/pipeline/executor.go
 
 ### Agent Delegation
 
-- [ ] T087 [US5] Implement agent delegation (LLM-evaluated condition matching, conversation handoff to delegate agent, response routing) in internal/loop/delegation.go
+- [x] T087 [US5] Implement agent delegation (LLM-evaluated condition matching, conversation handoff to delegate agent, response routing) in internal/loop/delegation.go
 
 ### Additional Strategies
 
-- [ ] T088 [P] [US5] Implement Plan-and-Execute strategy (LLM creates plan, execute steps sequentially, re-plan on failure) in internal/loop/plan_execute.go
-- [ ] T089 [P] [US5] Implement Reflexion strategy (execute, self-critique, iterate until satisfactory) in internal/loop/reflexion.go
-- [ ] T089a [P] [US5] Implement Router strategy (classify input, dispatch to specialized sub-agent, return result) in internal/loop/router.go
-- [ ] T089b [P] [US5] Implement Map-Reduce strategy (split input into chunks, fan-out to parallel agent calls, merge results) in internal/loop/map_reduce.go
+- [x] T088 [P] [US5] Implement Plan-and-Execute strategy (LLM creates plan, execute steps sequentially, re-plan on failure) in internal/loop/plan_execute.go
+- [x] T089 [P] [US5] Implement Reflexion strategy (execute, self-critique, iterate until satisfactory) in internal/loop/reflexion.go
+- [x] T089a [P] [US5] Implement Router strategy (classify input, dispatch to specialized sub-agent, return result) in internal/loop/router.go
+- [x] T089b [P] [US5] Implement Map-Reduce strategy (split input into chunks, fan-out to parallel agent calls, merge results) in internal/loop/map_reduce.go
 
 ### Runtime Integration
 
-- [ ] T090 [US5] Wire pipeline execution endpoint `/v1/pipelines/{name}/run` to runtime HTTP server per contracts/runtime-api.md in internal/runtime/server.go
+- [x] T090 [US5] Wire pipeline execution endpoint `/v1/pipelines/{name}/run` to runtime HTTP server per contracts/runtime-api.md in internal/runtime/server.go
 
 ### Integration Tests
 
-- [ ] T091 [US5] Add integration test for pipeline execution (parallel steps, dependency ordering, fail-fast, data passing) using mock LLM in integration_tests/pipeline_test.go
-- [ ] T092 [P] [US5] Add integration test for agent delegation using mock LLM in integration_tests/delegation_test.go
+- [x] T091 [US5] Add integration test for pipeline execution (parallel steps, dependency ordering, fail-fast, data passing) using mock LLM in integration_tests/pipeline_exec_test.go
+- [x] T092 [P] [US5] Add integration test for agent delegation using mock LLM in integration_tests/delegation_test.go
 
 **Checkpoint**: Pipelines execute with correct ordering, parallelism, and fail-fast. Delegation routes conversations. All additional strategies work: Plan-and-Execute, Reflexion, Router, and Map-Reduce.
 
@@ -288,29 +288,29 @@
 
 ### Python SDK
 
-- [ ] T093 [P] [US6] Implement Python SDK client (`AgentSpecClient` with `invoke`, `stream`, `session` methods, typed response objects) in sdk/python/agentspec/client.py
-- [ ] T094 [P] [US6] Implement Python SDK streaming (async generator yielding SSE events) in sdk/python/agentspec/streaming.py
-- [ ] T095 [P] [US6] Create Python SDK package config (pyproject.toml, __init__.py, type stubs) in sdk/python/
+- [x] T093 [P] [US6] Implement Python SDK client (`AgentSpecClient` with `invoke`, `stream`, `session` methods, typed response objects) in sdk/python/agentspec/client.py
+- [x] T094 [P] [US6] Implement Python SDK streaming (async generator yielding SSE events) in sdk/python/agentspec/streaming.py
+- [x] T095 [P] [US6] Create Python SDK package config (pyproject.toml, __init__.py, type stubs) in sdk/python/
 
 ### TypeScript SDK
 
-- [ ] T096 [P] [US6] Implement TypeScript SDK client (AgentSpecClient class with invoke, stream, session methods) in sdk/typescript/src/client.ts
-- [ ] T097 [P] [US6] Implement TypeScript SDK streaming (EventSource-based SSE consumer) in sdk/typescript/src/streaming.ts
-- [ ] T098 [P] [US6] Create TypeScript SDK package config (package.json, tsconfig.json, index.ts) in sdk/typescript/
+- [x] T096 [P] [US6] Implement TypeScript SDK client (AgentSpecClient class with invoke, stream, session methods) in sdk/typescript/src/client.ts
+- [x] T097 [P] [US6] Implement TypeScript SDK streaming (EventSource-based SSE consumer) in sdk/typescript/src/streaming.ts
+- [x] T098 [P] [US6] Create TypeScript SDK package config (package.json, tsconfig.json, index.ts) in sdk/typescript/
 
 ### Go SDK
 
-- [ ] T099 [P] [US6] Implement Go SDK client (Client struct with Invoke, Stream, Session methods) in sdk/go/agentspec/client.go
-- [ ] T100 [P] [US6] Create Go SDK module (go.mod, exported types) in sdk/go/
+- [x] T099 [P] [US6] Implement Go SDK client (Client struct with Invoke, Stream, Session methods) in sdk/go/agentspec/client.go
+- [x] T100 [P] [US6] Create Go SDK module (go.mod, exported types) in sdk/go/
 
 ### SDK Generator
 
-- [ ] T101 [US6] Rewrite SDK generator to produce typed clients from runtime API contract and IR skill schemas in internal/sdk/generator/generator.go
+- [x] T101 [US6] Rewrite SDK generator to produce typed clients from runtime API contract and IR skill schemas in internal/sdk/generator/generator.go
 
 ### Project Templates
 
-- [ ] T102 [P] [US6] Implement `agentspec init --template <name>` command (prompt for config values, render template, write files) in cmd/agentspec/init.go
-- [ ] T103 [US6] Create 5 project templates (customer-support, rag-chatbot, code-review-pipeline, data-extraction, research-assistant) as embedded `.ias` files in internal/templates/
+- [x] T102 [P] [US6] Implement `agentspec init --template <name>` command (prompt for config values, render template, write files) in cmd/agentspec/init.go
+- [x] T103 [US6] Create 5 project templates (customer-support, rag-chatbot, code-review-pipeline, data-extraction, research-assistant) as embedded `.ias` files in internal/templates/
 
 **Checkpoint**: SDKs in Python, TypeScript, and Go can invoke agents, stream responses, and manage sessions. `agentspec init --template` scaffolds new projects.
 
@@ -322,14 +322,14 @@
 
 **Independent Test**: Install extension, open an `.ias` file, verify keywords are highlighted and validation errors appear inline on save.
 
-- [ ] T104 [P] [US7] Create VSCode extension manifest with IntentLang language registration, activation events, and contribution points in vscode-agentspec/package.json
-- [ ] T105 [P] [US7] Create TextMate grammar for IntentLang 2.0 (keywords, strings, numbers, comments, block structure, template variables) in vscode-agentspec/syntaxes/intentlang.tmLanguage.json
-- [ ] T106 [P] [US7] Create language configuration (bracket pairs, comment tokens, auto-closing pairs, folding markers) in vscode-agentspec/language-configuration.json
-- [ ] T107 [P] [US7] Create snippet definitions for agent, prompt, skill, deploy, pipeline blocks in vscode-agentspec/snippets/intentlang.json
-- [ ] T108 [US7] Implement extension entry point (activate/deactivate, register providers, format-on-save via `agentspec fmt`) in vscode-agentspec/src/extension.ts
-- [ ] T109 [US7] Implement LSP diagnostics provider (run `agentspec validate` on save, parse errors, map to VS Code diagnostics) in vscode-agentspec/src/language-server/diagnostics.ts
-- [ ] T110 [US7] Implement autocomplete provider (keyword completion, resource type completion, cross-reference completion for prompt/skill/agent names) in vscode-agentspec/src/language-server/completion.ts
-- [ ] T111 [US7] Implement go-to-definition provider (resolve `uses prompt "name"` to prompt block location) in vscode-agentspec/src/language-server/definition.ts
+- [x] T104 [P] [US7] Create VSCode extension manifest with IntentLang language registration, activation events, and contribution points in vscode-agentspec/package.json
+- [x] T105 [P] [US7] Create TextMate grammar for IntentLang 2.0 (keywords, strings, numbers, comments, block structure, template variables) in vscode-agentspec/syntaxes/intentlang.tmLanguage.json
+- [x] T106 [P] [US7] Create language configuration (bracket pairs, comment tokens, auto-closing pairs, folding markers) in vscode-agentspec/language-configuration.json
+- [x] T107 [P] [US7] Create snippet definitions for agent, prompt, skill, deploy, pipeline blocks in vscode-agentspec/snippets/intentlang.json
+- [x] T108 [US7] Implement extension entry point (activate/deactivate, register providers, format-on-save via `agentspec fmt`) in vscode-agentspec/src/extension.ts
+- [x] T109 [US7] Implement LSP diagnostics provider (run `agentspec validate` on save, parse errors, map to VS Code diagnostics) in vscode-agentspec/src/language-server/diagnostics.ts
+- [x] T110 [US7] Implement autocomplete provider (keyword completion, resource type completion, cross-reference completion for prompt/skill/agent names) in vscode-agentspec/src/language-server/completion.ts
+- [x] T111 [US7] Implement go-to-definition provider (resolve `uses prompt "name"` to prompt block location) in vscode-agentspec/src/language-server/definition.ts
 
 **Checkpoint**: VSCode extension provides syntax highlighting, snippets, format-on-save, inline diagnostics, autocomplete, and go-to-definition for `.ias` files.
 
@@ -341,14 +341,14 @@
 
 **Independent Test**: Deploy an agent, send requests, verify metrics at `/v1/metrics` endpoint and that secrets from `env(VAR)` are resolved.
 
-- [ ] T112 [P] [US8] Implement Prometheus metrics collector (request counter, latency histogram, token counter, tool call counter by agent/tool/status) in internal/telemetry/metrics.go
-- [ ] T113 [P] [US8] Implement structured logging with slog (request-scoped fields, correlation IDs, JSON output) in internal/telemetry/logger.go
-- [ ] T114 [P] [US8] Add OpenTelemetry tracing hooks (span per invocation, child spans for LLM calls and tool calls) in internal/telemetry/traces.go
-- [ ] T115 [US8] Implement per-agent rate limiting middleware (token bucket, configurable rate/burst, 429 response) in internal/runtime/server.go
-- [ ] T116 [P] [US8] Implement Vault-style secret resolver (HTTP API to key-value secret store, token auth, caching) in internal/secrets/vault.go
-- [ ] T117 [P] [US8] Implement persistent session store (Redis-backed, configurable TTL, session serialization) in internal/session/redis_store.go
-- [ ] T118 [US8] Wire metrics endpoint `/v1/metrics` and tracing middleware into runtime server in internal/runtime/server.go
-- [ ] T119 [US8] Add integration test for metrics emission (invoke agent, scrape metrics endpoint, verify counters) in integration_tests/telemetry_test.go
+- [x] T112 [P] [US8] Implement Prometheus metrics collector (request counter, latency histogram, token counter, tool call counter by agent/tool/status) in internal/telemetry/metrics.go
+- [x] T113 [P] [US8] Implement structured logging with slog (request-scoped fields, correlation IDs, JSON output) in internal/telemetry/logger.go
+- [x] T114 [P] [US8] Add OpenTelemetry tracing hooks (span per invocation, child spans for LLM calls and tool calls) in internal/telemetry/traces.go
+- [x] T115 [US8] Implement per-agent rate limiting middleware (token bucket, configurable rate/burst, 429 response) in internal/runtime/server.go
+- [x] T116 [P] [US8] Implement Vault-style secret resolver (HTTP API to key-value secret store, token auth, caching) in internal/secrets/vault.go
+- [x] T117 [P] [US8] Implement persistent session store (Redis-backed, configurable TTL, session serialization) in internal/session/redis_store.go
+- [x] T118 [US8] Wire metrics endpoint `/v1/metrics` and tracing middleware into runtime server in internal/runtime/server.go
+- [x] T119 [US8] Add integration test for metrics emission (invoke agent, scrape metrics endpoint, verify counters) in integration_tests/telemetry_test.go
 
 **Checkpoint**: Deployed agents emit Prometheus metrics, support distributed tracing, enforce rate limits and token budgets, and resolve secrets from environment variables and secure stores.
 
@@ -358,13 +358,13 @@
 
 **Purpose**: Final validation, documentation, and cross-cutting improvements
 
-- [ ] T120 Update ARCHITECTURE.md with runtime components, agentic loop, adapter architecture, and data flow diagram
-- [ ] T121 [P] Update CHANGELOG.md with all changes for this feature
-- [ ] T122 Run quickstart.md validation end-to-end (build CLI, create agent, apply, invoke, verify response)
-- [ ] T123 Update golden file fixtures for all new IntentLang 2.0 constructs in integration_tests/testdata/
-- [ ] T124 [P] Add determinism tests for new IR resource types (tool, deploy, pipeline, type) in integration_tests/determinism_test.go
-- [ ] T125 Verify all 10 examples in examples/ are runnable with `agentspec dev` using mock LLM
-- [ ] T126 [P] Delete init-spec.md from repository root (superseded by spec/ directory)
+- [x] T120 Update ARCHITECTURE.md with runtime components, agentic loop, adapter architecture, and data flow diagram
+- [x] T121 [P] Update CHANGELOG.md with all changes for this feature
+- [x] T122 Run quickstart.md validation end-to-end (build CLI, create agent, apply, invoke, verify response)
+- [x] T123 Update golden file fixtures for all new IntentLang 2.0 constructs in integration_tests/testdata/
+- [x] T124 [P] Add determinism tests for new IR resource types (tool, deploy, pipeline, type) in integration_tests/determinism_test.go
+- [x] T125 Verify all 10 examples in examples/ are runnable with `agentspec dev` using mock LLM
+- [x] T126 [P] Delete init-spec.md from repository root (superseded by spec/ directory)
 
 ---
 

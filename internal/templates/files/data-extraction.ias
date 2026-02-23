@@ -1,0 +1,34 @@
+package "{{.PackageName}}"
+
+prompt "extraction-system" {
+  content = """
+    You are a data extraction specialist. Given unstructured text,
+    extract structured data according to the requested schema.
+    Always output valid JSON. If a field cannot be determined,
+    use null rather than guessing. Include a confidence score
+    (0.0 to 1.0) for each extracted field.
+  """
+}
+
+skill "parse-document" {
+  description = "Parse a document file (PDF, DOCX, HTML) into plain text"
+  tool command {
+    command = "python3"
+    args = ["-m", "textract"]
+  }
+}
+
+agent "extractor" {
+  model = "claude-sonnet-4-20250514"
+  uses prompt "extraction-system"
+  uses skill "parse-document"
+
+  strategy = "react"
+  max_turns = 5
+  temperature = 0.0
+  stream = false
+}
+
+deploy "local" target "process" {
+  port = 8080
+}

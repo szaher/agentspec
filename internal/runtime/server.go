@@ -7,26 +7,30 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/szaher/designs/agentz/internal/llm"
 	"github.com/szaher/designs/agentz/internal/loop"
 	"github.com/szaher/designs/agentz/internal/session"
+	"github.com/szaher/designs/agentz/internal/telemetry"
 	"github.com/szaher/designs/agentz/internal/tools"
 )
 
 // Server is the runtime HTTP server for agent invocations.
 type Server struct {
-	config    *RuntimeConfig
-	mux       *http.ServeMux
-	server    *http.Server
-	logger    *slog.Logger
-	llmClient llm.Client
-	registry  *tools.Registry
-	sessions  *session.Manager
-	strategy  loop.Strategy
-	startTime time.Time
-	apiKey    string
+	config      *RuntimeConfig
+	mux         *http.ServeMux
+	server      *http.Server
+	logger      *slog.Logger
+	llmClient   llm.Client
+	registry    *tools.Registry
+	sessions    *session.Manager
+	strategy    loop.Strategy
+	startTime   time.Time
+	apiKey      string
+	metrics     *telemetry.Metrics
+	rateLimiter *rateLimiter
 }
 
 // ServerOption configures the Server.
@@ -40,6 +44,18 @@ func WithAPIKey(key string) ServerOption {
 // WithLogger sets the logger.
 func WithLogger(logger *slog.Logger) ServerOption {
 	return func(s *Server) { s.logger = logger }
+}
+
+// WithMetrics sets the metrics collector.
+func WithMetrics(m *telemetry.Metrics) ServerOption {
+	return func(s *Server) { s.metrics = m }
+}
+
+// WithRateLimit sets the per-agent rate limit (requests per second and burst).
+func WithRateLimit(rate float64, burst int) ServerOption {
+	return func(s *Server) {
+		s.rateLimiter = newRateLimiter(rate, burst)
+	}
 }
 
 // NewServer creates a new runtime HTTP server.
@@ -57,14 +73,20 @@ func NewServer(config *RuntimeConfig, llmClient llm.Client, registry *tools.Regi
 		opt(s)
 	}
 
+	if s.metrics == nil {
+		s.metrics = telemetry.NewMetrics()
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
 	mux.HandleFunc("GET /v1/agents", s.handleListAgents)
-	mux.HandleFunc("POST /v1/agents/{name}/invoke", s.handleInvoke)
-	mux.HandleFunc("POST /v1/agents/{name}/stream", s.handleStream)
+	mux.HandleFunc("POST /v1/agents/{name}/invoke", s.rateLimitMiddleware(s.handleInvoke))
+	mux.HandleFunc("POST /v1/agents/{name}/stream", s.rateLimitMiddleware(s.handleStream))
 	mux.HandleFunc("POST /v1/agents/{name}/sessions", s.handleCreateSession)
 	mux.HandleFunc("POST /v1/agents/{name}/sessions/{id}", s.handleSessionMessage)
 	mux.HandleFunc("DELETE /v1/agents/{name}/sessions/{id}", s.handleDeleteSession)
+	mux.HandleFunc("POST /v1/pipelines/{name}/run", s.handlePipelineRun)
+	mux.Handle("GET /v1/metrics", s.metrics.Handler())
 
 	s.mux = mux
 	return s
@@ -191,10 +213,22 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 		Temperature: agent.Temperature,
 	}
 
+	start := time.Now()
 	resp, err := s.strategy.Execute(r.Context(), inv, s.llmClient, s.registry, nil)
 	if err != nil {
+		s.metrics.RecordInvocation(agentName, "failed", time.Since(start), 0, 0)
 		writeError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
+	}
+
+	// Record metrics
+	s.metrics.RecordInvocation(agentName, "completed", time.Since(start), resp.Tokens.InputTokens, resp.Tokens.OutputTokens)
+	for _, tc := range resp.ToolCalls {
+		status := "success"
+		if tc.Error != "" {
+			status = "error"
+		}
+		s.metrics.RecordToolCall(agentName, tc.ToolName, status)
 	}
 
 	// Save messages to session
@@ -392,6 +426,121 @@ func (s *Server) handleDeleteSession(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) handlePipelineRun(w http.ResponseWriter, r *http.Request) {
+	pipelineName := r.PathValue("name")
+	pConfig := s.findPipeline(pipelineName)
+	if pConfig == nil {
+		writeError(w, http.StatusNotFound, "not_found", fmt.Sprintf("Pipeline %q not found", pipelineName))
+		return
+	}
+
+	var req struct {
+		Trigger map[string]interface{} `json:"trigger"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid request body")
+		return
+	}
+
+	triggerInput, _ := json.Marshal(req.Trigger)
+
+	// Build pipeline steps
+	var steps []pipelineStep
+	for _, step := range pConfig.Steps {
+		steps = append(steps, pipelineStep{
+			Name:      step.Name,
+			AgentRef:  step.AgentRef,
+			Input:     step.Input,
+			DependsOn: step.DependsOn,
+		})
+	}
+
+	// Execute pipeline using inline invocation
+	result := s.executePipeline(r.Context(), pipelineName, steps, string(triggerInput))
+
+	writeJSON(w, http.StatusOK, result)
+}
+
+type pipelineStep struct {
+	Name      string
+	AgentRef  string
+	Input     string
+	DependsOn []string
+}
+
+func (s *Server) executePipeline(ctx context.Context, name string, steps []pipelineStep, triggerInput string) map[string]interface{} {
+	result := map[string]interface{}{
+		"pipeline": name,
+		"status":   "completed",
+		"steps":    map[string]interface{}{},
+	}
+
+	stepOutputs := map[string]string{"trigger": triggerInput}
+	stepsResult, _ := result["steps"].(map[string]interface{})
+
+	for _, step := range steps {
+		input := step.Input
+		if input == "" && len(step.DependsOn) > 0 {
+			input = stepOutputs[step.DependsOn[0]]
+		}
+		if input == "" {
+			input = triggerInput
+		}
+
+		agent := s.findAgent(step.AgentRef)
+		if agent == nil {
+			stepsResult[step.Name] = map[string]interface{}{
+				"agent":  step.AgentRef,
+				"status": "failed",
+				"error":  fmt.Sprintf("agent %q not found", step.AgentRef),
+			}
+			result["status"] = "failed"
+			break
+		}
+
+		inv := loop.Invocation{
+			AgentName:   agent.Name,
+			Model:       agent.Model,
+			System:      agent.System,
+			Input:       input,
+			MaxTurns:    agent.MaxTurns,
+			MaxTokens:   4096,
+			TokenBudget: agent.TokenBudget,
+			Temperature: agent.Temperature,
+		}
+
+		resp, err := s.strategy.Execute(ctx, inv, s.llmClient, s.registry, nil)
+		if err != nil {
+			stepsResult[step.Name] = map[string]interface{}{
+				"agent":  step.AgentRef,
+				"status": "failed",
+				"error":  err.Error(),
+			}
+			result["status"] = "failed"
+			break
+		}
+
+		stepOutputs[step.Name] = resp.Output
+		stepsResult[step.Name] = map[string]interface{}{
+			"agent":       step.AgentRef,
+			"output":      resp.Output,
+			"duration_ms": resp.Duration.Milliseconds(),
+			"status":      "completed",
+		}
+	}
+
+	return result
+}
+
+func (s *Server) findPipeline(name string) *PipelineConfig {
+	for i := range s.config.Pipelines {
+		if s.config.Pipelines[i].Name == name {
+			return &s.config.Pipelines[i]
+		}
+	}
+	return nil
+}
+
 func (s *Server) findAgent(name string) *AgentConfig {
 	for i := range s.config.Agents {
 		if s.config.Agents[i].Name == name {
@@ -399,6 +548,82 @@ func (s *Server) findAgent(name string) *AgentConfig {
 		}
 	}
 	return nil
+}
+
+// rateLimiter implements per-agent token bucket rate limiting.
+type rateLimiter struct {
+	mu      sync.Mutex
+	rate    float64 // tokens per second
+	burst   int
+	buckets map[string]*tokenBucket
+}
+
+type tokenBucket struct {
+	tokens     float64
+	lastRefill time.Time
+	rate       float64
+	burst      int
+}
+
+func newRateLimiter(rate float64, burst int) *rateLimiter {
+	return &rateLimiter{
+		rate:    rate,
+		burst:   burst,
+		buckets: make(map[string]*tokenBucket),
+	}
+}
+
+func (rl *rateLimiter) allow(agent string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	b, ok := rl.buckets[agent]
+	if !ok {
+		b = &tokenBucket{
+			tokens:     float64(rl.burst),
+			lastRefill: time.Now(),
+			rate:       rl.rate,
+			burst:      rl.burst,
+		}
+		rl.buckets[agent] = b
+	}
+
+	// Refill tokens based on elapsed time
+	now := time.Now()
+	elapsed := now.Sub(b.lastRefill).Seconds()
+	b.tokens += elapsed * b.rate
+	if b.tokens > float64(b.burst) {
+		b.tokens = float64(b.burst)
+	}
+	b.lastRefill = now
+
+	if b.tokens < 1 {
+		return false
+	}
+	b.tokens--
+	return true
+}
+
+func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if s.rateLimiter == nil {
+			next(w, r)
+			return
+		}
+
+		agentName := r.PathValue("name")
+		if agentName == "" {
+			next(w, r)
+			return
+		}
+
+		if !s.rateLimiter.allow(agentName) {
+			writeError(w, http.StatusTooManyRequests, "rate_limited", "Per-agent rate limit exceeded")
+			return
+		}
+
+		next(w, r)
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {

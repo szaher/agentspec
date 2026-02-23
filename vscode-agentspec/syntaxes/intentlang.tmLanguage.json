@@ -1,0 +1,143 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "IntentLang",
+  "scopeName": "source.intentlang",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#template-variables" },
+    { "include": "#keywords" },
+    { "include": "#block-types" },
+    { "include": "#attributes" },
+    { "include": "#operators" },
+    { "include": "#constants" },
+    { "include": "#functions" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.intentlang",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.line.hash.intentlang",
+          "match": "#.*$"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.triple.intentlang",
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "patterns": [
+            { "include": "#template-variables" }
+          ]
+        },
+        {
+          "name": "string.quoted.double.intentlang",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.intentlang",
+              "match": "\\\\."
+            },
+            { "include": "#template-variables" }
+          ]
+        }
+      ]
+    },
+    "template-variables": {
+      "patterns": [
+        {
+          "name": "variable.other.template.intentlang",
+          "match": "\\{\\{\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*\\}\\}"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.intentlang",
+          "match": "\\b[0-9]+\\.[0-9]+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.intentlang",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.intentlang",
+          "match": "\\b(uses|from|when|to|depends_on|parallel|on_error|fallback)\\b"
+        },
+        {
+          "name": "keyword.other.intentlang",
+          "match": "\\b(import|package)\\b"
+        }
+      ]
+    },
+    "block-types": {
+      "patterns": [
+        {
+          "name": "storage.type.intentlang",
+          "match": "\\b(agent|prompt|skill|deploy|target|pipeline|step|delegate|type|tool|memory|health|autoscale|resources|variables)\\b"
+        }
+      ]
+    },
+    "attributes": {
+      "patterns": [
+        {
+          "name": "variable.other.property.intentlang",
+          "match": "\\b(model|strategy|max_turns|timeout|token_budget|temperature|stream|max_retries|content|description|transport|command|args|method|url|port|replicas|cpu|min_replicas|max_replicas|target_cpu|max_messages|interval|path|name|version|required|default|enum|list|condition|input|output)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.intentlang",
+          "match": "="
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.intentlang",
+          "match": "\\b(true|false)\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "support.function.builtin.intentlang",
+          "match": "\\b(env|store|ref)\\s*\\("
+        },
+        {
+          "name": "entity.name.type.strategy.intentlang",
+          "match": "\\b(react|plan_execute|reflexion|router|map_reduce)\\b"
+        },
+        {
+          "name": "entity.name.type.tool.intentlang",
+          "match": "\\b(mcp|http|command|inline)\\b"
+        },
+        {
+          "name": "entity.name.type.target.intentlang",
+          "match": "\\b(process|docker|kubernetes|compose)\\b"
+        },
+        {
+          "name": "entity.name.type.memory.intentlang",
+          "match": "\\b(sliding_window|summary)\\b"
+        }
+      ]
+    }
+  }
+}
