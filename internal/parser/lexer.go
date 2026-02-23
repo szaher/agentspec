@@ -7,7 +7,7 @@ import (
 	"unicode/utf8"
 )
 
-// Lexer tokenizes .az source input.
+// Lexer tokenizes IntentLang (.ias/.az) source input.
 type Lexer struct {
 	input   string
 	file    string

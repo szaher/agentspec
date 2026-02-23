@@ -10,7 +10,7 @@ import (
 func newSDKCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sdk",
-		Short: "SDK generation commands",
+		Short: "IntentLang SDK generation commands",
 	}
 	cmd.AddCommand(newSDKGenerateCmd())
 	return cmd

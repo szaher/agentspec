@@ -2,7 +2,7 @@
 
 ## Overview
 
-SDKs provide programmatic access to Agentz resources from Python,
+SDKs provide programmatic access to AgentSpec resources from Python,
 TypeScript, and Go. In MVP (no API server), SDKs operate against
 the local state file and compiled IR artifacts.
 
@@ -13,7 +13,7 @@ All three SDKs MUST expose the following operations:
 ### Initialization
 
 ```
-client = AgentzClient(state_file="path/to/.agentz.state.json")
+client = AgentSpecClient(state_file="path/to/.agentspec.state.json")
 ```
 
 ### List Resources
@@ -89,14 +89,14 @@ All SDK methods raise/return typed errors:
 
 ### Python SDK
 
-- Package name: `agentz`
+- Package name: `agentspec`
 - Minimum Python: 3.10+
-- Async support: `AsyncAgentzClient` with `async for` streaming
+- Async support: `AsyncAgentSpecClient` with `async for` streaming
 - Type hints via dataclasses
 
 ### TypeScript SDK
 
-- Package name: `@agentz/sdk`
+- Package name: `@agentspec/sdk`
 - Minimum Node: 18+
 - Async/await with `AsyncIterable` for streaming
 - Full TypeScript types generated from IR schema

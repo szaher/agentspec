@@ -9,9 +9,9 @@ import (
 )
 
 func TestMultiEnvironmentPlan(t *testing.T) {
-	input := readTestFile(t, "testdata/multi_env.az")
+	input := readTestFile(t, "testdata/multi_env.ias")
 
-	f, parseErrs := parser.Parse(input, "multi_env.az")
+	f, parseErrs := parser.Parse(input, "multi_env.ias")
 	if parseErrs != nil {
 		t.Fatalf("parse errors: %v", parseErrs)
 	}

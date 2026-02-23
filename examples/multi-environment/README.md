@@ -1,16 +1,16 @@
 # Multi-Environment
 
-Maintain a single agent definition with environment-specific overrides for dev and prod.
+Maintain a single AgentSpec with environment-specific overrides for dev and prod.
 
 ## What This Demonstrates
 
 - **Environment overlays** that override specific resource attributes
-- **Base definition inheritance** — unspecified attributes carry over from the base
+- **Base AgentSpec inheritance** — unspecified attributes carry over from the base
 - **Per-environment planning** with the `--env` flag
 
-## Definition Structure
+## AgentSpec Structure
 
-### Base Definition
+### Base AgentSpec
 
 ```
 agent "assistant" {
@@ -20,7 +20,7 @@ agent "assistant" {
 }
 ```
 
-The base definition is the source of truth. All attributes are set here.
+The base AgentSpec is the source of truth. All attributes are set here.
 
 ### Environment Overlays
 
@@ -48,19 +48,19 @@ The validator detects conflicting overlays — for example, if two environments 
 
 ```bash
 # Validate (checks both base and environment overlays)
-./agentz validate examples/multi-environment.az
+./agentspec validate examples/multi-environment.ias
 
 # Plan for dev (shows haiku model)
-./agentz plan examples/multi-environment.az --env dev
+./agentspec plan examples/multi-environment.ias --env dev
 
 # Plan for prod (shows sonnet model)
-./agentz plan examples/multi-environment.az --env prod
+./agentspec plan examples/multi-environment.ias --env prod
 
-# Plan without --env (uses base definition, no overlay applied)
-./agentz plan examples/multi-environment.az
+# Plan without --env (uses base AgentSpec, no overlay applied)
+./agentspec plan examples/multi-environment.ias
 
 # Apply for a specific environment
-./agentz apply examples/multi-environment.az --env dev --auto-approve
+./agentspec apply examples/multi-environment.ias --env dev --auto-approve
 ```
 
 ## Resources Created
@@ -73,13 +73,13 @@ The validator detects conflicting overlays — for example, if two environments 
 
 ## How Overlays Work
 
-1. The base definition is parsed and lowered to IR
+1. The base AgentSpec is parsed and lowered to IR
 2. When `--env dev` is specified, the environment overlay is applied
 3. The overlay finds the target resource (`agent "assistant"`) and replaces the specified attribute (`model`)
 4. A new content hash is computed for the modified resource
 5. Environment resources themselves are filtered out of the final IR (they are metadata, not deployable)
 
-This means the plan for `--env dev` and `--env prod` will show different content hashes for the agent, even though the underlying definition is the same file.
+This means the plan for `--env dev` and `--env prod` will show different content hashes for the agent, even though the underlying AgentSpec is the same file.
 
 ## Next Steps
 

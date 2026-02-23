@@ -1,5 +1,5 @@
 // Package parser implements the lexer and recursive descent parser
-// for the Agentz DSL (.az files).
+// for the IntentLang DSL (.ias/.az files).
 package parser
 
 import "fmt"

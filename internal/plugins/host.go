@@ -1,5 +1,5 @@
 // Package plugins implements the WASM plugin host and dispatch
-// for the Agentz toolchain.
+// for the AgentSpec toolchain.
 package plugins
 
 import (

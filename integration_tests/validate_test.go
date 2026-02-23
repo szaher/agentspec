@@ -13,10 +13,10 @@ import (
 )
 
 func TestParseValidateFormatRoundTrip(t *testing.T) {
-	input := readTestFile(t, "testdata/valid.az")
+	input := readTestFile(t, "testdata/valid.ias")
 
 	// Parse
-	f, parseErrs := parser.Parse(input, "valid.az")
+	f, parseErrs := parser.Parse(input, "valid.ias")
 	if parseErrs != nil {
 		t.Fatalf("unexpected parse errors: %v", parseErrs)
 	}
@@ -44,7 +44,7 @@ func TestParseValidateFormatRoundTrip(t *testing.T) {
 
 	// Format and verify idempotency
 	formatted1 := formatter.Format(f)
-	f2, parseErrs2 := parser.Parse(formatted1, "valid.az")
+	f2, parseErrs2 := parser.Parse(formatted1, "valid.ias")
 	if parseErrs2 != nil {
 		t.Fatalf("re-parse after format failed: %v", parseErrs2)
 	}
@@ -56,10 +56,10 @@ func TestParseValidateFormatRoundTrip(t *testing.T) {
 }
 
 func TestParseValidateInvalidRef(t *testing.T) {
-	input := readTestFile(t, "testdata/invalid_ref.az")
+	input := readTestFile(t, "testdata/invalid_ref.ias")
 
 	// Parse should succeed
-	f, parseErrs := parser.Parse(input, "invalid_ref.az")
+	f, parseErrs := parser.Parse(input, "invalid_ref.ias")
 	if parseErrs != nil {
 		t.Fatalf("unexpected parse errors: %v", parseErrs)
 	}
@@ -91,9 +91,9 @@ func TestParseValidateInvalidRef(t *testing.T) {
 }
 
 func TestIRLowering(t *testing.T) {
-	input := readTestFile(t, "testdata/valid.az")
+	input := readTestFile(t, "testdata/valid.ias")
 
-	f, parseErrs := parser.Parse(input, "valid.az")
+	f, parseErrs := parser.Parse(input, "valid.ias")
 	if parseErrs != nil {
 		t.Fatalf("unexpected parse errors: %v", parseErrs)
 	}

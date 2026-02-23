@@ -1,5 +1,5 @@
 // Package plan implements the desired-state diff engine for the
-// Agentz toolchain.
+// AgentSpec toolchain.
 package plan
 
 import (

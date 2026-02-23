@@ -1,5 +1,5 @@
 // Package policy defines the policy types and rule engine interface
-// for enforcing security constraints in the Agentz toolchain.
+// for enforcing security constraints in the AgentSpec toolchain.
 package policy
 
 import "github.com/szaher/designs/agentz/internal/ir"

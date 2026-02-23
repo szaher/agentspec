@@ -1,4 +1,4 @@
-// Package local implements the Local MCP adapter for the Agentz toolchain.
+// Package local implements the Local MCP adapter for the AgentSpec toolchain.
 package local
 
 import (

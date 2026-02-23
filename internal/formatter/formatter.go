@@ -1,4 +1,4 @@
-// Package formatter implements canonical formatting of .az files
+// Package formatter implements canonical formatting of IntentLang (.ias/.az) files
 // from AST back to source, with deterministic output.
 package formatter
 
@@ -10,7 +10,7 @@ import (
 	"github.com/szaher/designs/agentz/internal/ast"
 )
 
-// Format formats an AST File back to canonical .az source.
+// Format formats an AST File back to canonical IntentLang (.ias/.az) source.
 func Format(f *ast.File) string {
 	var sb strings.Builder
 

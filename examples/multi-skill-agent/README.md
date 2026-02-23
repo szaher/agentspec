@@ -8,7 +8,7 @@ An agent equipped with multiple skills, each with defined input/output schemas a
 - **Multiple `uses skill`** references on a single agent
 - **Execution commands** that map skills to external tool binaries
 
-## Definition Structure
+## AgentSpec Structure
 
 ### Skills
 
@@ -39,22 +39,22 @@ agent "researcher" {
 }
 ```
 
-An agent can reference any number of skills with `uses skill`. The validator ensures every referenced skill name exists in the file and will suggest corrections for typos.
+An agent can reference any number of skills with `uses skill`. The validator ensures every referenced skill name exists in the AgentSpec and will suggest corrections for typos.
 
 ## How to Run
 
 ```bash
 # Validate
-./agentz validate examples/multi-skill-agent.az
+./agentspec validate examples/multi-skill-agent.ias
 
 # Plan (shows 5 resources: 1 Prompt + 3 Skills + 1 Agent)
-./agentz plan examples/multi-skill-agent.az
+./agentspec plan examples/multi-skill-agent.ias
 
 # Apply
-./agentz apply examples/multi-skill-agent.az --auto-approve
+./agentspec apply examples/multi-skill-agent.ias --auto-approve
 
 # Export artifacts
-./agentz export examples/multi-skill-agent.az --out-dir ./output
+./agentspec export examples/multi-skill-agent.ias --out-dir ./output
 ```
 
 ## Resources Created

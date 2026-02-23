@@ -1,4 +1,4 @@
-// Package main is the entry point for the agentz CLI tool.
+// Package main is the entry point for the agentspec CLI tool.
 package main
 
 import (
@@ -10,7 +10,7 @@ import (
 
 // Version information set at build time.
 var (
-	version     = "0.1.0"
+	version     = "0.2.0"
 	langVersion = "1.0"
 	irVersion   = "1.0"
 )
@@ -23,18 +23,26 @@ var (
 	correlationID string
 )
 
+const (
+	defaultStateFile = ".agentspec.state.json"
+	oldStateFile     = ".agentz.state.json"
+)
+
 func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
-		Use:   "agentz",
-		Short: "Declarative agent packaging and deployment tool",
-		Long: `Agentz parses declarative agent definitions (.az files),
+		Use:   "agentspec",
+		Short: "IntentLang agent packaging and deployment tool",
+		Long: `AgentSpec parses IntentLang agent definitions (.ias files),
 validates configurations, plans and applies changes idempotently
 via pluggable adapters, and generates SDKs for multiple languages.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return migrateStateFile()
+		},
 	}
 
-	root.PersistentFlags().StringVar(&stateFile, "state-file", ".agentz.state.json", "Path to state file")
+	root.PersistentFlags().StringVar(&stateFile, "state-file", defaultStateFile, "Path to state file")
 	root.PersistentFlags().BoolVar(&verbose, "verbose", false, "Enable verbose output")
 	root.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	root.PersistentFlags().StringVar(&correlationID, "correlation-id", "", "Set explicit correlation ID")
@@ -50,6 +58,28 @@ via pluggable adapters, and generates SDKs for multiple languages.`,
 	root.AddCommand(newMigrateCmd())
 
 	return root
+}
+
+// migrateStateFile auto-migrates old .agentz.state.json to .agentspec.state.json.
+func migrateStateFile() error {
+	if stateFile != defaultStateFile {
+		return nil // user specified a custom path, don't migrate
+	}
+
+	if _, err := os.Stat(defaultStateFile); err == nil {
+		return nil // new state file exists, nothing to migrate
+	}
+
+	if _, err := os.Stat(oldStateFile); err != nil {
+		return nil // old state file doesn't exist either
+	}
+
+	// Auto-migrate
+	if err := os.Rename(oldStateFile, defaultStateFile); err != nil {
+		return fmt.Errorf("migrating state file: %w", err)
+	}
+	fmt.Fprintf(os.Stderr, "Notice: Migrated state file '%s' → '%s'\n", oldStateFile, defaultStateFile)
+	return nil
 }
 
 func main() {

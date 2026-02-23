@@ -1,6 +1,6 @@
 # Basic Agent
 
-The simplest possible Agentz definition: a single agent with a system prompt and one binding.
+The simplest possible IntentLang AgentSpec: a single agent with a system prompt and one binding.
 
 ## What This Demonstrates
 
@@ -9,13 +9,13 @@ The simplest possible Agentz definition: a single agent with a system prompt and
 - **Agent** resource that references the prompt and specifies a model
 - **Binding** to the `local-mcp` adapter as the default deployment target
 
-## Definition Structure
+## AgentSpec Structure
 
 ```
 package "basic-agent" version "0.1.0" lang "1.0"
 ```
 
-Every `.az` file starts with a package header. The `lang "1.0"` field pins the DSL language version for forward compatibility.
+Every `.ias` file starts with a package header. The `lang "1.0"` field pins the IntentLang language version for forward compatibility.
 
 ```
 prompt "system" {
@@ -40,25 +40,25 @@ binding "local" adapter "local-mcp" {
 }
 ```
 
-A binding declares where the agent is deployed. The `default true` flag means `agentz plan` and `agentz apply` use this binding when no `--target` flag is provided.
+A binding declares where the agent is deployed. The `default true` flag means `agentspec plan` and `agentspec apply` use this binding when no `--target` flag is provided.
 
 ## How to Run
 
 ```bash
 # Format
-./agentz fmt examples/basic-agent.az
+./agentspec fmt examples/basic-agent.ias
 
 # Validate
-./agentz validate examples/basic-agent.az
+./agentspec validate examples/basic-agent.ias
 
 # Plan (shows 3 resources: Prompt, Agent, Binding)
-./agentz plan examples/basic-agent.az
+./agentspec plan examples/basic-agent.ias
 
 # Apply
-./agentz apply examples/basic-agent.az --auto-approve
+./agentspec apply examples/basic-agent.ias --auto-approve
 
 # Verify idempotency
-./agentz apply examples/basic-agent.az --auto-approve
+./agentspec apply examples/basic-agent.ias --auto-approve
 # Output: No changes. Infrastructure is up-to-date.
 ```
 

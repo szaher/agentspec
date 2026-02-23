@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-The Agentz DSL requires parsing with high-quality error messages
+The IntentLang DSL requires parsing with high-quality error messages
 including file:line:col positions and contextual fix suggestions.
 
 ## Decision

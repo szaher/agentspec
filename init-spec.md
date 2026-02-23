@@ -1,7 +1,7 @@
 You are Claude Code acting as a staff-level language designer + platform engineer.
 
 Mission
-Design and build a high-level, English-friendly, declarative language (DSL) for packaging, managing, deploying, and operating:
+Design and build a high-level, English-friendly, declarative language (IntentLang) for packaging, managing, deploying, and operating:
 - Agents
 - Prompts
 - Skills/tools
@@ -52,7 +52,7 @@ Deliver an initial spec in /spec/spec.md that includes:
 - Variables, templates, and safe interpolation rules
 - Extension model (plugins): packaging, discovery, capabilities, sandboxing (e.g., WASM), lifecycle
 - Compilation model:
-  - Source DSL -> canonical AST -> IR -> target manifests/adapters
+  - IntentLang source -> canonical AST -> IR -> target manifests/adapters
   - Determinism rules
 - Execution model:
   - control plane (optional for MVP) vs local apply
@@ -66,7 +66,7 @@ Deliver an initial spec in /spec/spec.md that includes:
 
 C) Syntax proposal (English-friendly)
 Propose 2 viable syntaxes, pick 1 for MVP:
-Option 1: “Sentence-like” DSL (custom grammar)
+Option 1: “Sentence-like” IntentLang (custom grammar)
 Option 2: YAML/JSON compatible surface with English-y keys + optional “sugar” layer
 For each option:
 - Example configs (at least 6) covering:
@@ -104,7 +104,7 @@ Define MVP to ship in a week of focused engineering:
 
 F) Implementation
 Implement in a new repo with this layout (adjust if needed):
-/cmd/dslc                  # CLI: fmt, validate, plan, apply, export, run
+/cmd/agentspec             # CLI: fmt, validate, plan, apply, export, run
 /internal/parser
 /internal/ast
 /internal/ir
@@ -167,7 +167,7 @@ Deliverables checklist (must produce files)
 - /ARCHITECTURE.md
 - /examples/* (at least 6)
 - /integration_tests/* (runnable)
-- Working CLI: dslc fmt|validate|plan|apply|export
+- Working CLI: agentspec fmt|validate|plan|apply|export
 - At least one plugin + docs
 - SDKs (python, ts, go) with minimal examples
 

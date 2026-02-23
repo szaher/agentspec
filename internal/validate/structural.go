@@ -1,5 +1,5 @@
 // Package validate implements structural and semantic validation
-// for parsed .az definitions.
+// for parsed .ias definitions.
 package validate
 
 import (

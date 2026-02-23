@@ -9,7 +9,7 @@ A retrieval-augmented generation (RAG) chatbot that searches a vector store and 
 - **Secret management** for vector database credentials
 - **Grounded generation** prompt pattern with citation requirements
 
-## Definition Structure
+## AgentSpec Structure
 
 ### RAG-Specific Prompt
 
@@ -71,16 +71,16 @@ The vector database API key is stored as an environment variable and referenced 
 
 ```bash
 # Validate
-./agentz validate examples/rag-chatbot.az
+./agentspec validate examples/rag-chatbot.ias
 
 # Plan
-./agentz plan examples/rag-chatbot.az
+./agentspec plan examples/rag-chatbot.ias
 
 # Apply
-./agentz apply examples/rag-chatbot.az --auto-approve
+./agentspec apply examples/rag-chatbot.ias --auto-approve
 
 # Export (produces mcp-servers.json with RAG server config)
-./agentz export examples/rag-chatbot.az --out-dir ./output
+./agentspec export examples/rag-chatbot.ias --out-dir ./output
 ```
 
 ## Resources Created

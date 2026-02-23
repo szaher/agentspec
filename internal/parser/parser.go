@@ -24,7 +24,7 @@ func (e *ParseError) Error() string {
 	return s
 }
 
-// Parser performs recursive descent parsing of .az token streams.
+// Parser performs recursive descent parsing of IntentLang (.ias/.az) token streams.
 type Parser struct {
 	tokens []Token
 	pos    int
@@ -33,7 +33,7 @@ type Parser struct {
 	names  map[string]map[string]bool // kind -> name -> exists (for duplicate detection)
 }
 
-// Parse parses the given .az source and returns an AST File.
+// Parse parses the given IntentLang (.ias/.az) source and returns an AST File.
 func Parse(input, file string) (*ast.File, []*ParseError) {
 	lexer := NewLexer(input, file)
 	tokens, err := lexer.Tokenize()

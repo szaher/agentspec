@@ -1,6 +1,6 @@
 # Customer Support
 
-A customer support agent with ticket lookup, knowledge base search, and escalation capabilities. Demonstrates secrets management and environment overlays in a realistic scenario.
+A customer support agent with ticket lookup, knowledge base search, and escalation capabilities. Demonstrates secrets management and environment overlays in a realistic IntentLang scenario.
 
 ## What This Demonstrates
 
@@ -9,7 +9,7 @@ A customer support agent with ticket lookup, knowledge base search, and escalati
 - **Environment overlays** switching models between dev (cheaper) and prod (higher quality)
 - **Multi-line prompts** with detailed behavioral instructions
 
-## Definition Structure
+## AgentSpec Structure
 
 ### Prompt with Detailed Instructions
 
@@ -33,7 +33,7 @@ secret "api-key" {
 }
 ```
 
-Secrets declare where sensitive values come from without embedding them in the definition. The `store "env"` and `env` attribute indicate the value is read from the `ACME_API_KEY` environment variable at runtime. The validator ensures secrets are referenced properly and rejects plaintext values in definitions.
+Secrets declare where sensitive values come from without embedding them in the AgentSpec. The `store "env"` and `env` attribute indicate the value is read from the `ACME_API_KEY` environment variable at runtime. The validator ensures secrets are referenced properly and rejects plaintext values in AgentSpec files.
 
 ### Environment-Specific Models
 
@@ -57,19 +57,19 @@ Dev uses a faster, cheaper model for iteration. Prod uses a higher-quality model
 
 ```bash
 # Validate
-./agentz validate examples/customer-support.az
+./agentspec validate examples/customer-support.ias
 
 # Plan for dev (haiku model)
-./agentz plan examples/customer-support.az --env dev
+./agentspec plan examples/customer-support.ias --env dev
 
 # Plan for prod (sonnet model)
-./agentz plan examples/customer-support.az --env prod
+./agentspec plan examples/customer-support.ias --env prod
 
 # Apply for prod
-./agentz apply examples/customer-support.az --env prod --auto-approve
+./agentspec apply examples/customer-support.ias --env prod --auto-approve
 
 # Export
-./agentz export examples/customer-support.az --out-dir ./output
+./agentspec export examples/customer-support.ias --out-dir ./output
 ```
 
 ## Resources Created
