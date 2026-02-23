@@ -10,7 +10,7 @@ A data processing pipeline agent with extract, transform, load, and validate cap
 - **Dual bindings** for local development and containerized deployment
 - **ETL workflow** modeled as skills
 
-## Definition Structure
+## AgentSpec Structure
 
 ### Policy Enforcement
 
@@ -25,7 +25,7 @@ Policies declare constraints that the validator enforces:
 - `deny model` — blocks specific models from being used (prevents cheaper models in production)
 - `require secret` — ensures a secret is declared before the configuration can be applied
 
-When you run `agentz validate`, the policy engine evaluates these rules against all resources and reports violations.
+When you run `agentspec validate`, the policy engine evaluates these rules against all resources and reports violations.
 
 ### Secret Management
 
@@ -41,7 +41,7 @@ secret "source-api-key" {
 }
 ```
 
-Secrets reference external credential stores. The `store "env"` attribute means the value is read from an environment variable at runtime. Agentz never stores secret values in the state file — only the reference.
+Secrets reference external credential stores. The `store "env"` attribute means the value is read from an environment variable at runtime. The tool never stores secret values in the state file -- only the reference.
 
 ### Three-Environment Configuration
 
@@ -71,18 +71,18 @@ Note: The `deny model "claude-haiku-latest"` policy applies globally. When valid
 
 ```bash
 # Validate
-./agentz validate examples/data-pipeline.az
+./agentspec validate examples/data-pipeline.ias
 
 # Plan for each environment
-./agentz plan examples/data-pipeline.az --env dev
-./agentz plan examples/data-pipeline.az --env staging
-./agentz plan examples/data-pipeline.az --env prod
+./agentspec plan examples/data-pipeline.ias --env dev
+./agentspec plan examples/data-pipeline.ias --env staging
+./agentspec plan examples/data-pipeline.ias --env prod
 
 # Apply
-./agentz apply examples/data-pipeline.az --env prod --auto-approve
+./agentspec apply examples/data-pipeline.ias --env prod --auto-approve
 
 # Export to Docker Compose
-./agentz export examples/data-pipeline.az --target compose --out-dir ./pipeline-deploy
+./agentspec export examples/data-pipeline.ias --target compose --out-dir ./pipeline-deploy
 ```
 
 ## Resources Created

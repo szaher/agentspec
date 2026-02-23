@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/szaher/designs/agentz/internal/cli"
 	"github.com/szaher/designs/agentz/internal/formatter"
 	"github.com/szaher/designs/agentz/internal/parser"
 )
@@ -18,7 +19,7 @@ func newFmtCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "fmt [files...]",
-		Short: "Format .az source files to canonical style",
+		Short: "Format IntentLang source files to canonical style",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			files, err := resolveAZFiles(args)
 			if err != nil {
@@ -27,6 +28,10 @@ func newFmtCmd() *cobra.Command {
 
 			anyChanged := false
 			for _, file := range files {
+				if err := cli.CheckExtensionDeprecation(file); err != nil {
+					return err
+				}
+
 				changed, err := formatFile(file, check, diff)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error formatting %s: %v\n", file, err)
@@ -102,11 +107,17 @@ func resolveAZFiles(args []string) ([]string, error) {
 			return nil, fmt.Errorf("cannot access %s: %w", arg, err)
 		}
 		if info.IsDir() {
-			matches, err := filepath.Glob(filepath.Join(arg, "*.az"))
+			// Prefer .ias files; also include .az for backward compatibility
+			iasMatches, err := filepath.Glob(filepath.Join(arg, "*.ias"))
 			if err != nil {
 				return nil, err
 			}
-			files = append(files, matches...)
+			files = append(files, iasMatches...)
+			azMatches, err := filepath.Glob(filepath.Join(arg, "*.az"))
+			if err != nil {
+				return nil, err
+			}
+			files = append(files, azMatches...)
 		} else {
 			files = append(files, arg)
 		}

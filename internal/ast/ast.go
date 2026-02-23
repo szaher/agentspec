@@ -1,5 +1,5 @@
 // Package ast defines the abstract syntax tree node types for the
-// Agentz DSL (.az files).
+// IntentLang DSL (.ias/.az files).
 package ast
 
 // Pos represents a position in source code.
@@ -15,7 +15,7 @@ type Node interface {
 	End() Pos
 }
 
-// File represents a parsed .az file.
+// File represents a parsed IntentLang AgentSpec (.ias/.az) file.
 type File struct {
 	Path       string
 	Package    *Package

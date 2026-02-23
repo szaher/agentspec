@@ -1,15 +1,15 @@
-# Architecture: Agentz Toolchain
+# Architecture: AgentSpec Toolchain
 
 ## Overview
 
-Agentz is a declarative agent packaging and deployment toolchain.
-It parses `.az` definition files through a pipeline that produces
+AgentSpec is a declarative agent packaging and deployment toolchain.
+It parses `.ias` IntentLang definition files through a pipeline that produces
 platform-neutral artifacts via pluggable adapters.
 
 ## Data Flow
 
 ```
-.az source → Lexer → Tokens → Parser → AST → Validator → IR → Adapter → Artifacts
+.ias source → Lexer → Tokens → Parser → AST → Validator → IR → Adapter → Artifacts
                                                               ↓
                                                          State File
 ```
@@ -17,7 +17,7 @@ platform-neutral artifacts via pluggable adapters.
 ## Components
 
 ### Parser (`internal/parser/`)
-Hand-written recursive descent parser producing AST from `.az` source.
+Hand-written recursive descent parser producing AST from `.ias` source.
 Includes lexer/tokenizer with keyword recognition and source position tracking.
 
 ### AST (`internal/ast/`)
@@ -25,7 +25,7 @@ Abstract syntax tree node types for all resource kinds with source position
 tracking for error reporting.
 
 ### Formatter (`internal/formatter/`)
-Canonical formatter producing deterministic `.az` output from AST.
+Canonical formatter producing deterministic `.ias` output from AST.
 Zero configuration options — one canonical style.
 
 ### Validator (`internal/validate/`)

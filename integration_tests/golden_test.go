@@ -19,10 +19,10 @@ import (
 // TestGoldenPathLifecycle tests the complete lifecycle:
 // parse → validate → format → plan → apply → apply(idempotency) → export
 func TestGoldenPathLifecycle(t *testing.T) {
-	input := readTestFile(t, "testdata/valid.az")
+	input := readTestFile(t, "testdata/valid.ias")
 
 	// Step 1: Parse
-	f, parseErrs := parser.Parse(input, "valid.az")
+	f, parseErrs := parser.Parse(input, "valid.ias")
 	if parseErrs != nil {
 		t.Fatalf("parse failed: %v", parseErrs)
 	}
@@ -39,7 +39,7 @@ func TestGoldenPathLifecycle(t *testing.T) {
 
 	// Step 3: Format and verify idempotency
 	formatted1 := formatter.Format(f)
-	f2, _ := parser.Parse(formatted1, "valid.az")
+	f2, _ := parser.Parse(formatted1, "valid.ias")
 	formatted2 := formatter.Format(f2)
 	if formatted1 != formatted2 {
 		t.Error("formatter is not idempotent")
@@ -53,7 +53,7 @@ func TestGoldenPathLifecycle(t *testing.T) {
 
 	// Step 5: Plan from fresh state
 	tmpDir := t.TempDir()
-	stateFile := filepath.Join(tmpDir, ".agentz.state.json")
+	stateFile := filepath.Join(tmpDir, ".agentspec.state.json")
 	backend := state.NewLocalBackend(stateFile)
 	current, _ := backend.Load()
 

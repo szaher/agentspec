@@ -13,8 +13,8 @@ import (
 )
 
 func TestExportLocalMCP(t *testing.T) {
-	input := readTestFile(t, "testdata/valid.az")
-	f, parseErrs := parser.Parse(input, "valid.az")
+	input := readTestFile(t, "testdata/valid.ias")
+	f, parseErrs := parser.Parse(input, "valid.ias")
 	if parseErrs != nil {
 		t.Fatalf("parse errors: %v", parseErrs)
 	}
@@ -55,8 +55,8 @@ func TestExportLocalMCP(t *testing.T) {
 }
 
 func TestExportDockerCompose(t *testing.T) {
-	input := readTestFile(t, "testdata/valid.az")
-	f, parseErrs := parser.Parse(input, "valid.az")
+	input := readTestFile(t, "testdata/valid.ias")
+	f, parseErrs := parser.Parse(input, "valid.ias")
 	if parseErrs != nil {
 		t.Fatalf("parse errors: %v", parseErrs)
 	}
@@ -98,8 +98,8 @@ func TestExportDockerCompose(t *testing.T) {
 }
 
 func TestExportBothAdaptersFromSameSource(t *testing.T) {
-	input := readTestFile(t, "testdata/valid.az")
-	f, parseErrs := parser.Parse(input, "valid.az")
+	input := readTestFile(t, "testdata/valid.ias")
+	f, parseErrs := parser.Parse(input, "valid.ias")
 	if parseErrs != nil {
 		t.Fatalf("parse errors: %v", parseErrs)
 	}

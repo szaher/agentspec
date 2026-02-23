@@ -1,8 +1,8 @@
-# Agentz DSL Language Specification v1.0
+# IntentLang Language Specification v1.0
 
 ## Overview
 
-The Agentz DSL (`.az` files) is a declarative language for defining
+IntentLang (`.ias` files) is a declarative language for defining
 AI agent configurations, prompts, skills, MCP server/client connections,
 environment overlays, and deployment bindings.
 
@@ -91,7 +91,7 @@ Multiline strings are supported within quotes.
 
 ### Canonical Formatting
 
-The `agentz fmt` command produces canonical output with:
+The `agentspec fmt` command produces canonical output with:
 - 2-space indentation
 - One blank line between resource blocks
 - Sorted metadata keys

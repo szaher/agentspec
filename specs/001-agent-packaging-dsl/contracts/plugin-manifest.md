@@ -2,7 +2,7 @@
 
 ## Overview
 
-Plugins extend the Agentz toolchain with custom resource types,
+Plugins extend the AgentSpec toolchain with custom resource types,
 validators, transforms, and lifecycle hooks. Plugins are
 distributed as WASM modules with an embedded manifest.
 
@@ -84,7 +84,7 @@ buffers; the plugin allocates output buffers.
 
 ## Plugin Resolution
 
-Plugins are referenced in `.az` files:
+Plugins are referenced in `.ias` files:
 
 ```
 plugin "monitor" version "1.0.0"
@@ -92,7 +92,7 @@ plugin "monitor" version "1.0.0"
 
 The host resolves plugins from:
 1. Local path: `./plugins/<name>/plugin.wasm`
-2. Package cache: `~/.agentz/plugins/<name>/<version>/plugin.wasm`
+2. Package cache: `~/.agentspec/plugins/<name>/<version>/plugin.wasm`
 
 ## Conflict Rules
 

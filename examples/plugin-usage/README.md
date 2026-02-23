@@ -1,14 +1,14 @@
 # Plugin Usage
 
-An agent definition that references a WASM plugin, extending the DSL with custom resource types.
+An AgentSpec that references a WASM plugin, extending IntentLang with custom resource types.
 
 ## What This Demonstrates
 
 - **Plugin declaration** with name and version pinning
 - **Plugin resolution** from local and global plugin directories
-- **Extension model** for adding custom resource types, validators, transforms, and hooks
+- **Extension model** for adding custom resource types, validators, transforms, and hooks to IntentLang
 
-## Definition Structure
+## AgentSpec Structure
 
 ### Plugin Reference
 
@@ -16,7 +16,7 @@ An agent definition that references a WASM plugin, extending the DSL with custom
 plugin "monitor" version "1.0.0"
 ```
 
-This declares a dependency on the `monitor` plugin at version `1.0.0`. Agentz resolves plugins from:
+This declares a dependency on the `monitor` plugin at version `1.0.0`. The tool resolves plugins from:
 1. `./plugins/<name>/manifest.json` (local, project-scoped)
 2. `~/.agentz/plugins/<name>/manifest.json` (global, user-scoped)
 
@@ -25,26 +25,26 @@ The version is pinned for reproducibility. If the installed plugin version doesn
 ### Plugin Manifest
 
 The monitor plugin's manifest (`plugins/monitor/manifest.json`) declares:
-- **Resource types**: `Monitor` (a custom resource type not in the base DSL)
+- **Resource types**: `Monitor` (a custom resource type not in the base IntentLang)
 - **Validators**: `threshold` (validates monitor-specific attributes)
 - **Transforms**: `monitor-to-alerts` (converts Monitor resources during compilation)
 - **Hooks**: `preflight` (runs at pre-apply stage)
 
 ### Using Plugin Resources
 
-Once the plugin is loaded, you can use its custom resource types in your definitions. The plugin's validators and transforms run automatically during the validate and plan stages.
+Once the plugin is loaded, you can use its custom resource types in your AgentSpec files. The plugin's validators and transforms run automatically during the validate and plan stages.
 
 ## How to Run
 
 ```bash
 # Validate (plugin manifest is loaded and checked)
-./agentz validate examples/plugin-usage.az
+./agentspec validate examples/plugin-usage.ias
 
 # Plan
-./agentz plan examples/plugin-usage.az
+./agentspec plan examples/plugin-usage.ias
 
 # Apply
-./agentz apply examples/plugin-usage.az --auto-approve
+./agentspec apply examples/plugin-usage.ias --auto-approve
 ```
 
 ## Resources Created
@@ -58,7 +58,7 @@ Once the plugin is loaded, you can use its custom resource types in your definit
 ## Plugin System Architecture
 
 ```
-.az file
+.ias file
   |
   v
 Parser --> loads plugin manifest

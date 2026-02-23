@@ -1,5 +1,5 @@
 # Binaries
-/agentz
+/agentspec
 *.exe
 *.test
 *.out
@@ -23,6 +23,7 @@ Thumbs.db
 .env.*
 
 # State files
+.agentspec.state.json
 .agentz.state.json
 
 # Build output

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/szaher/designs/agentz/internal/cli"
 	"github.com/szaher/designs/agentz/internal/ir"
 	"github.com/szaher/designs/agentz/internal/parser"
 	"github.com/szaher/designs/agentz/internal/plan"
@@ -26,6 +27,12 @@ func newPlanCmd() *cobra.Command {
 			files, err := resolveAZFiles(args)
 			if err != nil {
 				return err
+			}
+
+			for _, file := range files {
+				if err := cli.CheckExtensionDeprecation(file); err != nil {
+					return err
+				}
 			}
 
 			doc, err := parseAndLower(files)
@@ -82,7 +89,7 @@ func newPlanCmd() *cobra.Command {
 	return cmd
 }
 
-// parseAndLower parses all .az files and produces a single IR document.
+// parseAndLower parses all IntentLang (.ias) files and produces a single IR document.
 func parseAndLower(files []string) (*ir.Document, error) {
 	if len(files) == 0 {
 		files, _ = resolveAZFiles(nil)
@@ -90,7 +97,7 @@ func parseAndLower(files []string) (*ir.Document, error) {
 
 	// For MVP, parse first file only (single-file packages)
 	if len(files) == 0 {
-		return nil, fmt.Errorf("no .az files found")
+		return nil, fmt.Errorf("no .ias files found")
 	}
 
 	input, err := os.ReadFile(files[0])

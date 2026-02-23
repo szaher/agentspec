@@ -1,15 +1,15 @@
 # Multi-Binding
 
-Deploy the same agent definition to multiple platforms simultaneously using different adapter bindings.
+Deploy the same AgentSpec to multiple platforms simultaneously using different adapter bindings.
 
 ## What This Demonstrates
 
-- **Multiple bindings** targeting different adapters from one definition
+- **Multiple bindings** targeting different adapters from one AgentSpec
 - **Default binding** selection for `plan` and `apply` without `--target`
 - **Adapter-specific artifacts** produced by `export`
 - **Write once, deploy anywhere** workflow
 
-## Definition Structure
+## AgentSpec Structure
 
 ### Default Binding
 
@@ -19,7 +19,7 @@ binding "local" adapter "local-mcp" {
 }
 ```
 
-The `local-mcp` adapter is marked as default. Commands like `agentz plan` and `agentz apply` use this binding when no `--target` flag is specified.
+The `local-mcp` adapter is marked as default. Commands like `agentspec plan` and `agentspec apply` use this binding when no `--target` flag is specified.
 
 ### Additional Binding
 
@@ -35,22 +35,22 @@ The `docker-compose` adapter produces container deployment artifacts. The `outpu
 
 ```bash
 # Validate
-./agentz validate examples/multi-binding.az
+./agentspec validate examples/multi-binding.ias
 
 # Plan for default binding (local-mcp)
-./agentz plan examples/multi-binding.az
+./agentspec plan examples/multi-binding.ias
 
 # Plan for docker-compose binding
-./agentz plan examples/multi-binding.az --target compose
+./agentspec plan examples/multi-binding.ias --target compose
 
 # Apply to default
-./agentz apply examples/multi-binding.az --auto-approve
+./agentspec apply examples/multi-binding.ias --auto-approve
 
 # Export to local-mcp
-./agentz export examples/multi-binding.az --out-dir ./local-output
+./agentspec export examples/multi-binding.ias --out-dir ./local-output
 
 # Export to docker-compose
-./agentz export examples/multi-binding.az --target compose --out-dir ./compose-output
+./agentspec export examples/multi-binding.ias --target compose --out-dir ./compose-output
 ```
 
 ## Resources Created
@@ -83,7 +83,7 @@ compose-output/
 
 ## How Binding Resolution Works
 
-1. `agentz plan` checks for a `--target` flag
+1. `agentspec plan` checks for a `--target` flag
 2. If no target is specified, it looks for a binding with `default true`
 3. If exactly one binding exists and none is marked default, it uses that one implicitly
 4. If multiple bindings exist with no default and no `--target`, the tool reports an error

@@ -17,9 +17,9 @@ import (
 )
 
 func TestPlanApplyIdempotencyCycle(t *testing.T) {
-	input := readTestFile(t, "testdata/valid.az")
+	input := readTestFile(t, "testdata/valid.ias")
 
-	f, parseErrs := parser.Parse(input, "valid.az")
+	f, parseErrs := parser.Parse(input, "valid.ias")
 	if parseErrs != nil {
 		t.Fatalf("parse errors: %v", parseErrs)
 	}
@@ -31,7 +31,7 @@ func TestPlanApplyIdempotencyCycle(t *testing.T) {
 
 	// Set up temp state file
 	tmpDir := t.TempDir()
-	stateFile := filepath.Join(tmpDir, ".agentz.state.json")
+	stateFile := filepath.Join(tmpDir, ".agentspec.state.json")
 	backend := state.NewLocalBackend(stateFile)
 
 	// Step 1: Plan from fresh state — should show all creates

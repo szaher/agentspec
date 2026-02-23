@@ -1,80 +1,80 @@
 # Agentz Examples
 
-This directory contains example `.az` definition files demonstrating the features of the Agentz DSL. Each example is self-contained and can be validated, planned, and applied independently.
+This directory contains example `.ias` AgentSpec files demonstrating the features of IntentLang. Each example is self-contained and can be validated, planned, and applied independently.
 
 ## Prerequisites
 
-Build the `agentz` CLI from the repository root:
+Build the `agentspec` CLI from the repository root:
 
 ```bash
-go build -o agentz ./cmd/agentz
+go build -o agentspec ./cmd/agentz
 ```
 
 Verify the build:
 
 ```bash
-./agentz version
-# agentz version 0.1.0 (lang 1.0, ir 1.0)
+./agentspec version
+# agentspec version 0.1.0 (lang 1.0, ir 1.0)
 ```
 
 ## Examples
 
 | Example | File | Key Concepts |
 |---------|------|--------------|
-| [Basic Agent](basic-agent/) | `basic-agent.az` | Minimal agent definition, prompt, binding |
-| [Multi-Skill Agent](multi-skill-agent/) | `multi-skill-agent.az` | Multiple skills with input/output schemas |
-| [MCP Server/Client](mcp-server-client/) | `mcp-server-client.az` | MCP transport, server/client connectivity |
-| [Multi-Environment](multi-environment/) | `multi-environment.az` | Environment overlays (dev/prod) |
-| [Plugin Usage](plugin-usage/) | `plugin-usage.az` | WASM plugin references |
-| [Multi-Binding](multi-binding/) | `multi-binding.az` | Deploying to multiple adapters |
-| [Customer Support](customer-support/) | `customer-support.az` | Secrets, environments, multi-skill agent |
-| [Code Review Pipeline](code-review-pipeline/) | `code-review-pipeline.az` | Multi-agent collaboration, MCP, dual bindings |
-| [Data Pipeline](data-pipeline/) | `data-pipeline.az` | Policies, secrets, three environments |
-| [RAG Chatbot](rag-chatbot/) | `rag-chatbot.az` | Vector search, MCP transport, secrets |
+| [Basic Agent](basic-agent/) | `basic-agent.ias` | Minimal AgentSpec, prompt, binding |
+| [Multi-Skill Agent](multi-skill-agent/) | `multi-skill-agent.ias` | Multiple skills with input/output schemas |
+| [MCP Server/Client](mcp-server-client/) | `mcp-server-client.ias` | MCP transport, server/client connectivity |
+| [Multi-Environment](multi-environment/) | `multi-environment.ias` | Environment overlays (dev/prod) |
+| [Plugin Usage](plugin-usage/) | `plugin-usage.ias` | WASM plugin references |
+| [Multi-Binding](multi-binding/) | `multi-binding.ias` | Deploying to multiple adapters |
+| [Customer Support](customer-support/) | `customer-support.ias` | Secrets, environments, multi-skill agent |
+| [Code Review Pipeline](code-review-pipeline/) | `code-review-pipeline.ias` | Multi-agent collaboration, MCP, dual bindings |
+| [Data Pipeline](data-pipeline/) | `data-pipeline.ias` | Policies, secrets, three environments |
+| [RAG Chatbot](rag-chatbot/) | `rag-chatbot.ias` | Vector search, MCP transport, secrets |
 
 ## Running Any Example
 
 Every example follows the same workflow. From the repository root:
 
 ```bash
-# 1. Format the definition (canonical output)
-./agentz fmt examples/<name>/<name>.az
+# 1. Format the AgentSpec (canonical output)
+./agentspec fmt examples/<name>/<name>.ias
 
-# 2. Validate the definition
-./agentz validate examples/<name>/<name>.az
+# 2. Validate the AgentSpec
+./agentspec validate examples/<name>/<name>.ias
 
 # 3. Preview what will change
-./agentz plan examples/<name>/<name>.az
+./agentspec plan examples/<name>/<name>.ias
 
 # 4. Apply the changes
-./agentz apply examples/<name>/<name>.az --auto-approve
+./agentspec apply examples/<name>/<name>.ias --auto-approve
 
 # 5. Verify idempotency (should report no changes)
-./agentz apply examples/<name>/<name>.az --auto-approve
+./agentspec apply examples/<name>/<name>.ias --auto-approve
 
 # 6. Export artifacts
-./agentz export examples/<name>/<name>.az --out-dir ./output
+./agentspec export examples/<name>/<name>.ias --out-dir ./output
 ```
 
 For example, to run the basic-agent example:
 
 ```bash
-./agentz validate examples/basic-agent/basic-agent.az
-./agentz plan examples/basic-agent/basic-agent.az
-./agentz apply examples/basic-agent/basic-agent.az --auto-approve
+./agentspec validate examples/basic-agent/basic-agent.ias
+./agentspec plan examples/basic-agent/basic-agent.ias
+./agentspec apply examples/basic-agent/basic-agent.ias --auto-approve
 ```
 
 For examples with environment overlays, add the `--env` flag:
 
 ```bash
-./agentz plan examples/multi-environment/multi-environment.az --env dev
-./agentz plan examples/multi-environment/multi-environment.az --env prod
+./agentspec plan examples/multi-environment/multi-environment.ias --env dev
+./agentspec plan examples/multi-environment/multi-environment.ias --env prod
 ```
 
 For examples with multiple bindings, use the `--target` flag:
 
 ```bash
-./agentz export examples/multi-binding/multi-binding.az --target compose --out-dir ./output
+./agentspec export examples/multi-binding/multi-binding.ias --target compose --out-dir ./output
 ```
 
 ## Important Notes

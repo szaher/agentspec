@@ -1,12 +1,12 @@
-# CLI Contract: `agentz`
+# CLI Contract: `agentspec`
 
 ## Commands
 
-### `agentz fmt [files...]`
+### `agentspec fmt [files...]`
 
-Format `.az` source files to canonical style.
+Format `.ias` IntentLang source files to canonical style.
 
-- **Input**: One or more `.az` files, or current directory (recursive)
+- **Input**: One or more `.ias` files, or current directory (recursive)
 - **Output**: Formatted files written in-place; diff to stdout if
   `--check` flag is set
 - **Exit codes**: 0 = all files formatted; 1 = files would change
@@ -15,22 +15,22 @@ Format `.az` source files to canonical style.
   - `--check`: Report whether files need formatting without writing
   - `--diff`: Print diff of changes to stdout
 
-### `agentz validate [files...]`
+### `agentspec validate [files...]`
 
-Validate `.az` definitions (structural + semantic).
+Validate `.ias` AgentSpec definitions (structural + semantic).
 
-- **Input**: One or more `.az` files, or current directory
+- **Input**: One or more `.ias` files, or current directory
 - **Output**: Validation errors to stderr in format:
   `<file>:<line>:<col>: error: <message>\n  hint: <fix suggestion>`
 - **Exit codes**: 0 = valid; 1 = validation errors
 - **Flags**:
   - `--format`: Output format (`text` | `json`), default `text`
 
-### `agentz plan [--target <binding>] [--env <environment>]`
+### `agentspec plan [--target <binding>] [--env <environment>]`
 
 Show what changes would be made without applying.
 
-- **Input**: `.az` files in current directory + state file
+- **Input**: `.ias` files in current directory + state file
 - **Output**: Machine-diffable plan to stdout
 - **Exit codes**: 0 = no changes; 2 = changes pending
 - **Flags**:
@@ -41,11 +41,11 @@ Show what changes would be made without applying.
 - **Determinism**: Identical inputs MUST produce byte-identical
   output across machines and runs.
 
-### `agentz apply [--target <binding>] [--env <environment>]`
+### `agentspec apply [--target <binding>] [--env <environment>]`
 
 Apply desired state idempotently.
 
-- **Input**: `.az` files + state file + target adapter
+- **Input**: `.ias` files + state file + target adapter
 - **Output**: Applied resource summary to stdout; structured events
   to stderr
 - **Exit codes**: 0 = success (no changes or all applied);
@@ -59,19 +59,19 @@ Apply desired state idempotently.
   accurately. Re-running retries only failed resources.
 - **Events**: Emits structured events with correlation ID.
 
-### `agentz diff [--target <binding>]`
+### `agentspec diff [--target <binding>]`
 
 Show drift between desired state and actual state.
 
-- **Input**: `.az` files + state file
+- **Input**: `.ias` files + state file
 - **Output**: Drift report to stdout
 - **Exit codes**: 0 = no drift; 2 = drift detected
 
-### `agentz export [--target <binding>] [--env <environment>]`
+### `agentspec export [--target <binding>] [--env <environment>]`
 
 Export adapter-specific artifacts without applying.
 
-- **Input**: `.az` files + target adapter
+- **Input**: `.ias` files + target adapter
 - **Output**: Artifacts written to `--out-dir`
 - **Exit codes**: 0 = success; 1 = error
 - **Flags**:
@@ -81,7 +81,7 @@ Export adapter-specific artifacts without applying.
 - **Determinism**: Identical inputs MUST produce byte-identical
   artifacts.
 
-### `agentz sdk generate [--lang <language>]`
+### `agentspec sdk generate [--lang <language>]`
 
 Generate SDK for a target language.
 
@@ -91,16 +91,16 @@ Generate SDK for a target language.
   - `--lang`: Target language (`python` | `typescript` | `go`)
   - `--out-dir`: Output directory (default: `./sdk/<lang>/`)
 
-### `agentz version`
+### `agentspec version`
 
 Print version information.
 
-- **Output**: `agentz version <semver> (lang <lang-version>,
+- **Output**: `agentspec version <semver> (lang <lang-version>,
   ir <ir-version>)`
 
 ## Global Flags
 
-- `--state-file`: Path to state file (default: `.agentz.state.json`)
+- `--state-file`: Path to state file (default: `.agentspec.state.json`)
 - `--verbose`: Enable verbose output
 - `--no-color`: Disable colored output
 - `--correlation-id`: Set explicit correlation ID (auto-generated

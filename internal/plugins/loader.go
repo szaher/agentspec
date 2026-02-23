@@ -60,7 +60,8 @@ type WASMConfig struct {
 }
 
 // ResolvePluginPath finds a plugin WASM module by name and version.
-// Search order: ./plugins/<name>/plugin.wasm, ~/.agentz/plugins/<name>/<version>/plugin.wasm
+// Search order: ./plugins/<name>/plugin.wasm, ~/.agentspec/plugins/<name>/<version>/plugin.wasm,
+// then fallback to ~/.agentz/plugins/<name>/<version>/plugin.wasm with deprecation warning.
 func ResolvePluginPath(name, version string) (string, error) {
 	// Local path
 	localPath := filepath.Join("plugins", name, "plugin.wasm")
@@ -68,12 +69,21 @@ func ResolvePluginPath(name, version string) (string, error) {
 		return localPath, nil
 	}
 
-	// Package cache
 	home, err := os.UserHomeDir()
 	if err == nil {
-		cachePath := filepath.Join(home, ".agentz", "plugins", name, version, "plugin.wasm")
+		// Primary: ~/.agentspec/plugins/
+		cachePath := filepath.Join(home, ".agentspec", "plugins", name, version, "plugin.wasm")
 		if _, err := os.Stat(cachePath); err == nil {
 			return cachePath, nil
+		}
+
+		// Fallback: ~/.agentz/plugins/ (deprecated)
+		oldCachePath := filepath.Join(home, ".agentz", "plugins", name, version, "plugin.wasm")
+		if _, err := os.Stat(oldCachePath); err == nil {
+			fmt.Fprintf(os.Stderr,
+				"Warning: Plugin '%s' found in deprecated path '~/.agentz/plugins/'. "+
+					"Move plugins to '~/.agentspec/plugins/' instead.\n", name)
+			return oldCachePath, nil
 		}
 	}
 

@@ -25,7 +25,7 @@ jobs:
         run: go mod download
 
       - name: Build binary
-        run: go build -o agentz ./cmd/agentz
+        run: go build -o agentspec ./cmd/agentspec
 
       - name: Run tests
         run: go test ./... -count=1 -v
@@ -38,33 +38,33 @@ jobs:
       - name: Validate all examples
         run: |
           shopt -s nullglob
-          files=(examples/*/*.az)
+          files=(examples/*/*.ias)
           if [ ${#files[@]} -eq 0 ]; then
-            echo "::warning::No example .az files found matching examples/*/*.az"
+            echo "::warning::No example .ias files found matching examples/*/*.ias"
             exit 0
           fi
           for f in "${files[@]}"; do
             echo "Validating $f..."
-            ./agentz validate "$f"
+            ./agentspec validate "$f"
           done
 
       - name: Format-check all examples
         run: |
           shopt -s nullglob
-          files=(examples/*/*.az)
+          files=(examples/*/*.ias)
           if [ ${#files[@]} -eq 0 ]; then
-            echo "::warning::No example .az files found matching examples/*/*.az"
+            echo "::warning::No example .ias files found matching examples/*/*.ias"
             exit 0
           fi
           for f in "${files[@]}"; do
             echo "Format-checking $f..."
-            ./agentz fmt --check "$f"
+            ./agentspec fmt --check "$f"
           done
 
       - name: Smoke test - plan
         run: |
           set +e
-          ./agentz plan examples/basic-agent/basic-agent.az
+          ./agentspec plan examples/basic-agent/basic-agent.ias
           exit_code=$?
           set -e
           if [ $exit_code -eq 0 ] || [ $exit_code -eq 2 ]; then
@@ -75,11 +75,11 @@ jobs:
           fi
 
       - name: Smoke test - apply
-        run: ./agentz apply examples/basic-agent/basic-agent.az --auto-approve
+        run: ./agentspec apply examples/basic-agent/basic-agent.ias --auto-approve
 
       - name: Smoke test - idempotency check
         run: |
-          output=$(./agentz apply examples/basic-agent/basic-agent.az --auto-approve 2>&1)
+          output=$(./agentspec apply examples/basic-agent/basic-agent.ias --auto-approve 2>&1)
           echo "$output"
           if echo "$output" | grep -q "No changes"; then
             echo "Idempotency check passed: no changes on second apply"

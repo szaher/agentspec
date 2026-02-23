@@ -43,14 +43,14 @@ func generatePython(cfg Config) error {
 	}
 
 	// Generate __init__.py
-	initContent := `"""Agentz SDK for Python."""
-from .client import AgentzClient, AsyncAgentzClient
+	initContent := `"""AgentSpec SDK for Python."""
+from .client import AgentSpecClient, AsyncAgentSpecClient
 from .types import Agent, Prompt, Skill, MCPServer, MCPClient, ResourceSummary
 from .errors import ResourceNotFoundError, StateFileError, InvocationError
 
 __all__ = [
-    "AgentzClient",
-    "AsyncAgentzClient",
+    "AgentSpecClient",
+    "AsyncAgentSpecClient",
     "Agent",
     "Prompt",
     "Skill",
@@ -134,21 +134,21 @@ class MCPClient:
 	// Generate errors.py
 	errorsContent := `"""SDK error types."""
 
-class AgentzError(Exception):
+class AgentSpecError(Exception):
     pass
 
-class ResourceNotFoundError(AgentzError):
+class ResourceNotFoundError(AgentSpecError):
     def __init__(self, kind: str, name: str):
         super().__init__(f"{kind} '{name}' not found")
         self.kind = kind
         self.name = name
 
-class StateFileError(AgentzError):
+class StateFileError(AgentSpecError):
     def __init__(self, path: str, message: str):
         super().__init__(f"State file error ({path}): {message}")
         self.path = path
 
-class InvocationError(AgentzError):
+class InvocationError(AgentSpecError):
     def __init__(self, agent: str, message: str):
         super().__init__(f"Invocation error for '{agent}': {message}")
         self.agent = agent
@@ -158,15 +158,15 @@ class InvocationError(AgentzError):
 	}
 
 	// Generate client.py
-	clientContent := `"""Agentz SDK client."""
+	clientContent := `"""AgentSpec SDK client."""
 import json
 from pathlib import Path
 from typing import List, Optional
 from .types import Agent, Prompt, Skill, MCPServer, MCPClient, ResourceSummary
 from .errors import ResourceNotFoundError, StateFileError
 
-class AgentzClient:
-    def __init__(self, state_file: str = ".agentz.state.json"):
+class AgentSpecClient:
+    def __init__(self, state_file: str = ".agentspec.state.json"):
         self._state_file = Path(state_file)
         self._state = self._load_state()
 
@@ -240,10 +240,10 @@ class AgentzClient:
         raise ResourceNotFoundError("Agent", name)
 
 
-class AsyncAgentzClient:
-    """Async version of AgentzClient."""
-    def __init__(self, state_file: str = ".agentz.state.json"):
-        self._sync = AgentzClient(state_file)
+class AsyncAgentSpecClient:
+    """Async version of AgentSpecClient."""
+    def __init__(self, state_file: str = ".agentspec.state.json"):
+        self._sync = AgentSpecClient(state_file)
 
     async def list_agents(self) -> List[ResourceSummary]:
         return self._sync.list_agents()
@@ -259,7 +259,7 @@ class AsyncAgentzClient:
 	setupContent := `from setuptools import setup, find_packages
 
 setup(
-    name="agentz",
+    name="agentspec",
     version="0.1.0",
     packages=find_packages(),
     python_requires=">=3.10",
@@ -278,8 +278,8 @@ func generateTypeScript(cfg Config) error {
 	}
 
 	// Generate index.ts
-	indexContent := `// @agentz/sdk - Generated SDK
-export { AgentzClient } from './client';
+	indexContent := `// @agentspec/sdk - Generated SDK
+export { AgentSpecClient } from './client';
 export type { Agent, Prompt, Skill, MCPServer, MCPClient, ResourceSummary } from './types';
 export { ResourceNotFoundError, StateFileError, InvocationError } from './errors';
 `
@@ -330,20 +330,20 @@ export interface MCPClient extends ResourceSummary {
 	}
 
 	// Generate errors.ts
-	errorsContent := "export class AgentzError extends Error {\n  constructor(message: string) {\n    super(message);\n    this.name = 'AgentzError';\n  }\n}\n\nexport class ResourceNotFoundError extends AgentzError {\n  constructor(public readonly kind: string, public readonly resourceName: string) {\n    super(`${kind} '${resourceName}' not found`);\n    this.name = 'ResourceNotFoundError';\n  }\n}\n\nexport class StateFileError extends AgentzError {\n  constructor(public readonly path: string, reason: string) {\n    super(`State file error (${path}): ${reason}`);\n    this.name = 'StateFileError';\n  }\n}\n\nexport class InvocationError extends AgentzError {\n  constructor(public readonly agent: string, reason: string) {\n    super(`Invocation error for '${agent}': ${reason}`);\n    this.name = 'InvocationError';\n  }\n}\n"
+	errorsContent := "export class AgentSpecError extends Error {\n  constructor(message: string) {\n    super(message);\n    this.name = 'AgentSpecError';\n  }\n}\n\nexport class ResourceNotFoundError extends AgentSpecError {\n  constructor(public readonly kind: string, public readonly resourceName: string) {\n    super(`${kind} '${resourceName}' not found`);\n    this.name = 'ResourceNotFoundError';\n  }\n}\n\nexport class StateFileError extends AgentSpecError {\n  constructor(public readonly path: string, reason: string) {\n    super(`State file error (${path}): ${reason}`);\n    this.name = 'StateFileError';\n  }\n}\n\nexport class InvocationError extends AgentSpecError {\n  constructor(public readonly agent: string, reason: string) {\n    super(`Invocation error for '${agent}': ${reason}`);\n    this.name = 'InvocationError';\n  }\n}\n"
 	if err := os.WriteFile(filepath.Join(cfg.OutDir, "errors.ts"), []byte(errorsContent), 0644); err != nil {
 		return err
 	}
 
 	// Generate client.ts
-	clientContent := "import * as fs from 'fs';\nimport type { ResourceSummary } from './types';\nimport { ResourceNotFoundError, StateFileError } from './errors';\n\ninterface StateFile {\n  version: string;\n  entries: StateEntry[];\n}\n\ninterface StateEntry {\n  fqn: string;\n  hash: string;\n  status: string;\n  last_applied: string;\n  adapter: string;\n  error?: string;\n}\n\nexport class AgentzClient {\n  private state: StateFile;\n\n  constructor(private stateFile: string = '.agentz.state.json') {\n    this.state = this.loadState();\n  }\n\n  private loadState(): StateFile {\n    try {\n      const data = fs.readFileSync(this.stateFile, 'utf-8');\n      return JSON.parse(data);\n    } catch (err: any) {\n      throw new StateFileError(this.stateFile, err.message);\n    }\n  }\n\n  private getEntries(kind: string): StateEntry[] {\n    return this.state.entries.filter(e => e.fqn.includes(`/${kind}/`));\n  }\n\n  async listAgents(): Promise<ResourceSummary[]> {\n    return this.getEntries('Agent').map(e => ({\n      name: e.fqn.split('/').pop()!,\n      kind: 'Agent',\n      fqn: e.fqn,\n      status: e.status as any,\n      hash: e.hash,\n      lastApplied: e.last_applied,\n    }));\n  }\n\n  async getAgent(name: string): Promise<ResourceSummary> {\n    const agents = await this.listAgents();\n    const agent = agents.find(a => a.name === name);\n    if (!agent) throw new ResourceNotFoundError('Agent', name);\n    return agent;\n  }\n}\n"
+	clientContent := "import * as fs from 'fs';\nimport type { ResourceSummary } from './types';\nimport { ResourceNotFoundError, StateFileError } from './errors';\n\ninterface StateFile {\n  version: string;\n  entries: StateEntry[];\n}\n\ninterface StateEntry {\n  fqn: string;\n  hash: string;\n  status: string;\n  last_applied: string;\n  adapter: string;\n  error?: string;\n}\n\nexport class AgentSpecClient {\n  private state: StateFile;\n\n  constructor(private stateFile: string = '.agentspec.state.json') {\n    this.state = this.loadState();\n  }\n\n  private loadState(): StateFile {\n    try {\n      const data = fs.readFileSync(this.stateFile, 'utf-8');\n      return JSON.parse(data);\n    } catch (err: any) {\n      throw new StateFileError(this.stateFile, err.message);\n    }\n  }\n\n  private getEntries(kind: string): StateEntry[] {\n    return this.state.entries.filter(e => e.fqn.includes(`/${kind}/`));\n  }\n\n  async listAgents(): Promise<ResourceSummary[]> {\n    return this.getEntries('Agent').map(e => ({\n      name: e.fqn.split('/').pop()!,\n      kind: 'Agent',\n      fqn: e.fqn,\n      status: e.status as any,\n      hash: e.hash,\n      lastApplied: e.last_applied,\n    }));\n  }\n\n  async getAgent(name: string): Promise<ResourceSummary> {\n    const agents = await this.listAgents();\n    const agent = agents.find(a => a.name === name);\n    if (!agent) throw new ResourceNotFoundError('Agent', name);\n    return agent;\n  }\n}\n"
 	if err := os.WriteFile(filepath.Join(cfg.OutDir, "client.ts"), []byte(clientContent), 0644); err != nil {
 		return err
 	}
 
 	// Generate package.json
 	pkgContent := `{
-  "name": "@agentz/sdk",
+  "name": "@agentspec/sdk",
   "version": "0.1.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -365,8 +365,8 @@ func generateGo(cfg Config) error {
 	}
 
 	// Generate client.go
-	clientContent := `// Package agentz provides a Go SDK for accessing Agentz resources.
-package agentz
+	clientContent := `// Package agentspec provides a Go SDK for accessing AgentSpec resources.
+package agentspec
 
 import (
 	"context"
@@ -376,7 +376,7 @@ import (
 	"strings"
 )
 
-// Client provides access to Agentz resources via the state file.
+// Client provides access to AgentSpec resources via the state file.
 type Client struct {
 	stateFile string
 	state     *stateData
@@ -407,7 +407,7 @@ type ResourceSummary struct {
 	LastApplied string
 }
 
-// NewClient creates a new Agentz client.
+// NewClient creates a new AgentSpec client.
 func NewClient(stateFile string) (*Client, error) {
 	c := &Client{stateFile: stateFile}
 	if err := c.loadState(); err != nil {

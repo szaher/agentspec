@@ -1,5 +1,5 @@
 // Package apply implements the idempotent apply engine with
-// partial failure handling for the Agentz toolchain.
+// partial failure handling for the AgentSpec toolchain.
 package apply
 
 import (

@@ -9,7 +9,7 @@ An agent connected to external tools through Model Context Protocol (MCP) transp
 - **Agent-to-client** connectivity via `connects to client`
 - **Transport configuration** with `stdio` protocol
 
-## Definition Structure
+## AgentSpec Structure
 
 ### Server
 
@@ -53,16 +53,16 @@ The agent uses skills and connects to clients. This creates a dependency chain: 
 
 ```bash
 # Validate
-./agentz validate examples/mcp-server-client.az
+./agentspec validate examples/mcp-server-client.ias
 
 # Plan
-./agentz plan examples/mcp-server-client.az
+./agentspec plan examples/mcp-server-client.ias
 
 # Apply
-./agentz apply examples/mcp-server-client.az --auto-approve
+./agentspec apply examples/mcp-server-client.ias --auto-approve
 
 # Export (generates mcp-servers.json and mcp-clients.json)
-./agentz export examples/mcp-server-client.az --out-dir ./output
+./agentspec export examples/mcp-server-client.ias --out-dir ./output
 ```
 
 ## Resources Created

@@ -1,5 +1,5 @@
 // Package adapters defines the adapter interface and registry
-// for the Agentz toolchain.
+// for the AgentSpec toolchain.
 package adapters
 
 import (

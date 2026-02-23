@@ -4,12 +4,12 @@ A multi-agent code review system with separate agents for static analysis, secur
 
 ## What This Demonstrates
 
-- **Multiple agents** in a single definition, each with a specialized role
+- **Multiple agents** in a single AgentSpec, each with a specialized role
 - **Shared skills** referenced by multiple agents (`read-diff` is used by both analyzer and scanner)
 - **MCP server/client** wiring for inter-agent communication
 - **Dual bindings** for local development and CI/CD deployment
 
-## Definition Structure
+## AgentSpec Structure
 
 ### Specialized Agents
 
@@ -75,19 +75,19 @@ binding "ci" adapter "docker-compose" {
 
 ```bash
 # Validate
-./agentz validate examples/code-review-pipeline.az
+./agentspec validate examples/code-review-pipeline.ias
 
 # Plan for local
-./agentz plan examples/code-review-pipeline.az
+./agentspec plan examples/code-review-pipeline.ias
 
 # Plan for CI
-./agentz plan examples/code-review-pipeline.az --target ci
+./agentspec plan examples/code-review-pipeline.ias --target ci
 
 # Apply locally
-./agentz apply examples/code-review-pipeline.az --auto-approve
+./agentspec apply examples/code-review-pipeline.ias --auto-approve
 
 # Export CI artifacts
-./agentz export examples/code-review-pipeline.az --target ci --out-dir ./ci-deploy
+./agentspec export examples/code-review-pipeline.ias --target ci --out-dir ./ci-deploy
 ```
 
 ## Resources Created
