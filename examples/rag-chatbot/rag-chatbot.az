@@ -1,34 +1,39 @@
 package "rag-chatbot" version "0.1.0" lang "1.0"
 
-# A retrieval-augmented generation (RAG) chatbot that searches
-# a vector store and generates grounded answers with citations.
-
 prompt "rag" {
-  content "You are a knowledge assistant. Answer questions using only
-           the retrieved context. Always cite your sources with
-           [Source: document_name] notation. If the context does not
-           contain enough information, say so honestly rather than
-           guessing."
+  content "You are a knowledge assistant. Answer questions using only\n           the retrieved context. Always cite your sources with\n           [Source: document_name] notation. If the context does not\n           contain enough information, say so honestly rather than\n           guessing."
 }
 
 skill "embed-query" {
   description "Generate an embedding vector for a search query"
-  input { query string required }
-  output { vector string }
+  input {
+    query string required
+  }
+  output {
+    vector string
+  }
   execution command "embed-tool"
 }
 
 skill "vector-search" {
   description "Search the vector store for similar documents"
-  input { vector string required }
-  output { documents string }
+  input {
+    vector string required
+  }
+  output {
+    documents string
+  }
   execution command "vector-search-tool"
 }
 
 skill "rerank" {
   description "Rerank retrieved documents by relevance to the query"
-  input { query string required }
-  output { ranked string }
+  input {
+    query string required
+  }
+  output {
+    ranked string
+  }
   execution command "rerank-tool"
 }
 
@@ -53,8 +58,7 @@ client "rag-client" {
 }
 
 secret "vector-db-key" {
-  store "env"
-  env "VECTOR_DB_API_KEY"
+  env(VECTOR_DB_API_KEY)
 }
 
 binding "local" adapter "local-mcp" {

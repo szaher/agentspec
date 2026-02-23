@@ -6,8 +6,12 @@ prompt "assistant" {
 
 skill "file-read" {
   description "Read files from disk"
-  input { path string required }
-  output { content string }
+  input {
+    path string required
+  }
+  output {
+    content string
+  }
   execution command "file-reader"
 }
 
@@ -24,8 +28,8 @@ client "my-client" {
 agent "file-assistant" {
   uses prompt "assistant"
   uses skill "file-read"
-  connects to client "my-client"
   model "claude-sonnet-4-20250514"
+  connects to client "my-client"
 }
 
 binding "local" adapter "local-mcp" {

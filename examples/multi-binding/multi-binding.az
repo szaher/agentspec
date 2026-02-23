@@ -6,8 +6,12 @@ prompt "system" {
 
 skill "query" {
   description "Query data"
-  input { q string required }
-  output { data string }
+  input {
+    q string required
+  }
+  output {
+    data string
+  }
   execution command "query-tool"
 }
 

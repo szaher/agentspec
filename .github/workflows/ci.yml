@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build binary
+        run: go build -o agentz ./cmd/agentz
+
+      - name: Run tests
+        run: go test ./... -count=1 -v
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.10.1
+
+      - name: Validate all examples
+        run: |
+          shopt -s nullglob
+          files=(examples/*/*.az)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::warning::No example .az files found matching examples/*/*.az"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            echo "Validating $f..."
+            ./agentz validate "$f"
+          done
+
+      - name: Format-check all examples
+        run: |
+          shopt -s nullglob
+          files=(examples/*/*.az)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::warning::No example .az files found matching examples/*/*.az"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            echo "Format-checking $f..."
+            ./agentz fmt --check "$f"
+          done
+
+      - name: Smoke test - plan
+        run: |
+          set +e
+          ./agentz plan examples/basic-agent/basic-agent.az
+          exit_code=$?
+          set -e
+          if [ $exit_code -eq 0 ] || [ $exit_code -eq 2 ]; then
+            echo "Plan succeeded (exit $exit_code: changes pending or no changes)"
+          else
+            echo "::error::Plan failed with unexpected exit code $exit_code"
+            exit $exit_code
+          fi
+
+      - name: Smoke test - apply
+        run: ./agentz apply examples/basic-agent/basic-agent.az --auto-approve
+
+      - name: Smoke test - idempotency check
+        run: |
+          output=$(./agentz apply examples/basic-agent/basic-agent.az --auto-approve 2>&1)
+          echo "$output"
+          if echo "$output" | grep -q "No changes"; then
+            echo "Idempotency check passed: no changes on second apply"
+          else
+            echo "::error::Idempotency check failed: expected 'No changes' in output"
+            exit 1
+          fi

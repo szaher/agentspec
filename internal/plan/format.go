@@ -29,22 +29,22 @@ func FormatText(p *Plan) string {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Plan: %d to create, %d to update, %d to delete\n\n",
-		creates, updates, deletes))
+	fmt.Fprintf(&sb, "Plan: %d to create, %d to update, %d to delete\n\n",
+		creates, updates, deletes)
 
 	for _, a := range p.Actions {
 		switch a.Type {
 		case adapters.ActionCreate:
-			sb.WriteString(fmt.Sprintf("  + %s\n", fqnToDisplay(a.FQN)))
+			fmt.Fprintf(&sb, "  + %s\n", fqnToDisplay(a.FQN))
 		case adapters.ActionUpdate:
-			sb.WriteString(fmt.Sprintf("  ~ %s\n", fqnToDisplay(a.FQN)))
+			fmt.Fprintf(&sb, "  ~ %s\n", fqnToDisplay(a.FQN))
 		case adapters.ActionDelete:
-			sb.WriteString(fmt.Sprintf("  - %s\n", fqnToDisplay(a.FQN)))
+			fmt.Fprintf(&sb, "  - %s\n", fqnToDisplay(a.FQN))
 		}
 	}
 
 	if p.TargetBinding != "" {
-		sb.WriteString(fmt.Sprintf("\nTarget: %s\n", p.TargetBinding))
+		fmt.Fprintf(&sb, "\nTarget: %s\n", p.TargetBinding)
 	}
 
 	return sb.String()

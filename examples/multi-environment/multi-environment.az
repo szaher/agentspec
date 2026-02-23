@@ -6,8 +6,12 @@ prompt "greeting" {
 
 skill "search" {
   description "Search"
-  input { query string required }
-  output { results string }
+  input {
+    query string required
+  }
+  output {
+    results string
+  }
   execution command "search-tool"
 }
 

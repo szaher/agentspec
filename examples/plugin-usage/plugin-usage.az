@@ -8,8 +8,12 @@ prompt "ops" {
 
 skill "check-health" {
   description "Check service health"
-  input { service string required }
-  output { status string }
+  input {
+    service string required
+  }
+  output {
+    status string
+  }
   execution command "health-check"
 }
 

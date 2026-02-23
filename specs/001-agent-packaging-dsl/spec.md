@@ -2,18 +2,28 @@
 
 **Feature Branch**: `001-agent-packaging-dsl`
 **Created**: 2026-02-22
+**Amended**: 2026-02-22
 **Status**: Draft
 **Input**: User description from init-spec.md
+
+## Naming Conventions
+
+The following names apply throughout this specification and the codebase:
+
+- **IntentLang** (short: **ilang**): The declarative specification language used to define agents, prompts, skills, and infrastructure. File extension: `.ias`
+- **AgentSpec**: A single definition file written in IntentLang. An AgentSpec declares one package with its resources (agents, prompts, skills, servers, etc.). Analogous to a Dockerfile or a Terraform file.
+- **AgentPack**: A distributable package containing one or more AgentSpecs. An AgentPack bundles related definitions into a versioned, shareable unit. Analogous to a Helm chart or an npm package.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Define and Validate Agent Configurations (Priority: P1)
 
-An agent developer writes declarative definitions for their agents,
-prompts, skills/tools, and MCP server connections using an
-English-friendly syntax. They run the toolchain's validation command
-and receive immediate, actionable feedback on any errors — including
-the exact location in the source file and a suggested fix.
+An agent developer writes AgentSpec files in IntentLang to define
+their agents, prompts, skills/tools, and MCP server connections
+using an English-friendly syntax. They run the toolchain's
+validation command and receive immediate, actionable feedback on
+any errors — including the exact location in the source file and a
+suggested fix.
 
 **Why this priority**: Without the ability to author and validate
 definitions, no other workflow is possible. This is the foundation
@@ -53,8 +63,8 @@ changes, and the system executes them idempotently — running apply
 again with no source changes produces zero mutations.
 
 **Why this priority**: The desired-state engine (plan/apply) is the
-core value proposition. Without it, the DSL is a config format with
-no operational power.
+core value proposition. Without it, IntentLang is a config format
+with no operational power.
 
 **Independent Test**: Can be tested by creating a definition,
 running plan (verifying output describes creation), running apply
@@ -83,20 +93,20 @@ and apply again (verifying no changes).
 
 ### User Story 3 - Target Multiple Platforms (Priority: P3)
 
-An agent developer writes one set of definitions and deploys to at
-least two different target platforms. The DSL source remains
+An agent developer writes one set of AgentSpecs and deploys to at
+least two different target platforms. The IntentLang source remains
 identical; only the target binding changes. Each target produces its
 own exportable artifacts.
 
 **Why this priority**: Portability is a core principle. Proving it
-with at least two adapters validates the separation between DSL
-semantics and platform-specific behavior.
+with at least two adapters validates the separation between
+IntentLang semantics and platform-specific behavior.
 
 **Independent Test**: Can be tested by creating a single agent
 definition, exporting it to adapter A (verifying correct artifacts),
 then exporting the same source to adapter B (verifying correct
-artifacts), and confirming the DSL source was not modified for
-either target.
+artifacts), and confirming the IntentLang source was not modified
+for either target.
 
 **Acceptance Scenarios**:
 
@@ -187,9 +197,9 @@ programmatically list available agents, resolve an agent's endpoint,
 invoke a run, and stream events from the execution. The SDK operates
 against local state and compiled artifacts.
 
-**Why this priority**: SDKs make the DSL consumable by application
-code. Without them, the DSL's value is limited to configuration
-management.
+**Why this priority**: SDKs make IntentLang definitions consumable
+by application code. Without them, AgentSpecs are limited to
+configuration management.
 
 **Independent Test**: Can be tested by applying a definition
 locally, then using the SDK to list agents (confirming the defined
@@ -227,8 +237,8 @@ and receiving at least one streamed event.
   re-run apply to retry only the failed resources.
 - What happens when the local state file is corrupted or deleted
   between plan and apply?
-- What happens when a definition file contains syntax valid in
-  language version N but deprecated in version N+1?
+- What happens when an AgentSpec contains syntax valid in IntentLang
+  version N but deprecated in version N+1?
 - What happens when two environment overlays define conflicting
   values for the same attribute? The system rejects the
   configuration at validation time. Each environment MUST resolve
@@ -253,17 +263,24 @@ and receiving at least one streamed event.
 - Q: How are environment overlay conflicts handled? → A: Fail-fast — reject conflicting attribute values within the same environment as a validation error. Each environment MUST resolve to a single unambiguous value for every attribute.
 - Q: What happens when apply is run with no target and multiple bindings exist? → A: One binding may be marked as default; a sole binding is implicitly default; the system errors and lists available targets if no default is set with multiple bindings.
 
+### Amendment 2026-02-22: Naming Conventions
+
+- Q: What is the language called? → A: **IntentLang** (short: **ilang**). File extension: `.ias`
+- Q: What is an individual definition file called? → A: **AgentSpec** — a single IntentLang file (`.ias`) declaring one package with its resources.
+- Q: What is a distributable package called? → A: **AgentPack** — a versioned bundle of one or more AgentSpecs. An AgentPack is the unit of distribution and dependency management.
+- Q: What file extension should AgentSpec files use? → A: `.ias` (amended from `.il`).
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-**DSL Authoring & Formatting**
+**IntentLang Authoring & Formatting**
 
-- **FR-001**: The system MUST provide a declarative syntax for
+- **FR-001**: IntentLang MUST provide a declarative syntax for
   defining agents, prompts, skills/tools, MCP servers, MCP clients,
-  and platform bindings.
-- **FR-002**: The syntax MUST be readable by non-programmers while
-  remaining machine-parseable and unambiguous.
+  and platform bindings in AgentSpec files (`.ias`).
+- **FR-002**: IntentLang syntax MUST be readable by non-programmers
+  while remaining machine-parseable and unambiguous.
 - **FR-003**: The system MUST provide a canonical formatter that
   produces a single deterministic output for any valid input.
 - **FR-004**: Running the formatter on already-formatted source MUST
@@ -304,7 +321,7 @@ and receiving at least one streamed event.
 - **FR-013**: The system MUST separate platform-neutral semantics
   from platform-specific behavior through an adapter mechanism.
 - **FR-014**: Adapters MUST operate on an intermediate
-  representation, not on the raw DSL source.
+  representation, not on raw IntentLang source.
 - **FR-015**: The initial release MUST include at least two working
   adapters to demonstrate portability.
 - **FR-016**: Each adapter MUST produce exportable artifacts
@@ -360,29 +377,30 @@ and receiving at least one streamed event.
 **Resource Identity**
 
 - **FR-036**: Each resource MUST be uniquely identified by the
-  combination of its type and name within a package scope.
-- **FR-037**: Cross-package references MUST use fully-qualified
-  paths in the form `package/type/name`.
-- **FR-038**: The system MUST reject definitions that declare two
-  resources of the same type with the same name within a single
-  package.
+  combination of its type and name within an AgentSpec scope.
+- **FR-037**: Cross-pack references MUST use fully-qualified
+  paths in the form `pack/type/name`.
+- **FR-038**: The system MUST reject AgentSpecs that declare two
+  resources of the same type with the same name.
 
 **Versioning & Compatibility**
 
-- **FR-027**: The DSL language version MUST be explicitly declared in
-  every definition file or package.
+- **FR-027**: The IntentLang version MUST be explicitly declared in
+  every AgentSpec file.
 - **FR-028**: The system MUST provide migration guidance for any
-  breaking changes between language versions.
-- **FR-029**: All external package references MUST be pinned to
+  breaking changes between IntentLang versions.
+- **FR-029**: All external AgentPack references MUST be pinned to
   specific versions, content hashes, or git SHAs.
 
 **Security**
 
-- **FR-030**: Secrets MUST be expressed as references to environment
-  variables or external secret stores, never as literal values.
+- **FR-030**: Secrets in AgentSpecs MUST be expressed as references
+  to environment variables or external secret stores, never as
+  literal values.
 - **FR-031**: The system MUST support a policy mechanism capable of
-  blocking configurations that violate security constraints (e.g.,
-  disallowing unrestricted network access or unpinned imports).
+  blocking AgentSpec configurations that violate security constraints
+  (e.g., disallowing unrestricted network access or unpinned
+  imports).
 
 **Observability**
 
@@ -413,14 +431,17 @@ and receiving at least one streamed event.
   references.
 - **MCP Client**: A client that connects to one or more MCP servers
   and makes their capabilities available to agents.
-- **Package**: A distributable, versioned unit containing related
-  definitions with dependency metadata. Resources within a package
-  are uniquely identified by type + name. Cross-package references
-  use fully-qualified paths (package/type/name).
+- **AgentSpec**: A single IntentLang definition file (`.ias`) that
+  declares one package and its resources. An AgentSpec is the unit of
+  authoring and validation.
+- **AgentPack**: A distributable, versioned bundle containing one or
+  more AgentSpecs with dependency metadata. Resources within an
+  AgentPack are uniquely identified by type + name. Cross-pack
+  references use fully-qualified paths (pack/type/name).
 - **Environment**: A named configuration scope (e.g., dev, staging,
   prod) providing variable overrides layered on a base definition.
-- **Secret**: A reference to a sensitive value stored outside DSL
-  source (environment variable path or secret store key).
+- **Secret**: A reference to a sensitive value stored outside
+  IntentLang source (environment variable path or secret store key).
 - **Policy**: A set of rules governing permitted configurations,
   enforced during validation and apply.
 - **Binding**: A mapping from a platform-neutral definition to a
@@ -440,8 +461,8 @@ and receiving at least one streamed event.
   planning).
 - Plugin isolation uses sandboxing where feasible; strict process
   isolation is acceptable as a fallback for MVP.
-- Package registry support is local-only for MVP (local file system
-  paths); remote registry support is deferred.
+- AgentPack registry support is local-only for MVP (local file
+  system paths); remote registry support is deferred.
 - The system is a developer tool targeting engineers and technical
   domain experts, not end-users of the agents themselves.
 

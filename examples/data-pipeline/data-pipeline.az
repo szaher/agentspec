@@ -1,41 +1,50 @@
 package "data-pipeline" version "0.1.0" lang "1.0"
 
-# A data processing pipeline agent that can extract, transform,
-# and load data. Shows policy enforcement to restrict which
-# models can be used and require secrets for database access.
-
 prompt "etl" {
-  content "You are a data engineering assistant. Help users extract
-           data from sources, transform it according to rules, and
-           load it into target systems. Always validate data quality
-           before loading."
+  content "You are a data engineering assistant. Help users extract\n           data from sources, transform it according to rules, and\n           load it into target systems. Always validate data quality\n           before loading."
 }
 
 skill "extract" {
   description "Extract data from a source system"
-  input { source string required }
-  output { raw_data string }
+  input {
+    source string required
+  }
+  output {
+    raw_data string
+  }
   execution command "data-extract"
 }
 
 skill "transform" {
   description "Transform data according to mapping rules"
-  input { data string required }
-  output { transformed string }
+  input {
+    data string required
+  }
+  output {
+    transformed string
+  }
   execution command "data-transform"
 }
 
 skill "load" {
   description "Load data into the target database"
-  input { data string required }
-  output { rows_inserted string }
+  input {
+    data string required
+  }
+  output {
+    rows_inserted string
+  }
   execution command "data-load"
 }
 
 skill "validate" {
   description "Run data quality checks"
-  input { data string required }
-  output { report string }
+  input {
+    data string required
+  }
+  output {
+    report string
+  }
   execution command "data-validate"
 }
 
@@ -49,18 +58,16 @@ agent "etl-bot" {
 }
 
 secret "db-connection" {
-  store "env"
-  env "DATABASE_URL"
+  env(DATABASE_URL)
 }
 
 secret "source-api-key" {
-  store "env"
-  env "SOURCE_API_KEY"
+  env(SOURCE_API_KEY)
 }
 
 policy "production-safety" {
-  deny model "claude-haiku-latest"
-  require secret "db-connection"
+  deny model claude-haiku-latest
+  require secret db-connection
 }
 
 environment "dev" {

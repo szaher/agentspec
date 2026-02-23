@@ -6,22 +6,34 @@ prompt "research" {
 
 skill "web-search" {
   description "Search the web"
-  input { query string required }
-  output { results string }
+  input {
+    query string required
+  }
+  output {
+    results string
+  }
   execution command "search-tool"
 }
 
 skill "summarize" {
   description "Summarize text"
-  input { text string required }
-  output { summary string }
+  input {
+    text string required
+  }
+  output {
+    summary string
+  }
   execution command "summarize-tool"
 }
 
 skill "translate" {
   description "Translate text"
-  input { text string required }
-  output { translated string }
+  input {
+    text string required
+  }
+  output {
+    translated string
+  }
   execution command "translate-tool"
 }
 

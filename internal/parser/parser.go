@@ -26,11 +26,11 @@ func (e *ParseError) Error() string {
 
 // Parser performs recursive descent parsing of .az token streams.
 type Parser struct {
-	tokens  []Token
-	pos     int
-	file    string
-	errors  []*ParseError
-	names   map[string]map[string]bool // kind -> name -> exists (for duplicate detection)
+	tokens []Token
+	pos    int
+	file   string
+	errors []*ParseError
+	names  map[string]map[string]bool // kind -> name -> exists (for duplicate detection)
 }
 
 // Parse parses the given .az source and returns an AST File.

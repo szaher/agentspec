@@ -5,17 +5,10 @@ linters:
     - govet
     - staticcheck
     - unused
-    - gosimple
     - ineffassign
-    - typecheck
-    - gofmt
-    - goimports
   settings:
-    gofmt:
-      simplify: true
-linters-settings:
-  errcheck:
-    check-type-assertions: true
+    errcheck:
+      check-type-assertions: true
 formatters:
   enable:
     - gofmt

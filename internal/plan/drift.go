@@ -13,10 +13,10 @@ type DriftResult struct {
 
 // DriftEntry describes a single resource with drift.
 type DriftEntry struct {
-	FQN       string
-	Expected  string
-	Actual    string
-	Type      string // "missing", "hash_mismatch", "extra"
+	FQN      string
+	Expected string
+	Actual   string
+	Type     string // "missing", "hash_mismatch", "extra"
 }
 
 // DetectDrift compares current state against desired resources

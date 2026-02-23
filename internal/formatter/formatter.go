@@ -27,12 +27,12 @@ func Format(f *ast.File) string {
 }
 
 func formatPackage(sb *strings.Builder, pkg *ast.Package) {
-	sb.WriteString(fmt.Sprintf("package %q", pkg.Name))
+	fmt.Fprintf(sb, "package %q", pkg.Name)
 	if pkg.Version != "" {
-		sb.WriteString(fmt.Sprintf(" version %q", pkg.Version))
+		fmt.Fprintf(sb, " version %q", pkg.Version)
 	}
 	if pkg.LangVersion != "" {
-		sb.WriteString(fmt.Sprintf(" lang %q", pkg.LangVersion))
+		fmt.Fprintf(sb, " lang %q", pkg.LangVersion)
 	}
 	sb.WriteString("\n")
 }
@@ -65,26 +65,26 @@ func formatStatement(sb *strings.Builder, stmt ast.Statement) {
 }
 
 func formatPrompt(sb *strings.Builder, p *ast.Prompt) {
-	sb.WriteString(fmt.Sprintf("prompt %q {\n", p.Name))
+	fmt.Fprintf(sb, "prompt %q {\n", p.Name)
 	if p.Content != "" {
-		sb.WriteString(fmt.Sprintf("  content %q\n", p.Content))
+		fmt.Fprintf(sb, "  content %q\n", p.Content)
 	}
 	if p.Version != "" {
-		sb.WriteString(fmt.Sprintf("  version %q\n", p.Version))
+		fmt.Fprintf(sb, "  version %q\n", p.Version)
 	}
 	formatMetadata(sb, p.Metadata)
 	sb.WriteString("}\n")
 }
 
 func formatSkill(sb *strings.Builder, s *ast.Skill) {
-	sb.WriteString(fmt.Sprintf("skill %q {\n", s.Name))
+	fmt.Fprintf(sb, "skill %q {\n", s.Name)
 	if s.Description != "" {
-		sb.WriteString(fmt.Sprintf("  description %q\n", s.Description))
+		fmt.Fprintf(sb, "  description %q\n", s.Description)
 	}
 	if len(s.Input) > 0 {
 		sb.WriteString("  input {\n")
 		for _, f := range s.Input {
-			sb.WriteString(fmt.Sprintf("    %s %s", f.Name, f.Type))
+			fmt.Fprintf(sb, "    %s %s", f.Name, f.Type)
 			if f.Required {
 				sb.WriteString(" required")
 			}
@@ -95,7 +95,7 @@ func formatSkill(sb *strings.Builder, s *ast.Skill) {
 	if len(s.Output) > 0 {
 		sb.WriteString("  output {\n")
 		for _, f := range s.Output {
-			sb.WriteString(fmt.Sprintf("    %s %s", f.Name, f.Type))
+			fmt.Fprintf(sb, "    %s %s", f.Name, f.Type)
 			if f.Required {
 				sb.WriteString(" required")
 			}
@@ -104,34 +104,34 @@ func formatSkill(sb *strings.Builder, s *ast.Skill) {
 		sb.WriteString("  }\n")
 	}
 	if s.Execution != nil {
-		sb.WriteString(fmt.Sprintf("  execution %s %q\n", s.Execution.Type, s.Execution.Value))
+		fmt.Fprintf(sb, "  execution %s %q\n", s.Execution.Type, s.Execution.Value)
 	}
 	formatMetadata(sb, s.Metadata)
 	sb.WriteString("}\n")
 }
 
 func formatAgent(sb *strings.Builder, a *ast.Agent) {
-	sb.WriteString(fmt.Sprintf("agent %q {\n", a.Name))
+	fmt.Fprintf(sb, "agent %q {\n", a.Name)
 	if a.Prompt != nil {
-		sb.WriteString(fmt.Sprintf("  uses prompt %q\n", a.Prompt.Name))
+		fmt.Fprintf(sb, "  uses prompt %q\n", a.Prompt.Name)
 	}
 	for _, skill := range a.Skills {
-		sb.WriteString(fmt.Sprintf("  uses skill %q\n", skill.Name))
+		fmt.Fprintf(sb, "  uses skill %q\n", skill.Name)
 	}
 	if a.Model != "" {
-		sb.WriteString(fmt.Sprintf("  model %q\n", a.Model))
+		fmt.Fprintf(sb, "  model %q\n", a.Model)
 	}
 	if a.Client != nil {
-		sb.WriteString(fmt.Sprintf("  connects to client %q\n", a.Client.Name))
+		fmt.Fprintf(sb, "  connects to client %q\n", a.Client.Name)
 	}
 	formatMetadata(sb, a.Metadata)
 	sb.WriteString("}\n")
 }
 
 func formatBinding(sb *strings.Builder, b *ast.Binding) {
-	sb.WriteString(fmt.Sprintf("binding %q", b.Name))
+	fmt.Fprintf(sb, "binding %q", b.Name)
 	if b.Adapter != "" {
-		sb.WriteString(fmt.Sprintf(" adapter %q", b.Adapter))
+		fmt.Fprintf(sb, " adapter %q", b.Adapter)
 	}
 	sb.WriteString(" {\n")
 	if b.Default {
@@ -139,23 +139,24 @@ func formatBinding(sb *strings.Builder, b *ast.Binding) {
 	}
 	keys := sortedKeys(b.Config)
 	for _, k := range keys {
-		sb.WriteString(fmt.Sprintf("  %s %q\n", k, b.Config[k]))
+		fmt.Fprintf(sb, "  %s %q\n", k, b.Config[k])
 	}
 	sb.WriteString("}\n")
 }
 
 func formatSecret(sb *strings.Builder, s *ast.Secret) {
-	sb.WriteString(fmt.Sprintf("secret %q {\n", s.Name))
-	if s.Source == "env" {
-		sb.WriteString(fmt.Sprintf("  env(%s)\n", s.Key))
-	} else if s.Source == "store" {
-		sb.WriteString(fmt.Sprintf("  store(%s)\n", s.Key))
+	fmt.Fprintf(sb, "secret %q {\n", s.Name)
+	switch s.Source {
+	case "env":
+		fmt.Fprintf(sb, "  env(%s)\n", s.Key)
+	case "store":
+		fmt.Fprintf(sb, "  store(%s)\n", s.Key)
 	}
 	sb.WriteString("}\n")
 }
 
 func formatEnvironment(sb *strings.Builder, e *ast.Environment) {
-	sb.WriteString(fmt.Sprintf("environment %q {\n", e.Name))
+	fmt.Fprintf(sb, "environment %q {\n", e.Name)
 	// Group overrides by resource
 	groups := make(map[string][]*ast.Override)
 	var order []string
@@ -168,12 +169,12 @@ func formatEnvironment(sb *strings.Builder, e *ast.Environment) {
 	for _, res := range order {
 		parts := strings.SplitN(res, "/", 2)
 		if len(parts) == 2 {
-			sb.WriteString(fmt.Sprintf("  %s %q {\n", parts[0], parts[1]))
+			fmt.Fprintf(sb, "  %s %q {\n", parts[0], parts[1])
 		} else {
-			sb.WriteString(fmt.Sprintf("  %s {\n", res))
+			fmt.Fprintf(sb, "  %s {\n", res)
 		}
 		for _, o := range groups[res] {
-			sb.WriteString(fmt.Sprintf("    %s %q\n", o.Attribute, o.Value))
+			fmt.Fprintf(sb, "    %s %q\n", o.Attribute, o.Value)
 		}
 		sb.WriteString("  }\n")
 	}
@@ -181,9 +182,9 @@ func formatEnvironment(sb *strings.Builder, e *ast.Environment) {
 }
 
 func formatPolicy(sb *strings.Builder, p *ast.Policy) {
-	sb.WriteString(fmt.Sprintf("policy %q {\n", p.Name))
+	fmt.Fprintf(sb, "policy %q {\n", p.Name)
 	for _, r := range p.Rules {
-		sb.WriteString(fmt.Sprintf("  %s %s", r.Action, r.Resource))
+		fmt.Fprintf(sb, "  %s %s", r.Action, r.Resource)
 		if r.Subject != "" {
 			sb.WriteString(" " + r.Subject)
 		}
@@ -193,20 +194,20 @@ func formatPolicy(sb *strings.Builder, p *ast.Policy) {
 }
 
 func formatPlugin(sb *strings.Builder, p *ast.Plugin) {
-	sb.WriteString(fmt.Sprintf("plugin %q", p.Name))
+	fmt.Fprintf(sb, "plugin %q", p.Name)
 	if p.Version != "" {
-		sb.WriteString(fmt.Sprintf(" version %q", p.Version))
+		fmt.Fprintf(sb, " version %q", p.Version)
 	}
 	sb.WriteString("\n")
 }
 
 func formatMCPServer(sb *strings.Builder, s *ast.MCPServer) {
-	sb.WriteString(fmt.Sprintf("server %q {\n", s.Name))
+	fmt.Fprintf(sb, "server %q {\n", s.Name)
 	if s.Transport != "" {
-		sb.WriteString(fmt.Sprintf("  transport %q\n", s.Transport))
+		fmt.Fprintf(sb, "  transport %q\n", s.Transport)
 	}
 	if s.Command != "" {
-		sb.WriteString(fmt.Sprintf("  command %q\n", s.Command))
+		fmt.Fprintf(sb, "  command %q\n", s.Command)
 	}
 	if len(s.Args) > 0 {
 		sb.WriteString("  args [")
@@ -214,24 +215,24 @@ func formatMCPServer(sb *strings.Builder, s *ast.MCPServer) {
 			if i > 0 {
 				sb.WriteString(", ")
 			}
-			sb.WriteString(fmt.Sprintf("%q", arg))
+			fmt.Fprintf(sb, "%q", arg)
 		}
 		sb.WriteString("]\n")
 	}
 	if s.URL != "" {
-		sb.WriteString(fmt.Sprintf("  url %q\n", s.URL))
+		fmt.Fprintf(sb, "  url %q\n", s.URL)
 	}
 	if s.Auth != nil {
-		sb.WriteString(fmt.Sprintf("  auth %q\n", s.Auth.Name))
+		fmt.Fprintf(sb, "  auth %q\n", s.Auth.Name)
 	}
 	for _, skill := range s.Skills {
-		sb.WriteString(fmt.Sprintf("  exposes skill %q\n", skill.Name))
+		fmt.Fprintf(sb, "  exposes skill %q\n", skill.Name)
 	}
 	if len(s.Env) > 0 {
 		sb.WriteString("  env {\n")
 		keys := sortedKeys(s.Env)
 		for _, k := range keys {
-			sb.WriteString(fmt.Sprintf("    %s %q\n", k, s.Env[k]))
+			fmt.Fprintf(sb, "    %s %q\n", k, s.Env[k])
 		}
 		sb.WriteString("  }\n")
 	}
@@ -240,18 +241,18 @@ func formatMCPServer(sb *strings.Builder, s *ast.MCPServer) {
 }
 
 func formatMCPClient(sb *strings.Builder, c *ast.MCPClient) {
-	sb.WriteString(fmt.Sprintf("client %q {\n", c.Name))
+	fmt.Fprintf(sb, "client %q {\n", c.Name)
 	for _, server := range c.Servers {
-		sb.WriteString(fmt.Sprintf("  connects to server %q\n", server.Name))
+		fmt.Fprintf(sb, "  connects to server %q\n", server.Name)
 	}
 	formatMetadata(sb, c.Metadata)
 	sb.WriteString("}\n")
 }
 
 func formatPluginRef(sb *strings.Builder, p *ast.PluginRef) {
-	sb.WriteString(fmt.Sprintf("plugin %q", p.Name))
+	fmt.Fprintf(sb, "plugin %q", p.Name)
 	if p.Version != "" {
-		sb.WriteString(fmt.Sprintf(" version %q", p.Version))
+		fmt.Fprintf(sb, " version %q", p.Version)
 	}
 	sb.WriteString("\n")
 }
@@ -263,7 +264,7 @@ func formatMetadata(sb *strings.Builder, m map[string]string) {
 	sb.WriteString("  metadata {\n")
 	keys := sortedKeys(m)
 	for _, k := range keys {
-		sb.WriteString(fmt.Sprintf("    %s %q\n", k, m[k]))
+		fmt.Fprintf(sb, "    %s %q\n", k, m[k])
 	}
 	sb.WriteString("  }\n")
 }
