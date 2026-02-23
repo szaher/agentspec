@@ -40,14 +40,21 @@ func newApplyCmd() *cobra.Command {
 				return err
 			}
 
+			adapterName := ""
 			binding, _ := plan.ResolveBinding(doc.Bindings, target)
-			if binding == nil {
-				return fmt.Errorf("no binding found (use --target to specify)")
+			if binding != nil {
+				adapterName = binding.Adapter
+			} else {
+				dt, _ := plan.ResolveDeployTarget(doc.DeployTargets, target)
+				if dt == nil {
+					return fmt.Errorf("no deploy target found (use --target to specify)")
+				}
+				adapterName = plan.DeployTargetAdapter(dt.Target)
 			}
 
-			factory, err := adapters.Get(binding.Adapter)
+			factory, err := adapters.Get(adapterName)
 			if err != nil {
-				return fmt.Errorf("adapter %q: %w", binding.Adapter, err)
+				return fmt.Errorf("adapter %q: %w", adapterName, err)
 			}
 			adapter := factory()
 
