@@ -1,33 +1,39 @@
 package "customer-support" version "0.1.0" lang "1.0"
 
-# A customer support agent with ticket lookup, knowledge base search,
-# and escalation capabilities across dev and prod environments.
-
 prompt "support" {
-  content "You are a customer support agent for Acme Corp.
-           Be empathetic, concise, and solution-oriented.
-           Always greet the customer by name when available.
-           If you cannot resolve an issue, escalate to a human agent."
+  content "You are a customer support agent for Acme Corp.\n           Be empathetic, concise, and solution-oriented.\n           Always greet the customer by name when available.\n           If you cannot resolve an issue, escalate to a human agent."
 }
 
 skill "lookup-ticket" {
   description "Look up a customer support ticket by ID"
-  input { ticket_id string required }
-  output { ticket string }
+  input {
+    ticket_id string required
+  }
+  output {
+    ticket string
+  }
   execution command "ticket-lookup"
 }
 
 skill "search-kb" {
   description "Search the knowledge base for relevant articles"
-  input { query string required }
-  output { articles string }
+  input {
+    query string required
+  }
+  output {
+    articles string
+  }
   execution command "kb-search"
 }
 
 skill "escalate" {
   description "Escalate the conversation to a human agent"
-  input { reason string required }
-  output { escalation_id string }
+  input {
+    reason string required
+  }
+  output {
+    escalation_id string
+  }
   execution command "escalate-tool"
 }
 
@@ -40,8 +46,7 @@ agent "support-bot" {
 }
 
 secret "api-key" {
-  store "env"
-  env "ACME_API_KEY"
+  env(ACME_API_KEY)
 }
 
 environment "dev" {

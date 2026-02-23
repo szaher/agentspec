@@ -1,52 +1,58 @@
 package "code-review" version "0.1.0" lang "1.0"
 
-# A code review pipeline with separate agents for static analysis,
-# security scanning, and review summarization. Demonstrates multiple
-# agents collaborating through MCP transport.
-
 prompt "analyzer" {
-  content "You are a code analysis expert. Identify code smells,
-           anti-patterns, and suggest improvements. Focus on
-           readability, maintainability, and performance."
+  content "You are a code analysis expert. Identify code smells,\n           anti-patterns, and suggest improvements. Focus on\n           readability, maintainability, and performance."
 }
 
 prompt "security-reviewer" {
-  content "You are a security expert. Scan code for vulnerabilities
-           including injection flaws, authentication issues, and
-           data exposure risks. Reference OWASP Top 10 where applicable."
+  content "You are a security expert. Scan code for vulnerabilities\n           including injection flaws, authentication issues, and\n           data exposure risks. Reference OWASP Top 10 where applicable."
 }
 
 prompt "summarizer" {
-  content "You are a review summarizer. Combine analysis and security
-           findings into a concise, actionable review. Prioritize
-           issues by severity: critical, high, medium, low."
+  content "You are a review summarizer. Combine analysis and security\n           findings into a concise, actionable review. Prioritize\n           issues by severity: critical, high, medium, low."
 }
 
 skill "read-diff" {
   description "Read a git diff or pull request"
-  input { pr_url string required }
-  output { diff string }
+  input {
+    pr_url string required
+  }
+  output {
+    diff string
+  }
   execution command "git-diff-reader"
 }
 
 skill "analyze-code" {
   description "Run static analysis on code"
-  input { code string required }
-  output { findings string }
+  input {
+    code string required
+  }
+  output {
+    findings string
+  }
   execution command "static-analyzer"
 }
 
 skill "scan-security" {
   description "Scan code for security vulnerabilities"
-  input { code string required }
-  output { vulnerabilities string }
+  input {
+    code string required
+  }
+  output {
+    vulnerabilities string
+  }
   execution command "security-scanner"
 }
 
 skill "post-review" {
   description "Post review comments to a pull request"
-  input { pr_url string required }
-  output { comment_id string }
+  input {
+    pr_url string required
+  }
+  output {
+    comment_id string
+  }
   execution command "pr-commenter"
 }
 
