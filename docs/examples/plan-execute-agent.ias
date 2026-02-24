@@ -1,0 +1,63 @@
+package "plan-execute" version "0.1.0" lang "2.0"
+
+prompt "planner" {
+  content "You are a planning assistant. Break complex tasks into\nstep-by-step plans. Each step should be actionable and\nverifiable. Output your plan as a numbered list before\nexecuting any steps."
+}
+
+skill "create-plan" {
+  description "Create a structured execution plan from a task description"
+  input {
+    task string required
+  }
+  output {
+    plan string
+  }
+  tool command {
+    binary "plan-tool"
+  }
+}
+
+skill "execute-step" {
+  description "Execute a single step from the plan"
+  input {
+    step string required
+  }
+  output {
+    result string
+  }
+  tool command {
+    binary "execute-tool"
+  }
+}
+
+skill "verify-result" {
+  description "Verify the result of an executed step"
+  input {
+    expected string required
+    actual string required
+  }
+  output {
+    verification string
+  }
+  tool command {
+    binary "verify-tool"
+  }
+}
+
+agent "planner" {
+  uses prompt "planner"
+  uses skill "create-plan"
+  uses skill "execute-step"
+  uses skill "verify-result"
+  model "claude-sonnet-4-20250514"
+  strategy "plan-and-execute"
+  max_turns 20
+  timeout "120s"
+  token_budget 300000
+  on_error "retry"
+  max_retries 2
+}
+
+deploy "local" target "process" {
+  default true
+}

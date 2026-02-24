@@ -1,0 +1,90 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'docs-tools/**'
+      - 'mkdocs.yml'
+      - 'integration_tests/docexample_test.go'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'docs-tools/**'
+      - 'mkdocs.yml'
+      - 'integration_tests/docexample_test.go'
+      - '.github/workflows/docs.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Build agentspec binary
+        run: go build -o agentspec ./cmd/agentspec
+
+      - name: Validate example .ias files
+        run: |
+          for f in docs/examples/*.ias; do
+            echo "Validating $f..."
+            ./agentspec validate "$f"
+          done
+
+      - name: Run doc example integration tests
+        run: go test ./integration_tests/ -run TestDoc -v -count=1
+
+  build:
+    name: Build Site
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r docs-tools/requirements.txt
+          pip install -e docs-tools/pygments_intentlang/
+
+      - name: Build site
+        run: mkdocs build
+
+      - name: Upload artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

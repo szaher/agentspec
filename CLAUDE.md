@@ -7,6 +7,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-23
 - YAML (GitHub Actions workflow syntax) + GitHub Actions, actions/checkout, actions/setup-go, golangci/golangci-lint-action (002-ci-pipeline)
 - Go 1.25+ (existing) (004-runtime-platform)
 - Local JSON state file (existing `.agentspec.state.json`). In-memory session store (new, default). Redis session store (new, opt-in). (004-runtime-platform)
+- Python 3.9+ (MkDocs), Go 1.25+ (example validation), Markdown (content) (005-docs-site)
+- N/A (static site, no database) (005-docs-site)
 
 ## Project Structure
 
@@ -41,9 +43,9 @@ Go 1.25+: Follow standard conventions
 - Go module path: `github.com/szaher/designs/agentz` (unchanged)
 
 ## Recent Changes
+- 005-docs-site: Added Python 3.9+ (MkDocs), Go 1.25+ (example validation), Markdown (content)
 - 004-runtime-platform: Added Go 1.25+ (existing)
 - 003-intentlang-rename: Renamed language to IntentLang, file extension `.az` → `.ias`, binary `agentz` → `agentspec`
-- 002-ci-pipeline: Added GitHub Actions CI workflow
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

@@ -1,0 +1,64 @@
+package "reflexion" version "0.1.0" lang "2.0"
+
+prompt "writer" {
+  content "You are a writing assistant that produces high-quality text.\nAfter each draft, reflect on your work: identify weaknesses,\nmissing information, and areas for improvement. Then revise\nyour output based on your self-critique."
+}
+
+skill "draft" {
+  description "Generate an initial draft of text"
+  input {
+    topic string required
+    requirements string required
+  }
+  output {
+    draft string
+  }
+  tool command {
+    binary "draft-tool"
+  }
+}
+
+skill "critique" {
+  description "Critically evaluate a piece of text"
+  input {
+    text string required
+  }
+  output {
+    feedback string
+  }
+  tool command {
+    binary "critique-tool"
+  }
+}
+
+skill "revise" {
+  description "Revise text based on feedback"
+  input {
+    text string required
+    feedback string required
+  }
+  output {
+    revised string
+  }
+  tool command {
+    binary "revise-tool"
+  }
+}
+
+agent "reflective-writer" {
+  uses prompt "writer"
+  uses skill "draft"
+  uses skill "critique"
+  uses skill "revise"
+  model "claude-sonnet-4-20250514"
+  strategy "reflexion"
+  max_turns 10
+  timeout "90s"
+  token_budget 250000
+  on_error "retry"
+  max_retries 2
+}
+
+deploy "local" target "process" {
+  default true
+}

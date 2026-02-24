@@ -1,0 +1,97 @@
+package "delegation" version "0.1.0" lang "2.0"
+
+prompt "manager" {
+  content "You are a project manager agent. Break down complex tasks\nand delegate them to specialist agents. Monitor progress\nand coordinate between agents to ensure quality results."
+}
+
+prompt "researcher" {
+  content "You are a research specialist. Gather information from\navailable sources and produce thorough, well-cited reports."
+}
+
+prompt "writer" {
+  content "You are a writing specialist. Produce clear, well-structured\ndocuments based on research findings and requirements."
+}
+
+prompt "reviewer" {
+  content "You are a quality reviewer. Check documents for accuracy,\ncompleteness, and clarity. Provide specific, actionable\nfeedback."
+}
+
+skill "search" {
+  description "Search for information on a topic"
+  input {
+    topic string required
+  }
+  output {
+    findings string
+  }
+  tool command {
+    binary "search-tool"
+  }
+}
+
+skill "write-doc" {
+  description "Write a document section"
+  input {
+    topic string required
+    findings string required
+  }
+  output {
+    document string
+  }
+  tool command {
+    binary "write-tool"
+  }
+}
+
+skill "review-doc" {
+  description "Review a document for quality"
+  input {
+    document string required
+  }
+  output {
+    feedback string
+  }
+  tool command {
+    binary "review-tool"
+  }
+}
+
+agent "research-agent" {
+  uses prompt "researcher"
+  uses skill "search"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 10
+}
+
+agent "writing-agent" {
+  uses prompt "writer"
+  uses skill "write-doc"
+  model "claude-sonnet-4-20250514"
+  max_turns 5
+}
+
+agent "review-agent" {
+  uses prompt "reviewer"
+  uses skill "review-doc"
+  model "claude-sonnet-4-20250514"
+  max_turns 5
+}
+
+agent "project-manager" {
+  uses prompt "manager"
+  model "claude-sonnet-4-20250514"
+  delegate to agent "research-agent" when "research is needed"
+  delegate to agent "writing-agent" when "writing is needed"
+  delegate to agent "review-agent" when "review is needed"
+}
+
+deploy "local" target "process" {
+  default true
+  port 8080
+}
+
+deploy "production" target "kubernetes" {
+  namespace "agents"
+  replicas 2
+}
