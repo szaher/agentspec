@@ -12,5 +12,5 @@ setup(
             "intentlang = pygments_intentlang.lexer:IntentLangLexer",
         ],
     },
-    install_requires=["Pygments>=2.18.0"],
+    install_requires=["Pygments>=2.16.0"],
 )
