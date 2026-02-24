@@ -1,0 +1,7 @@
+# AgentSpec Documentation Dependencies
+# Pin all versions for reproducible builds (Constitution V)
+
+mkdocs-material==9.5.18
+pymdown-extensions==10.8.1
+mkdocs==1.5.3
+Pygments==2.18.0

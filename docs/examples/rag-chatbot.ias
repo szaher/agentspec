@@ -1,0 +1,75 @@
+package "rag-chatbot" version "0.1.0" lang "2.0"
+
+prompt "rag" {
+  content "You are a knowledge assistant. Answer questions using only\nthe retrieved context. Always cite your sources with\n[Source: document_name] notation. If the context does not\ncontain enough information, say so honestly rather than\nguessing."
+}
+
+skill "embed-query" {
+  description "Generate an embedding vector for a search query"
+  input {
+    query string required
+  }
+  output {
+    vector string
+  }
+  tool command {
+    binary "embed-tool"
+  }
+}
+
+skill "vector-search" {
+  description "Search the vector store for similar documents"
+  input {
+    vector string required
+  }
+  output {
+    documents string
+  }
+  tool command {
+    binary "vector-search-tool"
+  }
+}
+
+skill "rerank" {
+  description "Rerank retrieved documents by relevance to the query"
+  input {
+    query string required
+  }
+  output {
+    ranked string
+  }
+  tool command {
+    binary "rerank-tool"
+  }
+}
+
+agent "rag-bot" {
+  uses prompt "rag"
+  uses skill "embed-query"
+  uses skill "vector-search"
+  uses skill "rerank"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 5
+  timeout "30s"
+}
+
+server "rag-server" {
+  transport "stdio"
+  command "rag-mcp-server"
+  exposes skill "embed-query"
+  exposes skill "vector-search"
+  exposes skill "rerank"
+}
+
+client "rag-client" {
+  connects to server "rag-server"
+}
+
+secret "vector-db-key" {
+  env(VECTOR_DB_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}

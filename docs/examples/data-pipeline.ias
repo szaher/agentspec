@@ -1,0 +1,121 @@
+package "data-pipeline" version "0.1.0" lang "2.0"
+
+prompt "etl" {
+  content "You are a data engineering assistant. Help users extract\ndata from sources, transform it according to rules, and\nload it into target systems. Always validate data quality\nbefore loading."
+}
+
+skill "extract" {
+  description "Extract data from a source system"
+  input {
+    source string required
+  }
+  output {
+    raw_data string
+  }
+  tool command {
+    binary "data-extract"
+  }
+}
+
+skill "transform" {
+  description "Transform data according to mapping rules"
+  input {
+    data string required
+  }
+  output {
+    transformed string
+  }
+  tool command {
+    binary "data-transform"
+  }
+}
+
+skill "validate-data" {
+  description "Run data quality checks"
+  input {
+    data string required
+  }
+  output {
+    report string
+  }
+  tool command {
+    binary "data-validate"
+  }
+}
+
+skill "load" {
+  description "Load data into the target database"
+  input {
+    data string required
+  }
+  output {
+    rows_inserted string
+  }
+  tool command {
+    binary "data-load"
+  }
+}
+
+agent "etl-bot" {
+  uses prompt "etl"
+  uses skill "extract"
+  uses skill "transform"
+  uses skill "validate-data"
+  uses skill "load"
+  model "claude-sonnet-4-20250514"
+}
+
+pipeline "etl-pipeline" {
+  step "extract" {
+    agent "etl-bot"
+    input "data source configuration"
+    output "raw data"
+  }
+  step "transform" {
+    agent "etl-bot"
+    depends_on ["extract"]
+    output "transformed data"
+  }
+  step "validate" {
+    agent "etl-bot"
+    depends_on ["transform"]
+    output "validation report"
+  }
+  step "load" {
+    agent "etl-bot"
+    depends_on ["validate"]
+    output "load confirmation"
+  }
+}
+
+secret "db-connection" {
+  env(DATABASE_URL)
+}
+
+secret "source-api-key" {
+  env(SOURCE_API_KEY)
+}
+
+policy "production-safety" {
+  deny model claude-haiku-latest
+  require secret db-connection
+}
+
+environment "dev" {
+  agent "etl-bot" {
+    model "claude-haiku-latest"
+  }
+}
+
+environment "prod" {
+  agent "etl-bot" {
+    model "claude-sonnet-4-20250514"
+  }
+}
+
+deploy "local" target "process" {
+  default true
+}
+
+deploy "compose" target "docker-compose" {
+}

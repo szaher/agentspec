@@ -1,0 +1,39 @@
+package "basic-agent" version "0.1.0" lang "2.0"
+
+prompt "system" {
+  content "You are a helpful assistant. Answer questions clearly and concisely."
+}
+
+skill "greet" {
+  description "Greet the user by name"
+  input {
+    name string required
+  }
+  output {
+    message string
+  }
+  tool command {
+    binary "greet-tool"
+  }
+}
+
+agent "assistant" {
+  uses prompt "system"
+  uses skill "greet"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 10
+  timeout "30s"
+  token_budget 100000
+  stream true
+  on_error "retry"
+  max_retries 2
+}
+
+deploy "local" target "process" {
+  default true
+  port 8080
+  health {
+    path "/healthz"
+  }
+}
