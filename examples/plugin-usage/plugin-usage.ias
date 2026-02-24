@@ -1,4 +1,4 @@
-package "plugin-demo" version "0.1.0" lang "1.0"
+package "plugin-demo" version "0.1.0" lang "2.0"
 
 plugin "monitor" version "1.0.0"
 
@@ -14,7 +14,9 @@ skill "check-health" {
   output {
     status string
   }
-  execution command "health-check"
+  tool command {
+    binary "health-check"
+  }
 }
 
 agent "ops-bot" {
@@ -23,6 +25,6 @@ agent "ops-bot" {
   model "claude-sonnet-4-20250514"
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }

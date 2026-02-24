@@ -121,6 +121,49 @@ func ResolveBinding(bindings []ir.Binding, targetName string) (*ir.Binding, erro
 	return nil, nil
 }
 
+// ResolveDeployTarget finds the target deploy configuration from IR, handling defaults.
+// If targetName is empty, uses the default or sole deploy target.
+func ResolveDeployTarget(targets []ir.DeployTarget, targetName string) (*ir.DeployTarget, error) {
+	if len(targets) == 0 {
+		return nil, nil
+	}
+
+	if targetName != "" {
+		for i := range targets {
+			if targets[i].Name == targetName {
+				return &targets[i], nil
+			}
+		}
+		return nil, nil
+	}
+
+	// Find explicit default
+	for i := range targets {
+		if targets[i].Default {
+			return &targets[i], nil
+		}
+	}
+
+	// Sole target is implicitly default
+	if len(targets) == 1 {
+		return &targets[0], nil
+	}
+
+	return nil, nil
+}
+
+// DeployTargetAdapter maps a deploy target type to the corresponding adapter name.
+func DeployTargetAdapter(target string) string {
+	switch target {
+	case "process":
+		return "local-mcp"
+	case "docker-compose":
+		return "docker-compose"
+	default:
+		return target
+	}
+}
+
 func copyResource(r ir.Resource) *ir.Resource {
 	copy := r
 	return &copy

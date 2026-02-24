@@ -1,4 +1,4 @@
-package "data-pipeline" version "0.1.0" lang "1.0"
+package "data-pipeline" version "0.1.0" lang "2.0"
 
 prompt "etl" {
   content "You are a data engineering assistant. Help users extract\n           data from sources, transform it according to rules, and\n           load it into target systems. Always validate data quality\n           before loading."
@@ -12,7 +12,9 @@ skill "extract" {
   output {
     raw_data string
   }
-  execution command "data-extract"
+  tool command {
+    binary "data-extract"
+  }
 }
 
 skill "transform" {
@@ -23,7 +25,9 @@ skill "transform" {
   output {
     transformed string
   }
-  execution command "data-transform"
+  tool command {
+    binary "data-transform"
+  }
 }
 
 skill "load" {
@@ -34,7 +38,9 @@ skill "load" {
   output {
     rows_inserted string
   }
-  execution command "data-load"
+  tool command {
+    binary "data-load"
+  }
 }
 
 skill "validate" {
@@ -45,7 +51,9 @@ skill "validate" {
   output {
     report string
   }
-  execution command "data-validate"
+  tool command {
+    binary "data-validate"
+  }
 }
 
 agent "etl-bot" {
@@ -88,10 +96,9 @@ environment "prod" {
   }
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }
 
-binding "compose" adapter "docker-compose" {
-  output_dir "./pipeline-deploy"
+deploy "compose" target "docker-compose" {
 }

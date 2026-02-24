@@ -1,4 +1,4 @@
-package "multi-bind" version "0.1.0" lang "1.0"
+package "multi-bind" version "0.1.0" lang "2.0"
 
 prompt "system" {
   content "You are a deployable assistant."
@@ -12,7 +12,9 @@ skill "query" {
   output {
     data string
   }
-  execution command "query-tool"
+  tool command {
+    binary "query-tool"
+  }
 }
 
 agent "data-bot" {
@@ -21,10 +23,9 @@ agent "data-bot" {
   model "claude-sonnet-4-20250514"
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }
 
-binding "compose" adapter "docker-compose" {
-  output_dir "./compose-deploy"
+deploy "compose" target "docker-compose" {
 }

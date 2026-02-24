@@ -1,35 +1,35 @@
 # Multi-Binding
 
-Deploy the same AgentSpec to multiple platforms simultaneously using different adapter bindings.
+Deploy the same AgentSpec to multiple platforms simultaneously using different deploy targets.
 
 ## What This Demonstrates
 
-- **Multiple bindings** targeting different adapters from one AgentSpec
-- **Default binding** selection for `plan` and `apply` without `--target`
-- **Adapter-specific artifacts** produced by `export`
+- **Multiple deploy targets** targeting different targets from one AgentSpec
+- **Default deploy target** selection for `plan` and `apply` without `--target`
+- **Target-specific artifacts** produced by `export`
 - **Write once, deploy anywhere** workflow
 
 ## AgentSpec Structure
 
-### Default Binding
+### Default Deploy Target
 
 ```
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }
 ```
 
-The `local-mcp` adapter is marked as default. Commands like `agentspec plan` and `agentspec apply` use this binding when no `--target` flag is specified.
+The `process` target is marked as default. Commands like `agentspec plan` and `agentspec apply` use this deploy target when no `--target` flag is specified.
 
-### Additional Binding
+### Additional Deploy Target
 
 ```
-binding "compose" adapter "docker-compose" {
+deploy "compose" target "docker-compose" {
   output_dir "./compose-deploy"
 }
 ```
 
-The `docker-compose` adapter produces container deployment artifacts. The `output_dir` configures where exported files are written.
+The `docker-compose` target produces container deployment artifacts. The `output_dir` configures where exported files are written.
 
 ## How to Run
 
@@ -37,19 +37,19 @@ The `docker-compose` adapter produces container deployment artifacts. The `outpu
 # Validate
 ./agentspec validate examples/multi-binding.ias
 
-# Plan for default binding (local-mcp)
+# Plan for default deploy target (process)
 ./agentspec plan examples/multi-binding.ias
 
-# Plan for docker-compose binding
+# Plan for docker-compose deploy target
 ./agentspec plan examples/multi-binding.ias --target compose
 
 # Apply to default
 ./agentspec apply examples/multi-binding.ias --auto-approve
 
-# Export to local-mcp
+# Export to process target
 ./agentspec export examples/multi-binding.ias --out-dir ./local-output
 
-# Export to docker-compose
+# Export to docker-compose target
 ./agentspec export examples/multi-binding.ias --target compose --out-dir ./compose-output
 ```
 
@@ -61,9 +61,9 @@ The `docker-compose` adapter produces container deployment artifacts. The `outpu
 | Skill | query | Data query capability |
 | Agent | data-bot | Agent using the query skill |
 
-## Exported Artifacts by Adapter
+## Exported Artifacts by Target
 
-### local-mcp
+### process
 
 ```
 local-output/
@@ -81,14 +81,14 @@ compose-output/
   .env                 # Environment variables template
 ```
 
-## How Binding Resolution Works
+## How Deploy Target Resolution Works
 
 1. `agentspec plan` checks for a `--target` flag
-2. If no target is specified, it looks for a binding with `default true`
-3. If exactly one binding exists and none is marked default, it uses that one implicitly
-4. If multiple bindings exist with no default and no `--target`, the tool reports an error
+2. If no target is specified, it looks for a deploy target with `default true`
+3. If exactly one deploy target exists and none is marked default, it uses that one implicitly
+4. If multiple deploy targets exist with no default and no `--target`, the tool reports an error
 
 ## Next Steps
 
-- Add environment overlays to multi-binding: see [customer-support](../customer-support/)
+- Add environment overlays to multi-deploy-target: see [customer-support](../customer-support/)
 - Deploy a multi-agent pipeline to CI: see [code-review-pipeline](../code-review-pipeline/)

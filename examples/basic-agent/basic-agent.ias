@@ -1,4 +1,4 @@
-package "basic-agent" version "0.1.0" lang "1.0"
+package "basic-agent" version "0.1.0" lang "2.0"
 
 prompt "system" {
   content "You are a helpful assistant."
@@ -7,8 +7,18 @@ prompt "system" {
 agent "helper" {
   uses prompt "system"
   model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 10
+  timeout "30s"
+  token_budget 100000
+  stream true
+  on_error "retry"
+  max_retries 2
 }
 
-binding "local" adapter "local-mcp" {
-  default true
+deploy "local" target "process" {
+  port 8080
+  health {
+    path "/healthz"
+  }
 }

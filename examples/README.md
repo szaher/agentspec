@@ -7,28 +7,28 @@ This directory contains example `.ias` AgentSpec files demonstrating the feature
 Build the `agentspec` CLI from the repository root:
 
 ```bash
-go build -o agentspec ./cmd/agentz
+go build -o agentspec ./cmd/agentspec
 ```
 
 Verify the build:
 
 ```bash
 ./agentspec version
-# agentspec version 0.1.0 (lang 1.0, ir 1.0)
+# agentspec version 0.1.0 (lang 2.0, ir 1.0)
 ```
 
 ## Examples
 
 | Example | File | Key Concepts |
 |---------|------|--------------|
-| [Basic Agent](basic-agent/) | `basic-agent.ias` | Minimal AgentSpec, prompt, binding |
+| [Basic Agent](basic-agent/) | `basic-agent.ias` | Minimal AgentSpec, prompt, deploy target |
 | [Multi-Skill Agent](multi-skill-agent/) | `multi-skill-agent.ias` | Multiple skills with input/output schemas |
 | [MCP Server/Client](mcp-server-client/) | `mcp-server-client.ias` | MCP transport, server/client connectivity |
 | [Multi-Environment](multi-environment/) | `multi-environment.ias` | Environment overlays (dev/prod) |
 | [Plugin Usage](plugin-usage/) | `plugin-usage.ias` | WASM plugin references |
-| [Multi-Binding](multi-binding/) | `multi-binding.ias` | Deploying to multiple adapters |
+| [Multi-Binding](multi-binding/) | `multi-binding.ias` | Deploying to multiple targets |
 | [Customer Support](customer-support/) | `customer-support.ias` | Secrets, environments, multi-skill agent |
-| [Code Review Pipeline](code-review-pipeline/) | `code-review-pipeline.ias` | Multi-agent collaboration, MCP, dual bindings |
+| [Code Review Pipeline](code-review-pipeline/) | `code-review-pipeline.ias` | Multi-agent collaboration, MCP, dual deploy targets |
 | [Data Pipeline](data-pipeline/) | `data-pipeline.ias` | Policies, secrets, three environments |
 | [RAG Chatbot](rag-chatbot/) | `rag-chatbot.ias` | Vector search, MCP transport, secrets |
 
@@ -79,9 +79,9 @@ For examples with multiple bindings, use the `--target` flag:
 
 ## Important Notes
 
-- **State file**: Each `apply` writes to `.agentz.state.json` in the current directory. Use `--state-file` to specify a different location if running multiple examples.
-- **Adapters**: The `local-mcp` adapter produces JSON manifests (agents, servers, clients). The `docker-compose` adapter produces `docker-compose.yml` and supporting config files.
+- **State file**: Each `apply` writes to `.agentspec.state.json` in the current directory. Use `--state-file` to specify a different location if running multiple examples.
+- **Deploy targets**: The `process` target produces JSON manifests (agents, servers, clients). The `docker-compose` target produces `docker-compose.yml` and supporting config files.
 - **Secrets**: Examples that declare `secret` blocks expect environment variables to be set. The tool validates that secrets are referenced correctly but does not read their values at plan/apply time.
-- **Plugins**: The `plugin-usage` example references a WASM plugin. The plugin manifest must be present in `./plugins/` or `~/.agentz/plugins/` for full plugin functionality.
+- **Plugins**: The `plugin-usage` example references a WASM plugin. The plugin manifest must be present in `./plugins/` or `~/.agentspec/plugins/` for full plugin functionality.
 - **Determinism**: All outputs (IR, plan, export artifacts) are deterministic. Running the same command twice produces byte-identical results.
-- **Cleanup**: To reset state and start fresh, delete `.agentz.state.json` from the working directory.
+- **Cleanup**: To reset state and start fresh, delete `.agentspec.state.json` from the working directory.

@@ -4,12 +4,13 @@ package local
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/szaher/designs/agentz/internal/adapters"
 	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/state"
 )
 
 func init() {
@@ -27,12 +28,6 @@ func (a *Adapter) Name() string { return "local-mcp" }
 // Validate checks whether resources are compatible with local MCP.
 func (a *Adapter) Validate(_ context.Context, resources []ir.Resource) error {
 	return nil
-}
-
-// Plan computes changes needed.
-func (a *Adapter) Plan(_ context.Context, desired []ir.Resource, current []state.Entry) ([]adapters.Action, error) {
-	// Delegate to the shared plan engine
-	return nil, nil
 }
 
 // Apply executes the planned actions.
@@ -78,6 +73,22 @@ func (a *Adapter) Export(_ context.Context, resources []ir.Resource, outDir stri
 	}
 
 	return nil
+}
+
+// Status returns an empty status list for the local-mcp adapter.
+func (a *Adapter) Status(_ context.Context) ([]adapters.ResourceStatus, error) {
+	return nil, nil
+}
+
+// Logs is not supported for the local-mcp adapter.
+func (a *Adapter) Logs(_ context.Context, w io.Writer, _ adapters.LogOptions) error {
+	_, err := fmt.Fprintln(w, "Log streaming is not supported for local-mcp adapter.")
+	return err
+}
+
+// Destroy is a no-op for the local-mcp adapter.
+func (a *Adapter) Destroy(_ context.Context) ([]adapters.Result, error) {
+	return nil, nil
 }
 
 func writeJSON(path string, v interface{}) error {

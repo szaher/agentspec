@@ -1,0 +1,32 @@
+package "prompt-vars" version "1.0.0" lang "2.0"
+
+prompt "greeting" {
+  content "Hello {{name}}, you are a {{role}}."
+  variables {
+    name string required
+    role string required default "assistant"
+  }
+}
+
+skill "respond" {
+  description "Generate a response"
+  input {
+    message string required
+  }
+  output {
+    reply string
+  }
+  tool command {
+    binary "respond-tool"
+  }
+}
+
+agent "greeter" {
+  uses prompt "greeting"
+  uses skill "respond"
+  model "claude-sonnet-4-20250514"
+}
+
+deploy "local" target "process" {
+  default true
+}

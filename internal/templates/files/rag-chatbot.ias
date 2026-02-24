@@ -1,0 +1,46 @@
+package "{{.PackageName}}"
+
+prompt "rag-system" {
+  content = """
+    You are an intelligent chatbot that answers questions using a knowledge base.
+    Always search the document store before answering. If you cannot find
+    relevant information, say so honestly rather than making up answers.
+    Cite your sources when possible.
+  """
+}
+
+skill "search-documents" {
+  description = "Search the document store for relevant passages"
+  tool http {
+    method = "POST"
+    url = "http://localhost:9200/documents/_search"
+  }
+}
+
+skill "embed-query" {
+  description = "Generate an embedding vector for a search query"
+  tool http {
+    method = "POST"
+    url = "http://localhost:8000/embed"
+  }
+}
+
+agent "rag-bot" {
+  model = "claude-sonnet-4-20250514"
+  uses prompt "rag-system"
+  uses skill "search-documents"
+  uses skill "embed-query"
+
+  strategy = "react"
+  max_turns = 5
+  temperature = 0.2
+  stream = true
+  memory {
+    strategy = "sliding_window"
+    max_messages = 20
+  }
+}
+
+deploy "local" target "process" {
+  port = 8080
+}

@@ -1,4 +1,4 @@
-package "mcp-example" version "0.1.0" lang "1.0"
+package "mcp-example" version "0.1.0" lang "2.0"
 
 prompt "assistant" {
   content "You are an assistant connected to MCP servers."
@@ -12,7 +12,9 @@ skill "file-read" {
   output {
     content string
   }
-  execution command "file-reader"
+  tool command {
+    binary "file-reader"
+  }
 }
 
 server "file-server" {
@@ -32,6 +34,6 @@ agent "file-assistant" {
   connects to client "my-client"
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }

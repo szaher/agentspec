@@ -77,7 +77,7 @@ The agent uses skills and connects to clients. This creates a dependency chain: 
 
 ## Exported Artifacts
 
-When exported via the `local-mcp` adapter, this produces:
+When exported via the `process` target, this produces:
 - `mcp-servers.json` — server transport and skill mappings
 - `mcp-clients.json` — client-to-server connection config
 - `agents.json` — agent definitions with resolved references

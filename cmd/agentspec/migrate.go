@@ -7,19 +7,34 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/szaher/designs/agentz/internal/formatter"
+	"github.com/szaher/designs/agentz/internal/migrate"
+	"github.com/szaher/designs/agentz/internal/parser"
 )
 
 func newMigrateCmd() *cobra.Command {
+	var toV2 bool
+
 	cmd := &cobra.Command{
 		Use:   "migrate [path]",
-		Short: "Migrate .az files to .ias and detect version mismatches",
-		Long: `Migrate renames all .az files to .ias in the given directory (default: current directory)
-and its subdirectories. It also updates internal references if .az appears in file content.
+		Short: "Migrate .az files to .ias or IntentLang 1.0 to 2.0",
+		Long: `Migrate performs file and language version migrations:
 
-If both foo.az and foo.ias exist, that file is skipped and an error is reported.
-
-After renaming, the command checks for language version mismatches and emits guidance.`,
+Without flags: renames all .az files to .ias in the given directory.
+With --to-v2: rewrites IntentLang 1.0 files to 2.0 syntax.
+  - Replaces 'execution command "..."' with 'tool command { binary "..." }'
+  - Replaces 'binding "name" adapter "..."' with 'deploy "name" target "..."'
+  - Sets lang "2.0" in the package header`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if toV2 {
+				files, err := resolveFiles(args)
+				if err != nil {
+					return err
+				}
+				return migrateToV2(files)
+			}
+
 			dir := "."
 			if len(args) > 0 {
 				dir = args[0]
@@ -43,11 +58,54 @@ After renaming, the command checks for language version mismatches and emits gui
 		},
 	}
 
+	cmd.Flags().BoolVar(&toV2, "to-v2", false, "Migrate IntentLang 1.0 files to 2.0 syntax")
+
 	return cmd
 }
 
+// migrateToV2 rewrites .ias files from IntentLang 1.0 to 2.0.
+func migrateToV2(files []string) error {
+	migrated := 0
+	for _, file := range files {
+		content, err := os.ReadFile(file)
+		if err != nil {
+			return fmt.Errorf("reading %s: %w", file, err)
+		}
+
+		f, errs := parser.Parse(string(content), file)
+		if len(errs) > 0 {
+			fmt.Fprintf(os.Stderr, "Warning: %s has parse errors, skipping\n", file)
+			continue
+		}
+
+		if f.Package != nil && f.Package.LangVersion == "2.0" {
+			fmt.Printf("  %s: already 2.0, skipping\n", file)
+			continue
+		}
+
+		// Apply migration
+		f = migrate.ToV2(f)
+
+		// Format and write back
+		output := formatter.Format(f)
+		if err := os.WriteFile(file, []byte(output), 0644); err != nil {
+			return fmt.Errorf("writing %s: %w", file, err)
+		}
+
+		fmt.Printf("  Migrated: %s → IntentLang 2.0\n", filepath.Base(file))
+		migrated++
+	}
+
+	if migrated > 0 {
+		fmt.Printf("\n%d file(s) migrated to IntentLang 2.0.\n", migrated)
+	} else {
+		fmt.Println("No files needed migration to 2.0.")
+	}
+
+	return nil
+}
+
 // migrateAZToIAS walks the directory tree and renames .az files to .ias.
-// Returns count of renamed files, skipped files (conflicts), and any error.
 func migrateAZToIAS(root string) (renamed, skipped int, err error) {
 	err = filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
@@ -63,7 +121,6 @@ func migrateAZToIAS(root string) (renamed, skipped int, err error) {
 		base := strings.TrimSuffix(path, ".az")
 		iasPath := base + ".ias"
 
-		// Check for conflict
 		if _, statErr := os.Stat(iasPath); statErr == nil {
 			fmt.Fprintf(os.Stderr, "Conflict: both '%s' and '%s' exist — skipping.\n",
 				filepath.Base(path), filepath.Base(iasPath))
@@ -71,7 +128,6 @@ func migrateAZToIAS(root string) (renamed, skipped int, err error) {
 			return nil
 		}
 
-		// Update internal references in file content
 		content, readErr := os.ReadFile(path)
 		if readErr != nil {
 			return fmt.Errorf("reading %s: %w", path, readErr)
@@ -84,7 +140,6 @@ func migrateAZToIAS(root string) (renamed, skipped int, err error) {
 			}
 		}
 
-		// Rename file
 		if renameErr := os.Rename(path, iasPath); renameErr != nil {
 			return fmt.Errorf("renaming %s: %w", path, renameErr)
 		}

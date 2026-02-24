@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/cli"
 	"github.com/szaher/designs/agentz/internal/ir"
 	"github.com/szaher/designs/agentz/internal/parser"
 	"github.com/szaher/designs/agentz/internal/plan"
@@ -24,15 +23,9 @@ func newPlanCmd() *cobra.Command {
 		Use:   "plan",
 		Short: "Show what changes would be made without applying",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			files, err := resolveAZFiles(args)
+			files, err := resolveFiles(args)
 			if err != nil {
 				return err
-			}
-
-			for _, file := range files {
-				if err := cli.CheckExtensionDeprecation(file); err != nil {
-					return err
-				}
 			}
 
 			doc, err := parseAndLower(files)
@@ -92,7 +85,7 @@ func newPlanCmd() *cobra.Command {
 // parseAndLower parses all IntentLang (.ias) files and produces a single IR document.
 func parseAndLower(files []string) (*ir.Document, error) {
 	if len(files) == 0 {
-		files, _ = resolveAZFiles(nil)
+		files, _ = resolveFiles(nil)
 	}
 
 	// For MVP, parse first file only (single-file packages)

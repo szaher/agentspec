@@ -1,0 +1,80 @@
+package "test-tools" version "1.0.0" lang "2.0"
+
+prompt "system" {
+  content "You are a tool-using agent."
+}
+
+server "search-server" {
+  transport "stdio"
+  command "npx"
+  args ["-y", "@modelcontextprotocol/server-brave-search"]
+}
+
+skill "mcp-search" {
+  description "Search via MCP"
+  input {
+    query string required
+  }
+  output {
+    results string
+  }
+  tool mcp "search-server/search"
+}
+
+skill "http-api" {
+  description "Call HTTP API"
+  input {
+    url string required
+  }
+  output {
+    body string
+  }
+  tool http {
+    method "GET"
+    url "https://api.example.com/data"
+  }
+}
+
+skill "run-cmd" {
+  description "Run a command"
+  input {
+    args string required
+  }
+  output {
+    stdout string
+  }
+  tool command {
+    binary "echo"
+    args ["hello"]
+    timeout "10s"
+  }
+}
+
+skill "inline-code" {
+  description "Run inline code"
+  input {
+    data string required
+  }
+  output {
+    result string
+  }
+  tool inline {
+    language "python"
+    code "print('hello')"
+    timeout "5s"
+  }
+}
+
+agent "tool-tester" {
+  uses prompt "system"
+  uses skill "mcp-search"
+  uses skill "http-api"
+  uses skill "run-cmd"
+  uses skill "inline-code"
+  model "claude-sonnet-4-20250514"
+}
+
+deploy "local" target "process" {
+  port 9090
+  default true
+}

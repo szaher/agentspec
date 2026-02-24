@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/szaher/designs/agentz/internal/ast"
@@ -107,6 +108,11 @@ func (p *Parser) parsePackage() *ast.Package {
 		}
 	}
 
+	if pkg.LangVersion == "1.0" {
+		p.addError("IntentLang 1.0 is no longer supported",
+			"run 'agentspec migrate --to-v2' to upgrade to IntentLang 2.0")
+	}
+
 	pkg.EndPos = p.currentPos()
 	return pkg
 }
@@ -126,6 +132,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseAgent()
 	case p.check(TokenBinding):
 		return p.parseBinding()
+	case p.check(TokenDeploy):
+		return p.parseDeployTarget()
 	case p.check(TokenSecret):
 		return p.parseSecret()
 	case p.check(TokenEnvironment):
@@ -138,6 +146,10 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseMCPServer()
 	case p.check(TokenClient):
 		return p.parseMCPClient()
+	case p.check(TokenPipeline):
+		return p.parsePipeline()
+	case p.check(TokenTypeKw):
+		return p.parseTypeDef()
 	case p.check(TokenImport):
 		return p.parseImportAsStmt()
 	default:
@@ -175,6 +187,9 @@ func (p *Parser) parsePrompt() *ast.Prompt {
 		case p.check(TokenVersion):
 			p.advance()
 			prompt.Version = p.expectString("version")
+		case p.check(TokenVariables):
+			p.advance()
+			prompt.Variables = p.parseVariablesBlock()
 		case p.check(TokenMetadata):
 			p.advance()
 			p.parseMetadataBlock(prompt.Metadata)
@@ -222,6 +237,9 @@ func (p *Parser) parseSkill() *ast.Skill {
 		case p.check(TokenExecution):
 			p.advance()
 			skill.Execution = p.parseExecution()
+		case p.check(TokenTool):
+			p.advance()
+			skill.ToolConfig = p.parseToolConfig()
 		case p.check(TokenMetadata):
 			p.advance()
 			p.parseMetadataBlock(skill.Metadata)
@@ -299,6 +317,44 @@ func (p *Parser) parseAgent() *ast.Agent {
 			}
 			ref.EndPos = p.currentPos()
 			agent.Client = ref
+		case p.check(TokenStrategy):
+			p.advance()
+			agent.Strategy = p.expectString("strategy")
+		case p.check(TokenMaxTurns):
+			p.advance()
+			agent.MaxTurns = p.expectInt("max_turns")
+		case p.check(TokenTimeout):
+			p.advance()
+			agent.Timeout = p.expectString("timeout")
+		case p.check(TokenTokenBudget):
+			p.advance()
+			agent.TokenBudget = p.expectInt("token_budget")
+		case p.check(TokenTemperature):
+			p.advance()
+			agent.Temperature = p.expectFloat("temperature")
+			agent.HasTemp = true
+		case p.check(TokenStream):
+			p.advance()
+			val := p.expectBool("stream")
+			agent.Stream = &val
+		case p.check(TokenOnError):
+			p.advance()
+			agent.OnError = p.expectString("on_error")
+		case p.check(TokenMaxRetries):
+			p.advance()
+			agent.MaxRetries = p.expectInt("max_retries")
+		case p.check(TokenFallback):
+			p.advance()
+			agent.Fallback = p.expectString("fallback agent")
+		case p.check(TokenMemory):
+			p.advance()
+			agent.MemoryCfg = p.parseMemoryConfig()
+		case p.check(TokenDelegate):
+			p.advance()
+			del := p.parseDelegate()
+			if del != nil {
+				agent.Delegates = append(agent.Delegates, del)
+			}
 		case p.check(TokenMetadata):
 			p.advance()
 			p.parseMetadataBlock(agent.Metadata)
@@ -850,6 +906,56 @@ func (p *Parser) expectStringOrIdent(context string) string {
 	return ""
 }
 
+func (p *Parser) expectInt(context string) int {
+	if p.check(TokenNumber) {
+		lit := p.advance().Literal
+		n, err := strconv.Atoi(lit)
+		if err != nil {
+			p.addError(fmt.Sprintf("invalid integer for %s: %q", context, lit), "")
+			return 0
+		}
+		return n
+	}
+	p.addError(fmt.Sprintf("expected number for %s, got %s", context, p.current().Type), "")
+	if !p.isAtEnd() {
+		p.advance()
+	}
+	return 0
+}
+
+func (p *Parser) expectFloat(context string) float64 {
+	if p.check(TokenNumber) {
+		lit := p.advance().Literal
+		f, err := strconv.ParseFloat(lit, 64)
+		if err != nil {
+			p.addError(fmt.Sprintf("invalid float for %s: %q", context, lit), "")
+			return 0
+		}
+		return f
+	}
+	p.addError(fmt.Sprintf("expected number for %s, got %s", context, p.current().Type), "")
+	if !p.isAtEnd() {
+		p.advance()
+	}
+	return 0
+}
+
+func (p *Parser) expectBool(context string) bool {
+	if p.check(TokenTrue) {
+		p.advance()
+		return true
+	}
+	if p.check(TokenFalse) {
+		p.advance()
+		return false
+	}
+	p.addError(fmt.Sprintf("expected true/false for %s, got %s", context, p.current().Type), "")
+	if !p.isAtEnd() {
+		p.advance()
+	}
+	return false
+}
+
 func (p *Parser) skipNewlines() {
 	for p.check(TokenNewline) {
 		p.advance()
@@ -874,6 +980,537 @@ func (p *Parser) addError(msg, hint string) {
 		Message: msg,
 		Hint:    hint,
 	})
+}
+
+// parseToolConfig parses the tool block variants: mcp, http, command, inline.
+// Called after 'tool' keyword has been consumed.
+func (p *Parser) parseToolConfig() *ast.ToolConfig {
+	tc := &ast.ToolConfig{StartPos: p.currentPos()}
+
+	switch {
+	case p.check(TokenMCP):
+		p.advance()
+		tc.Type = "mcp"
+		tc.ServerTool = p.expectString("mcp server/tool reference")
+
+	case p.check(TokenHTTP):
+		p.advance()
+		tc.Type = "http"
+		p.expectToken(TokenLBrace)
+		p.skipNewlines()
+		for !p.check(TokenRBrace) && !p.isAtEnd() {
+			p.skipNewlines()
+			if p.check(TokenRBrace) {
+				break
+			}
+			switch {
+			case p.check(TokenMethod):
+				p.advance()
+				tc.Method = p.expectString("http method")
+			case p.check(TokenURL):
+				p.advance()
+				tc.URL = p.expectString("http url")
+			case p.check(TokenHeaders):
+				p.advance()
+				tc.Headers = make(map[string]string)
+				p.parseMetadataBlock(tc.Headers)
+			case p.check(TokenBodyTemplate):
+				p.advance()
+				tc.BodyTemplate = p.expectString("body template")
+			case p.check(TokenTimeout):
+				p.advance()
+				tc.Timeout = p.expectString("timeout")
+			default:
+				p.addError(fmt.Sprintf("unexpected token %s in tool http block", p.current().Type), "")
+				p.advance()
+			}
+			p.skipNewlines()
+		}
+		p.expectToken(TokenRBrace)
+
+	case p.check(TokenCommand):
+		p.advance()
+		tc.Type = "command"
+		p.expectToken(TokenLBrace)
+		p.skipNewlines()
+		for !p.check(TokenRBrace) && !p.isAtEnd() {
+			p.skipNewlines()
+			if p.check(TokenRBrace) {
+				break
+			}
+			switch {
+			case p.check(TokenBinary):
+				p.advance()
+				tc.Binary = p.expectString("binary path")
+			case p.check(TokenArgs):
+				p.advance()
+				tc.Args = p.parseStringList()
+			case p.check(TokenTimeout):
+				p.advance()
+				tc.Timeout = p.expectString("timeout")
+			case p.check(TokenEnv):
+				p.advance()
+				tc.Env = make(map[string]string)
+				p.parseMetadataBlock(tc.Env)
+			case p.check(TokenSecrets):
+				p.advance()
+				tc.Secrets = make(map[string]string)
+				p.parseMetadataBlock(tc.Secrets)
+			default:
+				p.addError(fmt.Sprintf("unexpected token %s in tool command block", p.current().Type), "")
+				p.advance()
+			}
+			p.skipNewlines()
+		}
+		p.expectToken(TokenRBrace)
+
+	case p.check(TokenInline):
+		p.advance()
+		tc.Type = "inline"
+		p.expectToken(TokenLBrace)
+		p.skipNewlines()
+		for !p.check(TokenRBrace) && !p.isAtEnd() {
+			p.skipNewlines()
+			if p.check(TokenRBrace) {
+				break
+			}
+			switch {
+			case p.check(TokenLanguage):
+				p.advance()
+				tc.Language = p.expectString("language")
+			case p.check(TokenCode):
+				p.advance()
+				tc.Code = p.expectString("code")
+			case p.check(TokenTimeout):
+				p.advance()
+				tc.Timeout = p.expectString("timeout")
+			case p.check(TokenMemory):
+				p.advance()
+				tc.MemoryLimit = p.expectString("memory limit")
+			default:
+				p.addError(fmt.Sprintf("unexpected token %s in tool inline block", p.current().Type), "")
+				p.advance()
+			}
+			p.skipNewlines()
+		}
+		p.expectToken(TokenRBrace)
+
+	default:
+		p.addError(fmt.Sprintf("expected tool type (mcp, http, command, inline), got %s", p.current().Type), "")
+		p.advance()
+	}
+
+	tc.EndPos = p.currentPos()
+	return tc
+}
+
+// parseDeployTarget parses: deploy "name" target "type" { ... }
+func (p *Parser) parseDeployTarget() *ast.DeployTarget {
+	startPos := p.currentPos()
+	p.expect(TokenDeploy)
+
+	dt := &ast.DeployTarget{
+		StartPos: startPos,
+		Env:      make(map[string]string),
+		Secrets:  make(map[string]string),
+	}
+	dt.Name = p.expectString("deploy name")
+	p.registerName("DeployTarget", dt.Name, startPos)
+
+	// Expect 'target' keyword
+	if p.check(TokenTarget) {
+		p.advance()
+		dt.Target = p.expectString("deploy target type")
+	} else {
+		p.addError("expected 'target' keyword in deploy block", "")
+	}
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		switch {
+		case p.check(TokenPort):
+			p.advance()
+			dt.Port = p.expectInt("port")
+		case p.check(TokenDefault):
+			p.advance()
+			dt.Default = p.expectBool("default")
+		case p.check(TokenNamespace):
+			p.advance()
+			dt.Namespace = p.expectString("namespace")
+		case p.check(TokenReplicas):
+			p.advance()
+			dt.Replicas = p.expectInt("replicas")
+		case p.check(TokenImage):
+			p.advance()
+			dt.Image = p.expectString("image")
+		case p.check(TokenResources):
+			p.advance()
+			dt.Resources = p.parseResourceLimits()
+		case p.check(TokenHealth):
+			p.advance()
+			dt.Health = p.parseHealthConfig()
+		case p.check(TokenAutoscale):
+			p.advance()
+			dt.Autoscale = p.parseAutoscaleConfig()
+		case p.check(TokenEnv):
+			p.advance()
+			p.parseMetadataBlock(dt.Env)
+		case p.check(TokenSecrets):
+			p.advance()
+			p.parseMetadataBlock(dt.Secrets)
+		default:
+			p.addError(fmt.Sprintf("unexpected token %s in deploy block", p.current().Type), "")
+			p.advance()
+		}
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	dt.EndPos = p.currentPos()
+	return dt
+}
+
+// parseMemoryConfig parses: { strategy "sliding_window" max_messages 50 }
+func (p *Parser) parseMemoryConfig() *ast.MemoryConfig {
+	mc := &ast.MemoryConfig{StartPos: p.currentPos()}
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		switch {
+		case p.check(TokenStrategy):
+			p.advance()
+			mc.Strategy = p.expectString("memory strategy")
+		case p.check(TokenIdent) && p.current().Literal == "max_messages":
+			p.advance()
+			mc.MaxMessages = p.expectInt("max_messages")
+		default:
+			p.addError(fmt.Sprintf("unexpected token %s in memory block", p.current().Type), "")
+			p.advance()
+		}
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	mc.EndPos = p.currentPos()
+	return mc
+}
+
+// parseResourceLimits parses: { cpu "0.5" memory "512m" }
+func (p *Parser) parseResourceLimits() *ast.ResourceLimits {
+	rl := &ast.ResourceLimits{StartPos: p.currentPos()}
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		switch {
+		case p.current().Literal == "cpu":
+			p.advance()
+			rl.CPU = p.expectString("cpu")
+		case p.check(TokenMemory):
+			p.advance()
+			rl.Memory = p.expectString("memory")
+		default:
+			p.addError(fmt.Sprintf("unexpected token %s in resources block", p.current().Type), "")
+			p.advance()
+		}
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	rl.EndPos = p.currentPos()
+	return rl
+}
+
+// parseHealthConfig parses: { path "/healthz" interval "10s" [timeout "5s"] }
+func (p *Parser) parseHealthConfig() *ast.HealthConfig {
+	hc := &ast.HealthConfig{StartPos: p.currentPos()}
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		switch {
+		case p.current().Literal == "path":
+			p.advance()
+			hc.Path = p.expectString("health path")
+		case p.current().Literal == "interval":
+			p.advance()
+			hc.Interval = p.expectString("health interval")
+		case p.check(TokenTimeout):
+			p.advance()
+			hc.Timeout = p.expectString("health timeout")
+		default:
+			p.addError(fmt.Sprintf("unexpected token %s in health block", p.current().Type), "")
+			p.advance()
+		}
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	hc.EndPos = p.currentPos()
+	return hc
+}
+
+// parseAutoscaleConfig parses: { min 2 max 10 metric "cpu" target 80 }
+func (p *Parser) parseAutoscaleConfig() *ast.AutoscaleConfig {
+	ac := &ast.AutoscaleConfig{StartPos: p.currentPos()}
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		switch {
+		case p.current().Literal == "min":
+			p.advance()
+			ac.MinReplicas = p.expectInt("min replicas")
+		case p.current().Literal == "max":
+			p.advance()
+			ac.MaxReplicas = p.expectInt("max replicas")
+		case p.current().Literal == "metric":
+			p.advance()
+			ac.Metric = p.expectString("autoscale metric")
+		case p.check(TokenTarget):
+			p.advance()
+			ac.Target = p.expectInt("autoscale target")
+		default:
+			p.addError(fmt.Sprintf("unexpected token %s in autoscale block", p.current().Type), "")
+			p.advance()
+		}
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	ac.EndPos = p.currentPos()
+	return ac
+}
+
+// parseVariablesBlock parses: { var_name type required default "value" ... }
+func (p *Parser) parseVariablesBlock() []*ast.Variable {
+	var vars []*ast.Variable
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		v := &ast.Variable{StartPos: p.currentPos()}
+		v.Name = p.current().Literal
+		p.advance()
+
+		// Type is required
+		v.Type = p.current().Literal
+		p.advance()
+
+		// Optional: required and default
+		for !p.check(TokenRBrace) && !p.isAtEnd() && !p.check(TokenNewline) {
+			if p.current().Literal == "required" {
+				p.advance()
+				v.Required = true
+			} else if p.current().Literal == "default" || p.check(TokenDefault) {
+				p.advance()
+				v.Default = p.expectString("default value")
+			} else {
+				break
+			}
+		}
+
+		v.EndPos = p.currentPos()
+		vars = append(vars, v)
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	return vars
+}
+
+// parseDelegate parses: to agent "name" when "condition"
+func (p *Parser) parseDelegate() *ast.Delegate {
+	del := &ast.Delegate{StartPos: p.currentPos()}
+
+	// expect "to"
+	if p.check(TokenTo) {
+		p.advance()
+	}
+	// expect "agent"
+	if p.check(TokenAgent) {
+		p.advance()
+	}
+	del.AgentRef = p.expectString("delegate agent name")
+
+	// expect "when"
+	if p.check(TokenWhen) {
+		p.advance()
+		del.Condition = p.expectString("delegate condition")
+	}
+
+	del.EndPos = p.currentPos()
+	return del
+}
+
+// parseTypeDef parses: type "name" { field1 string required ... } or type "name" enum ["a", "b"] or type "name" list string
+func (p *Parser) parseTypeDef() *ast.TypeDef {
+	startPos := p.currentPos()
+	p.expect(TokenTypeKw)
+
+	td := &ast.TypeDef{StartPos: startPos}
+	td.Name = p.expectString("type name")
+	p.registerName("Type", td.Name, startPos)
+
+	switch {
+	case p.check(TokenEnum):
+		p.advance()
+		td.EnumVals = p.parseStringList()
+	case p.check(TokenList):
+		p.advance()
+		td.ListOf = p.current().Literal
+		p.advance()
+	case p.check(TokenLBrace):
+		p.expectToken(TokenLBrace)
+		p.skipNewlines()
+
+		for !p.check(TokenRBrace) && !p.isAtEnd() {
+			p.skipNewlines()
+			if p.check(TokenRBrace) {
+				break
+			}
+
+			field := &ast.TypeField{StartPos: p.currentPos()}
+			field.Name = p.current().Literal
+			p.advance()
+			field.Type = p.current().Literal
+			p.advance()
+
+			// Optional: required, default
+			for !p.check(TokenRBrace) && !p.isAtEnd() && !p.check(TokenNewline) {
+				if p.current().Literal == "required" {
+					p.advance()
+					field.Required = true
+				} else if p.current().Literal == "default" || p.check(TokenDefault) {
+					p.advance()
+					field.Default = p.expectString("default value")
+				} else {
+					break
+				}
+			}
+
+			field.EndPos = p.currentPos()
+			td.Fields = append(td.Fields, field)
+			p.skipNewlines()
+		}
+		p.expectToken(TokenRBrace)
+	default:
+		p.addError("expected '{', 'enum', or 'list' after type name", "")
+	}
+
+	td.EndPos = p.currentPos()
+	return td
+}
+
+// parsePipeline parses: pipeline "name" { step "name" { ... } ... }
+func (p *Parser) parsePipeline() *ast.Pipeline {
+	startPos := p.currentPos()
+	p.expect(TokenPipeline)
+
+	pipeline := &ast.Pipeline{StartPos: startPos}
+	pipeline.Name = p.expectString("pipeline name")
+	p.registerName("Pipeline", pipeline.Name, startPos)
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		if p.check(TokenStep) {
+			p.advance()
+			step := p.parsePipelineStep()
+			pipeline.Steps = append(pipeline.Steps, step)
+		} else {
+			p.addError(fmt.Sprintf("unexpected token %s in pipeline block, expected 'step'", p.current().Type), "")
+			p.advance()
+		}
+		p.skipNewlines()
+	}
+
+	p.expectToken(TokenRBrace)
+	pipeline.EndPos = p.currentPos()
+	return pipeline
+}
+
+// parsePipelineStep parses: "name" { agent "x" input "..." output "..." depends_on [...] parallel true when "..." }
+func (p *Parser) parsePipelineStep() *ast.PipelineStep {
+	step := &ast.PipelineStep{StartPos: p.currentPos()}
+	step.Name = p.expectString("step name")
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		switch {
+		case p.check(TokenAgent):
+			p.advance()
+			step.Agent = p.expectString("step agent")
+		case p.check(TokenInput):
+			p.advance()
+			step.Input = p.expectString("step input")
+		case p.check(TokenOutput):
+			p.advance()
+			step.Output = p.expectString("step output")
+		case p.check(TokenDependsOn):
+			p.advance()
+			step.DependsOn = p.parseStringList()
+		case p.check(TokenParallel):
+			p.advance()
+			step.Parallel = p.expectBool("parallel")
+		case p.check(TokenWhen):
+			p.advance()
+			step.When = p.expectString("step condition")
+		default:
+			p.addError(fmt.Sprintf("unexpected token %s in step block", p.current().Type), "")
+			p.advance()
+		}
+		p.skipNewlines()
+	}
+
+	p.expectToken(TokenRBrace)
+	step.EndPos = p.currentPos()
+	return step
 }
 
 // AllNames returns all registered names for duplicate checking and suggestions.

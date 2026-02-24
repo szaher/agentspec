@@ -1,4 +1,4 @@
-package "code-review" version "0.1.0" lang "1.0"
+package "code-review" version "0.1.0" lang "2.0"
 
 prompt "analyzer" {
   content "You are a code analysis expert. Identify code smells,\n           anti-patterns, and suggest improvements. Focus on\n           readability, maintainability, and performance."
@@ -20,7 +20,9 @@ skill "read-diff" {
   output {
     diff string
   }
-  execution command "git-diff-reader"
+  tool command {
+    binary "git-diff-reader"
+  }
 }
 
 skill "analyze-code" {
@@ -31,7 +33,9 @@ skill "analyze-code" {
   output {
     findings string
   }
-  execution command "static-analyzer"
+  tool command {
+    binary "static-analyzer"
+  }
 }
 
 skill "scan-security" {
@@ -42,7 +46,9 @@ skill "scan-security" {
   output {
     vulnerabilities string
   }
-  execution command "security-scanner"
+  tool command {
+    binary "security-scanner"
+  }
 }
 
 skill "post-review" {
@@ -53,7 +59,9 @@ skill "post-review" {
   output {
     comment_id string
   }
-  execution command "pr-commenter"
+  tool command {
+    binary "pr-commenter"
+  }
 }
 
 agent "code-analyzer" {
@@ -89,10 +97,9 @@ client "review-client" {
   connects to server "review-server"
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }
 
-binding "ci" adapter "docker-compose" {
-  output_dir "./ci-deploy"
+deploy "ci" target "docker-compose" {
 }

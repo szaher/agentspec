@@ -1,0 +1,30 @@
+package "test-deploy" version "1.0.0" lang "2.0"
+
+prompt "system" {
+  content "You are a deployable agent."
+}
+
+agent "deployed" {
+  uses prompt "system"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 10
+  on_error "retry"
+  max_retries 3
+}
+
+deploy "local" target "process" {
+  port 8080
+  default true
+}
+
+deploy "staging" target "docker" {
+  port 8080
+  image "agentspec-test:latest"
+}
+
+deploy "production" target "kubernetes" {
+  port 8080
+  namespace "agents"
+  replicas 3
+}

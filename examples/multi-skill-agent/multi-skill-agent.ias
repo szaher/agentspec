@@ -1,4 +1,4 @@
-package "multi-skill" version "0.1.0" lang "1.0"
+package "multi-skill" version "0.1.0" lang "2.0"
 
 prompt "research" {
   content "You are a research assistant with multiple capabilities."
@@ -12,7 +12,9 @@ skill "web-search" {
   output {
     results string
   }
-  execution command "search-tool"
+  tool command {
+    binary "search-tool"
+  }
 }
 
 skill "summarize" {
@@ -23,7 +25,9 @@ skill "summarize" {
   output {
     summary string
   }
-  execution command "summarize-tool"
+  tool command {
+    binary "summarize-tool"
+  }
 }
 
 skill "translate" {
@@ -34,7 +38,9 @@ skill "translate" {
   output {
     translated string
   }
-  execution command "translate-tool"
+  tool command {
+    binary "translate-tool"
+  }
 }
 
 agent "researcher" {
@@ -45,6 +51,6 @@ agent "researcher" {
   model "claude-sonnet-4-20250514"
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }

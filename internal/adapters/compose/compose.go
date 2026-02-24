@@ -2,16 +2,18 @@
 package compose
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/szaher/designs/agentz/internal/adapters"
 	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/state"
 )
 
 func init() {
@@ -29,11 +31,6 @@ func (a *Adapter) Name() string { return "docker-compose" }
 // Validate checks whether resources are compatible with Docker Compose.
 func (a *Adapter) Validate(_ context.Context, resources []ir.Resource) error {
 	return nil
-}
-
-// Plan computes changes needed.
-func (a *Adapter) Plan(_ context.Context, desired []ir.Resource, current []state.Entry) ([]adapters.Action, error) {
-	return nil, nil
 }
 
 // Apply executes the planned actions.
@@ -120,6 +117,73 @@ func (a *Adapter) Export(_ context.Context, resources []ir.Resource, outDir stri
 	}
 
 	return nil
+}
+
+// Status returns the status of Docker Compose services.
+func (a *Adapter) Status(ctx context.Context) ([]adapters.ResourceStatus, error) {
+	cmd := exec.CommandContext(ctx, "docker", "compose", "ps", "--format", "{{.Name}}\t{{.State}}\t{{.Health}}\t{{.Ports}}")
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("docker compose ps: %w", err)
+	}
+
+	var statuses []adapters.ResourceStatus
+	scanner := bufio.NewScanner(strings.NewReader(string(out)))
+	for scanner.Scan() {
+		parts := strings.SplitN(scanner.Text(), "\t", 4)
+		if len(parts) < 2 {
+			continue
+		}
+		rs := adapters.ResourceStatus{
+			FQN:   parts[0],
+			Name:  parts[0],
+			Kind:  "Container",
+			State: parts[1],
+		}
+		if len(parts) > 2 {
+			rs.Health = parts[2]
+		}
+		if len(parts) > 3 && parts[3] != "" {
+			rs.Endpoint = parts[3]
+		}
+		statuses = append(statuses, rs)
+	}
+	return statuses, nil
+}
+
+// Logs streams Docker Compose logs to the writer.
+func (a *Adapter) Logs(ctx context.Context, w io.Writer, opts adapters.LogOptions) error {
+	args := []string{"compose", "logs"}
+	if opts.Follow {
+		args = append(args, "--follow")
+	}
+	if opts.Tail > 0 {
+		args = append(args, "--tail", fmt.Sprintf("%d", opts.Tail))
+	}
+	if opts.Since != "" {
+		args = append(args, "--since", opts.Since)
+	}
+
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Stdout = w
+	cmd.Stderr = w
+	return cmd.Run()
+}
+
+// Destroy tears down Docker Compose services.
+func (a *Adapter) Destroy(ctx context.Context) ([]adapters.Result, error) {
+	cmd := exec.CommandContext(ctx, "docker", "compose", "down", "--remove-orphans")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("docker compose down: %s: %w", string(out), err)
+	}
+	return []adapters.Result{
+		{
+			FQN:    "docker-compose/stack",
+			Action: adapters.ActionDelete,
+			Status: adapters.ResultSuccess,
+		},
+	}, nil
 }
 
 func sanitizeName(name string) string {

@@ -1,0 +1,118 @@
+{
+  "Agent Block": {
+    "prefix": "agent",
+    "description": "Create an agent block",
+    "body": [
+      "agent \"${1:agent-name}\" {",
+      "  model = \"${2:claude-sonnet-4-20250514}\"",
+      "  uses prompt \"${3:system-prompt}\"",
+      "  ${4:uses skill \"skill-name\"}",
+      "",
+      "  strategy = \"${5|react,plan_execute,reflexion,router,map_reduce|}\"",
+      "  max_turns = ${6:10}",
+      "  temperature = ${7:0.3}",
+      "  stream = ${8|true,false|}",
+      "}"
+    ]
+  },
+  "Prompt Block": {
+    "prefix": "prompt",
+    "description": "Create a prompt block",
+    "body": [
+      "prompt \"${1:prompt-name}\" {",
+      "  content = \"\"\"",
+      "    ${2:You are a helpful assistant.}",
+      "  \"\"\"",
+      "}"
+    ]
+  },
+  "Skill Block": {
+    "prefix": "skill",
+    "description": "Create a skill block",
+    "body": [
+      "skill \"${1:skill-name}\" {",
+      "  description = \"${2:Description of what this skill does}\"",
+      "  tool ${3|mcp,http,command,inline|} {",
+      "    ${4:server = \"server-name\"}",
+      "  }",
+      "}"
+    ]
+  },
+  "Deploy Block": {
+    "prefix": "deploy",
+    "description": "Create a deploy block",
+    "body": [
+      "deploy \"${1:local}\" target \"${2|process,docker,kubernetes|}\" {",
+      "  port = ${3:8080}",
+      "}"
+    ]
+  },
+  "Pipeline Block": {
+    "prefix": "pipeline",
+    "description": "Create a pipeline block",
+    "body": [
+      "pipeline \"${1:pipeline-name}\" {",
+      "  step \"${2:step-1}\" {",
+      "    agent = \"${3:agent-name}\"",
+      "  }",
+      "  step \"${4:step-2}\" {",
+      "    agent = \"${5:agent-name}\"",
+      "    depends_on = [\"${2:step-1}\"]",
+      "  }",
+      "}"
+    ]
+  },
+  "MCP Tool": {
+    "prefix": "tool-mcp",
+    "description": "Create an MCP tool configuration",
+    "body": [
+      "tool mcp {",
+      "  server = \"${1:server-name}\"",
+      "}"
+    ]
+  },
+  "HTTP Tool": {
+    "prefix": "tool-http",
+    "description": "Create an HTTP tool configuration",
+    "body": [
+      "tool http {",
+      "  method = \"${1|GET,POST,PUT,DELETE|}\"",
+      "  url = \"${2:http://localhost:8000/api}\"",
+      "}"
+    ]
+  },
+  "Command Tool": {
+    "prefix": "tool-command",
+    "description": "Create a command tool configuration",
+    "body": [
+      "tool command {",
+      "  command = \"${1:python3}\"",
+      "  args = [\"${2:-m}\", \"${3:module}\"]",
+      "}"
+    ]
+  },
+  "Delegate Block": {
+    "prefix": "delegate",
+    "description": "Create a delegation rule",
+    "body": [
+      "delegate to agent \"${1:agent-name}\" when \"${2:condition description}\""
+    ]
+  },
+  "Memory Block": {
+    "prefix": "memory",
+    "description": "Create a memory configuration",
+    "body": [
+      "memory {",
+      "  strategy = \"${1|sliding_window,summary|}\"",
+      "  max_messages = ${2:20}",
+      "}"
+    ]
+  },
+  "Package Declaration": {
+    "prefix": "package",
+    "description": "Create a package declaration",
+    "body": [
+      "package \"${1:my-package}\""
+    ]
+  }
+}

@@ -66,6 +66,12 @@ func ValidateStructural(f *ast.File) []*ValidationError {
 			errs = append(errs, validateSecret(s)...)
 		case *ast.Binding:
 			errs = append(errs, validateBinding(s)...)
+		case *ast.DeployTarget:
+			errs = append(errs, validateDeployTarget(s)...)
+		case *ast.TypeDef:
+			errs = append(errs, validateTypeDef(s)...)
+		case *ast.Pipeline:
+			errs = append(errs, validatePipeline(s)...)
 		}
 	}
 	return errs
@@ -85,6 +91,35 @@ func validateAgent(a *ast.Agent) []*ValidationError {
 		errs = append(errs, posError(a.StartPos,
 			fmt.Sprintf("agent %q requires a model", a.Name),
 			"add 'model \"model-name\"'"))
+	}
+	if a.Strategy != "" {
+		validStrategies := map[string]bool{
+			"react": true, "plan-and-execute": true, "reflexion": true,
+			"router": true, "map-reduce": true,
+		}
+		if !validStrategies[a.Strategy] {
+			errs = append(errs, posError(a.StartPos,
+				fmt.Sprintf("agent %q has invalid strategy %q", a.Name, a.Strategy),
+				"valid strategies: react, plan-and-execute, reflexion, router, map-reduce"))
+		}
+	}
+	if a.OnError != "" {
+		validOnError := map[string]bool{"retry": true, "fail": true, "fallback": true}
+		if !validOnError[a.OnError] {
+			errs = append(errs, posError(a.StartPos,
+				fmt.Sprintf("agent %q has invalid on_error %q", a.Name, a.OnError),
+				"valid values: retry, fail, fallback"))
+		}
+	}
+	if a.OnError == "fallback" && a.Fallback == "" {
+		errs = append(errs, posError(a.StartPos,
+			fmt.Sprintf("agent %q uses on_error \"fallback\" but no fallback agent specified", a.Name),
+			"add 'fallback \"agent-name\"'"))
+	}
+	if a.HasTemp && (a.Temperature < 0 || a.Temperature > 2) {
+		errs = append(errs, posError(a.StartPos,
+			fmt.Sprintf("agent %q has temperature %.1f out of range [0, 2]", a.Name, a.Temperature),
+			""))
 	}
 	return errs
 }
@@ -122,10 +157,23 @@ func validateSkill(s *ast.Skill) []*ValidationError {
 			fmt.Sprintf("skill %q requires an output schema", s.Name),
 			"add 'output { name type }'"))
 	}
-	if s.Execution == nil {
+	if s.Execution == nil && s.ToolConfig == nil {
 		errs = append(errs, posError(s.StartPos,
-			fmt.Sprintf("skill %q requires an execution block", s.Name),
-			"add 'execution command \"...\"'"))
+			fmt.Sprintf("skill %q requires an execution or tool block", s.Name),
+			"add 'tool mcp \"server/tool\"' or 'execution command \"...\"'"))
+	}
+	if s.Execution != nil && s.ToolConfig != nil {
+		errs = append(errs, posError(s.StartPos,
+			fmt.Sprintf("skill %q has both execution and tool blocks", s.Name),
+			"use only one: 'tool' (2.0) or 'execution' (1.0)"))
+	}
+	if s.ToolConfig != nil {
+		validTypes := map[string]bool{"mcp": true, "http": true, "command": true, "inline": true}
+		if !validTypes[s.ToolConfig.Type] {
+			errs = append(errs, posError(s.ToolConfig.StartPos,
+				fmt.Sprintf("skill %q has invalid tool type %q", s.Name, s.ToolConfig.Type),
+				"valid types: mcp, http, command, inline"))
+		}
 	}
 	return errs
 }
@@ -193,6 +241,95 @@ func validateBinding(b *ast.Binding) []*ValidationError {
 		errs = append(errs, posError(b.StartPos,
 			fmt.Sprintf("binding %q requires an adapter", b.Name),
 			"add 'adapter \"local-mcp\"'"))
+	}
+	return errs
+}
+
+func validateDeployTarget(d *ast.DeployTarget) []*ValidationError {
+	var errs []*ValidationError
+	if d.Name == "" {
+		errs = append(errs, posError(d.StartPos, "deploy target name is required", ""))
+	}
+	if d.Target == "" {
+		errs = append(errs, posError(d.StartPos,
+			fmt.Sprintf("deploy %q requires a target type", d.Name),
+			"add 'target \"process\"', 'target \"docker\"', or 'target \"kubernetes\"'"))
+	}
+	validTargets := map[string]bool{"process": true, "docker": true, "docker-compose": true, "kubernetes": true}
+	if d.Target != "" && !validTargets[d.Target] {
+		errs = append(errs, posError(d.StartPos,
+			fmt.Sprintf("deploy %q has invalid target type %q", d.Name, d.Target),
+			"valid targets: process, docker, docker-compose, kubernetes"))
+	}
+	return errs
+}
+
+func validateTypeDef(t *ast.TypeDef) []*ValidationError {
+	var errs []*ValidationError
+	if t.Name == "" {
+		errs = append(errs, posError(t.StartPos, "type name is required", ""))
+	}
+	if len(t.Fields) == 0 && len(t.EnumVals) == 0 && t.ListOf == "" {
+		errs = append(errs, posError(t.StartPos,
+			fmt.Sprintf("type %q must have fields, enum values, or list type", t.Name),
+			"add fields in a block, enum [...], or list <type>"))
+	}
+	for _, f := range t.Fields {
+		if f.Name == "" {
+			errs = append(errs, posError(f.StartPos, "type field name is required", ""))
+		}
+		if f.Type == "" {
+			errs = append(errs, posError(f.StartPos,
+				fmt.Sprintf("type field %q requires a type", f.Name), ""))
+		}
+	}
+	return errs
+}
+
+func validatePipeline(p *ast.Pipeline) []*ValidationError {
+	var errs []*ValidationError
+	if p.Name == "" {
+		errs = append(errs, posError(p.StartPos, "pipeline name is required", ""))
+	}
+	if len(p.Steps) == 0 {
+		errs = append(errs, posError(p.StartPos,
+			fmt.Sprintf("pipeline %q requires at least one step", p.Name),
+			"add 'step \"name\" { agent \"...\" }'"))
+	}
+
+	// Check for duplicate step names and validate step references
+	stepNames := make(map[string]bool)
+	for _, step := range p.Steps {
+		if step.Name == "" {
+			errs = append(errs, posError(step.StartPos, "step name is required", ""))
+			continue
+		}
+		if stepNames[step.Name] {
+			errs = append(errs, posError(step.StartPos,
+				fmt.Sprintf("duplicate step name %q in pipeline %q", step.Name, p.Name), ""))
+		}
+		stepNames[step.Name] = true
+
+		if step.Agent == "" {
+			errs = append(errs, posError(step.StartPos,
+				fmt.Sprintf("step %q requires an agent", step.Name),
+				"add 'agent \"agent-name\"'"))
+		}
+	}
+
+	// Validate depends_on references point to valid step names
+	for _, step := range p.Steps {
+		for _, dep := range step.DependsOn {
+			if !stepNames[dep] {
+				errs = append(errs, posError(step.StartPos,
+					fmt.Sprintf("step %q depends_on unknown step %q", step.Name, dep),
+					""))
+			}
+			if dep == step.Name {
+				errs = append(errs, posError(step.StartPos,
+					fmt.Sprintf("step %q cannot depend on itself", step.Name), ""))
+			}
+		}
 	}
 	return errs
 }

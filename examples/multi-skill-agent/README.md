@@ -1,12 +1,12 @@
 # Multi-Skill Agent
 
-An agent equipped with multiple skills, each with defined input/output schemas and execution commands.
+An agent equipped with multiple skills, each with defined input/output schemas and tool commands.
 
 ## What This Demonstrates
 
 - **Skill definitions** with typed input/output schemas
 - **Multiple `uses skill`** references on a single agent
-- **Execution commands** that map skills to external tool binaries
+- **Tool commands** that map skills to external tool binaries
 
 ## AgentSpec Structure
 
@@ -19,12 +19,12 @@ skill "web-search" {
   description "Search the web"
   input { query string required }
   output { results string }
-  execution command "search-tool"
+  tool command { binary "search-tool" }
 }
 ```
 
 - `input` / `output` blocks define the schema with field name, type, and optionality
-- `execution command` specifies the binary or script that implements the skill
+- `tool command { binary "..." }` specifies the binary or script that implements the skill
 - `description` is a human-readable summary used in documentation and SDK generation
 
 ### Agent with Multiple Skills

@@ -1,4 +1,4 @@
-package "demo" version "0.1.0" lang "1.0"
+package "demo" version "0.1.0" lang "2.0"
 
 prompt "greeting" {
   content "Hello world"
@@ -12,7 +12,9 @@ skill "web-search" {
   output {
     results string
   }
-  execution command "search-tool"
+  tool command {
+    binary "search-tool"
+  }
 }
 
 agent "my-agent" {
@@ -21,6 +23,6 @@ agent "my-agent" {
   model "claude-sonnet-4-20250514"
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }

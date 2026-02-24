@@ -59,8 +59,14 @@ func formatStatement(sb *strings.Builder, stmt ast.Statement) {
 		formatMCPServer(sb, s)
 	case *ast.MCPClient:
 		formatMCPClient(sb, s)
+	case *ast.DeployTarget:
+		formatDeployTarget(sb, s)
 	case *ast.PluginRef:
 		formatPluginRef(sb, s)
+	case *ast.TypeDef:
+		formatTypeDef(sb, s)
+	case *ast.Pipeline:
+		formatPipeline(sb, s)
 	}
 }
 
@@ -71,6 +77,20 @@ func formatPrompt(sb *strings.Builder, p *ast.Prompt) {
 	}
 	if p.Version != "" {
 		fmt.Fprintf(sb, "  version %q\n", p.Version)
+	}
+	if len(p.Variables) > 0 {
+		sb.WriteString("  variables {\n")
+		for _, v := range p.Variables {
+			fmt.Fprintf(sb, "    %s %s", v.Name, v.Type)
+			if v.Required {
+				sb.WriteString(" required")
+			}
+			if v.Default != "" {
+				fmt.Fprintf(sb, " default %q", v.Default)
+			}
+			sb.WriteString("\n")
+		}
+		sb.WriteString("  }\n")
 	}
 	formatMetadata(sb, p.Metadata)
 	sb.WriteString("}\n")
@@ -106,6 +126,9 @@ func formatSkill(sb *strings.Builder, s *ast.Skill) {
 	if s.Execution != nil {
 		fmt.Fprintf(sb, "  execution %s %q\n", s.Execution.Type, s.Execution.Value)
 	}
+	if s.ToolConfig != nil {
+		formatToolConfig(sb, s.ToolConfig)
+	}
 	formatMetadata(sb, s.Metadata)
 	sb.WriteString("}\n")
 }
@@ -123,6 +146,46 @@ func formatAgent(sb *strings.Builder, a *ast.Agent) {
 	}
 	if a.Client != nil {
 		fmt.Fprintf(sb, "  connects to client %q\n", a.Client.Name)
+	}
+	if a.Strategy != "" {
+		fmt.Fprintf(sb, "  strategy %q\n", a.Strategy)
+	}
+	if a.MaxTurns > 0 {
+		fmt.Fprintf(sb, "  max_turns %d\n", a.MaxTurns)
+	}
+	if a.Timeout != "" {
+		fmt.Fprintf(sb, "  timeout %q\n", a.Timeout)
+	}
+	if a.TokenBudget > 0 {
+		fmt.Fprintf(sb, "  token_budget %d\n", a.TokenBudget)
+	}
+	if a.HasTemp {
+		fmt.Fprintf(sb, "  temperature %g\n", a.Temperature)
+	}
+	if a.Stream != nil {
+		fmt.Fprintf(sb, "  stream %t\n", *a.Stream)
+	}
+	if a.OnError != "" {
+		fmt.Fprintf(sb, "  on_error %q\n", a.OnError)
+	}
+	if a.MaxRetries > 0 {
+		fmt.Fprintf(sb, "  max_retries %d\n", a.MaxRetries)
+	}
+	if a.Fallback != "" {
+		fmt.Fprintf(sb, "  fallback %q\n", a.Fallback)
+	}
+	if a.MemoryCfg != nil {
+		sb.WriteString("  memory {\n")
+		if a.MemoryCfg.Strategy != "" {
+			fmt.Fprintf(sb, "    strategy %q\n", a.MemoryCfg.Strategy)
+		}
+		if a.MemoryCfg.MaxMessages > 0 {
+			fmt.Fprintf(sb, "    max_messages %d\n", a.MemoryCfg.MaxMessages)
+		}
+		sb.WriteString("  }\n")
+	}
+	for _, d := range a.Delegates {
+		fmt.Fprintf(sb, "  delegate to agent %q when %q\n", d.AgentRef, d.Condition)
 	}
 	formatMetadata(sb, a.Metadata)
 	sb.WriteString("}\n")
@@ -267,6 +330,223 @@ func formatMetadata(sb *strings.Builder, m map[string]string) {
 		fmt.Fprintf(sb, "    %s %q\n", k, m[k])
 	}
 	sb.WriteString("  }\n")
+}
+
+func formatToolConfig(sb *strings.Builder, tc *ast.ToolConfig) {
+	switch tc.Type {
+	case "mcp":
+		fmt.Fprintf(sb, "  tool mcp %q\n", tc.ServerTool)
+	case "http":
+		sb.WriteString("  tool http {\n")
+		if tc.Method != "" {
+			fmt.Fprintf(sb, "    method %q\n", tc.Method)
+		}
+		if tc.URL != "" {
+			fmt.Fprintf(sb, "    url %q\n", tc.URL)
+		}
+		if len(tc.Headers) > 0 {
+			sb.WriteString("    headers {\n")
+			keys := sortedKeys(tc.Headers)
+			for _, k := range keys {
+				fmt.Fprintf(sb, "      %s %q\n", k, tc.Headers[k])
+			}
+			sb.WriteString("    }\n")
+		}
+		if tc.BodyTemplate != "" {
+			fmt.Fprintf(sb, "    body_template %q\n", tc.BodyTemplate)
+		}
+		if tc.Timeout != "" {
+			fmt.Fprintf(sb, "    timeout %q\n", tc.Timeout)
+		}
+		sb.WriteString("  }\n")
+	case "command":
+		sb.WriteString("  tool command {\n")
+		if tc.Binary != "" {
+			fmt.Fprintf(sb, "    binary %q\n", tc.Binary)
+		}
+		if len(tc.Args) > 0 {
+			sb.WriteString("    args [")
+			for i, arg := range tc.Args {
+				if i > 0 {
+					sb.WriteString(", ")
+				}
+				fmt.Fprintf(sb, "%q", arg)
+			}
+			sb.WriteString("]\n")
+		}
+		if tc.Timeout != "" {
+			fmt.Fprintf(sb, "    timeout %q\n", tc.Timeout)
+		}
+		if len(tc.Env) > 0 {
+			sb.WriteString("    env {\n")
+			keys := sortedKeys(tc.Env)
+			for _, k := range keys {
+				fmt.Fprintf(sb, "      %s %q\n", k, tc.Env[k])
+			}
+			sb.WriteString("    }\n")
+		}
+		if len(tc.Secrets) > 0 {
+			sb.WriteString("    secrets {\n")
+			keys := sortedKeys(tc.Secrets)
+			for _, k := range keys {
+				fmt.Fprintf(sb, "      %s %q\n", k, tc.Secrets[k])
+			}
+			sb.WriteString("    }\n")
+		}
+		sb.WriteString("  }\n")
+	case "inline":
+		sb.WriteString("  tool inline {\n")
+		if tc.Language != "" {
+			fmt.Fprintf(sb, "    language %q\n", tc.Language)
+		}
+		if tc.Code != "" {
+			fmt.Fprintf(sb, "    code %q\n", tc.Code)
+		}
+		if tc.Timeout != "" {
+			fmt.Fprintf(sb, "    timeout %q\n", tc.Timeout)
+		}
+		if tc.MemoryLimit != "" {
+			fmt.Fprintf(sb, "    memory %q\n", tc.MemoryLimit)
+		}
+		sb.WriteString("  }\n")
+	}
+}
+
+func formatDeployTarget(sb *strings.Builder, d *ast.DeployTarget) {
+	fmt.Fprintf(sb, "deploy %q target %q {\n", d.Name, d.Target)
+	if d.Port > 0 {
+		fmt.Fprintf(sb, "  port %d\n", d.Port)
+	}
+	if d.Default {
+		sb.WriteString("  default true\n")
+	}
+	if d.Namespace != "" {
+		fmt.Fprintf(sb, "  namespace %q\n", d.Namespace)
+	}
+	if d.Replicas > 0 {
+		fmt.Fprintf(sb, "  replicas %d\n", d.Replicas)
+	}
+	if d.Image != "" {
+		fmt.Fprintf(sb, "  image %q\n", d.Image)
+	}
+	if d.Resources != nil {
+		sb.WriteString("  resources {\n")
+		if d.Resources.CPU != "" {
+			fmt.Fprintf(sb, "    cpu %q\n", d.Resources.CPU)
+		}
+		if d.Resources.Memory != "" {
+			fmt.Fprintf(sb, "    memory %q\n", d.Resources.Memory)
+		}
+		sb.WriteString("  }\n")
+	}
+	if d.Health != nil {
+		sb.WriteString("  health {\n")
+		if d.Health.Path != "" {
+			fmt.Fprintf(sb, "    path %q\n", d.Health.Path)
+		}
+		if d.Health.Interval != "" {
+			fmt.Fprintf(sb, "    interval %q\n", d.Health.Interval)
+		}
+		if d.Health.Timeout != "" {
+			fmt.Fprintf(sb, "    timeout %q\n", d.Health.Timeout)
+		}
+		sb.WriteString("  }\n")
+	}
+	if d.Autoscale != nil {
+		sb.WriteString("  autoscale {\n")
+		if d.Autoscale.MinReplicas > 0 {
+			fmt.Fprintf(sb, "    min %d\n", d.Autoscale.MinReplicas)
+		}
+		if d.Autoscale.MaxReplicas > 0 {
+			fmt.Fprintf(sb, "    max %d\n", d.Autoscale.MaxReplicas)
+		}
+		if d.Autoscale.Metric != "" {
+			fmt.Fprintf(sb, "    metric %q\n", d.Autoscale.Metric)
+		}
+		if d.Autoscale.Target > 0 {
+			fmt.Fprintf(sb, "    target %d\n", d.Autoscale.Target)
+		}
+		sb.WriteString("  }\n")
+	}
+	if len(d.Env) > 0 {
+		sb.WriteString("  env {\n")
+		keys := sortedKeys(d.Env)
+		for _, k := range keys {
+			fmt.Fprintf(sb, "    %s %q\n", k, d.Env[k])
+		}
+		sb.WriteString("  }\n")
+	}
+	if len(d.Secrets) > 0 {
+		sb.WriteString("  secrets {\n")
+		keys := sortedKeys(d.Secrets)
+		for _, k := range keys {
+			fmt.Fprintf(sb, "    %s %q\n", k, d.Secrets[k])
+		}
+		sb.WriteString("  }\n")
+	}
+	sb.WriteString("}\n")
+}
+
+func formatTypeDef(sb *strings.Builder, t *ast.TypeDef) {
+	if len(t.EnumVals) > 0 {
+		fmt.Fprintf(sb, "type %q enum [", t.Name)
+		for i, v := range t.EnumVals {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			fmt.Fprintf(sb, "%q", v)
+		}
+		sb.WriteString("]\n")
+	} else if t.ListOf != "" {
+		fmt.Fprintf(sb, "type %q list %s\n", t.Name, t.ListOf)
+	} else {
+		fmt.Fprintf(sb, "type %q {\n", t.Name)
+		for _, f := range t.Fields {
+			fmt.Fprintf(sb, "  %s %s", f.Name, f.Type)
+			if f.Required {
+				sb.WriteString(" required")
+			}
+			if f.Default != "" {
+				fmt.Fprintf(sb, " default %q", f.Default)
+			}
+			sb.WriteString("\n")
+		}
+		sb.WriteString("}\n")
+	}
+}
+
+func formatPipeline(sb *strings.Builder, p *ast.Pipeline) {
+	fmt.Fprintf(sb, "pipeline %q {\n", p.Name)
+	for _, step := range p.Steps {
+		fmt.Fprintf(sb, "  step %q {\n", step.Name)
+		if step.Agent != "" {
+			fmt.Fprintf(sb, "    agent %q\n", step.Agent)
+		}
+		if step.Input != "" {
+			fmt.Fprintf(sb, "    input %q\n", step.Input)
+		}
+		if step.Output != "" {
+			fmt.Fprintf(sb, "    output %q\n", step.Output)
+		}
+		if len(step.DependsOn) > 0 {
+			sb.WriteString("    depends_on [")
+			for i, dep := range step.DependsOn {
+				if i > 0 {
+					sb.WriteString(", ")
+				}
+				fmt.Fprintf(sb, "%q", dep)
+			}
+			sb.WriteString("]\n")
+		}
+		if step.Parallel {
+			sb.WriteString("    parallel true\n")
+		}
+		if step.When != "" {
+			fmt.Fprintf(sb, "    when %q\n", step.When)
+		}
+		sb.WriteString("  }\n")
+	}
+	sb.WriteString("}\n")
 }
 
 func sortedKeys(m map[string]string) []string {

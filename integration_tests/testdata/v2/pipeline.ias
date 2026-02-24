@@ -1,0 +1,69 @@
+package "pipeline-demo" version "1.0.0" lang "2.0"
+
+prompt "analyst" {
+  content "You analyze data."
+}
+
+prompt "reporter" {
+  content "You write reports."
+}
+
+skill "fetch-data" {
+  description "Fetch data from source"
+  input {
+    source string required
+  }
+  output {
+    data string
+  }
+  tool command {
+    binary "data-fetch"
+  }
+}
+
+skill "write-report" {
+  description "Write a report"
+  input {
+    data string required
+  }
+  output {
+    report string
+  }
+  tool command {
+    binary "report-writer"
+  }
+}
+
+agent "data-analyst" {
+  uses prompt "analyst"
+  uses skill "fetch-data"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "report-writer" {
+  uses prompt "reporter"
+  uses skill "write-report"
+  model "claude-sonnet-4-20250514"
+}
+
+pipeline "data-report" {
+  step "fetch" {
+    agent "data-analyst"
+    input "raw data source"
+    output "processed data"
+  }
+  step "analyze" {
+    agent "data-analyst"
+    depends_on ["fetch"]
+    input "processed data"
+  }
+  step "report" {
+    agent "report-writer"
+    depends_on ["analyze"]
+    output "final report"
+  }
+}
+
+deploy "local" target "process" {
+  default true
+}

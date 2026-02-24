@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/szaher/designs/agentz/internal/adapters"
-	"github.com/szaher/designs/agentz/internal/cli"
 	"github.com/szaher/designs/agentz/internal/plan"
 )
 
@@ -21,15 +20,9 @@ func newExportCmd() *cobra.Command {
 		Use:   "export",
 		Short: "Export adapter-specific artifacts without applying",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			files, err := resolveAZFiles(args)
+			files, err := resolveFiles(args)
 			if err != nil {
 				return err
-			}
-
-			for _, file := range files {
-				if err := cli.CheckExtensionDeprecation(file); err != nil {
-					return err
-				}
 			}
 
 			doc, err := parseAndLower(files)
@@ -37,14 +30,21 @@ func newExportCmd() *cobra.Command {
 				return err
 			}
 
+			adapterName := ""
 			binding, _ := plan.ResolveBinding(doc.Bindings, target)
-			if binding == nil {
-				return fmt.Errorf("no binding found (use --target to specify)")
+			if binding != nil {
+				adapterName = binding.Adapter
+			} else {
+				dt, _ := plan.ResolveDeployTarget(doc.DeployTargets, target)
+				if dt == nil {
+					return fmt.Errorf("no deploy target found (use --target to specify)")
+				}
+				adapterName = plan.DeployTargetAdapter(dt.Target)
 			}
 
-			factory, err := adapters.Get(binding.Adapter)
+			factory, err := adapters.Get(adapterName)
 			if err != nil {
-				return fmt.Errorf("adapter %q: %w", binding.Adapter, err)
+				return fmt.Errorf("adapter %q: %w", adapterName, err)
 			}
 			adapter := factory()
 
@@ -57,7 +57,7 @@ func newExportCmd() *cobra.Command {
 				return fmt.Errorf("export failed: %w", err)
 			}
 
-			fmt.Printf("Exported to %s (adapter: %s)\n", exportDir, binding.Adapter)
+			fmt.Printf("Exported to %s (adapter: %s)\n", exportDir, adapterName)
 			return nil
 		},
 	}

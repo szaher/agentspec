@@ -1,0 +1,39 @@
+package "test-basic" version "1.0.0" lang "2.0"
+
+prompt "system" {
+  content "You are a helpful assistant."
+}
+
+server "search-server" {
+  transport "stdio"
+  command "npx"
+  args ["-y", "@modelcontextprotocol/server-brave-search"]
+}
+
+skill "search" {
+  description "Search the web"
+  input {
+    query string required
+  }
+  output {
+    results string
+  }
+  tool mcp "search-server/search"
+}
+
+agent "assistant" {
+  uses prompt "system"
+  uses skill "search"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 5
+  timeout "60s"
+  token_budget 50000
+  temperature 0.7
+  stream true
+}
+
+deploy "local" target "process" {
+  port 8080
+  default true
+}

@@ -9,12 +9,13 @@ import (
 
 // Document is the top-level IR container.
 type Document struct {
-	IRVersion   string     `json:"ir_version"`
-	LangVersion string     `json:"lang_version"`
-	Package     Package    `json:"package"`
-	Resources   []Resource `json:"resources"`
-	Policies    []Policy   `json:"policies,omitempty"`
-	Bindings    []Binding  `json:"bindings,omitempty"`
+	IRVersion     string         `json:"ir_version"`
+	LangVersion   string         `json:"lang_version"`
+	Package       Package        `json:"package"`
+	Resources     []Resource     `json:"resources"`
+	Policies      []Policy       `json:"policies,omitempty"`
+	Bindings      []Binding      `json:"bindings,omitempty"`
+	DeployTargets []DeployTarget `json:"deploy_targets,omitempty"`
 }
 
 // Package holds resolved package metadata.
@@ -48,10 +49,18 @@ type Rule struct {
 	Subject  string `json:"subject"`
 }
 
-// Binding is a target adapter binding.
+// Binding is a target adapter binding (IntentLang 1.0).
 type Binding struct {
 	Name    string                 `json:"name"`
 	Adapter string                 `json:"adapter"`
+	Default bool                   `json:"default,omitempty"`
+	Config  map[string]interface{} `json:"config,omitempty"`
+}
+
+// DeployTarget is a deployment configuration (IntentLang 2.0, replaces Binding).
+type DeployTarget struct {
+	Name    string                 `json:"name"`
+	Target  string                 `json:"target"`
 	Default bool                   `json:"default,omitempty"`
 	Config  map[string]interface{} `json:"config,omitempty"`
 }

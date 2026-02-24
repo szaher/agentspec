@@ -1,0 +1,41 @@
+package "{{.PackageName}}"
+
+prompt "support-system" {
+  content = """
+    You are a helpful customer support agent. You help customers with
+    their orders, answer questions about products, and resolve issues.
+    Always be polite, professional, and thorough in your responses.
+    When looking up orders, use the lookup-order tool.
+    When searching the knowledge base, use the search-kb tool.
+  """
+}
+
+skill "lookup-order" {
+  description = "Look up an order by order ID"
+  tool mcp {
+    server = "order-service"
+  }
+}
+
+skill "search-kb" {
+  description = "Search the knowledge base for product and policy information"
+  tool mcp {
+    server = "kb-service"
+  }
+}
+
+agent "support-bot" {
+  model = "claude-sonnet-4-20250514"
+  uses prompt "support-system"
+  uses skill "lookup-order"
+  uses skill "search-kb"
+
+  strategy = "react"
+  max_turns = 10
+  temperature = 0.3
+  stream = true
+}
+
+deploy "local" target "process" {
+  port = 8080
+}

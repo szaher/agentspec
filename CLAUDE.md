@@ -5,6 +5,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-23
 ## Active Technologies
 - Go 1.25+ + wazero v1.11.0 (WASM plugin sandbox), cobra v1.10.2, go-cmp v0.7.0 (001-agent-packaging-dsl)
 - YAML (GitHub Actions workflow syntax) + GitHub Actions, actions/checkout, actions/setup-go, golangci/golangci-lint-action (002-ci-pipeline)
+- Go 1.25+ (existing) (004-runtime-platform)
+- Local JSON state file (existing `.agentspec.state.json`). In-memory session store (new, default). Redis session store (new, opt-in). (004-runtime-platform)
 
 ## Project Structure
 
@@ -39,9 +41,9 @@ Go 1.25+: Follow standard conventions
 - Go module path: `github.com/szaher/designs/agentz` (unchanged)
 
 ## Recent Changes
+- 004-runtime-platform: Added Go 1.25+ (existing)
 - 003-intentlang-rename: Renamed language to IntentLang, file extension `.az` → `.ias`, binary `agentz` → `agentspec`
 - 002-ci-pipeline: Added GitHub Actions CI workflow
-- 001-agent-packaging-dsl: Core DSL implementation with parser, IR, plan/apply lifecycle
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

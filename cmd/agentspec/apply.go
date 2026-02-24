@@ -8,14 +8,16 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/szaher/designs/agentz/internal/adapters"
 	"github.com/szaher/designs/agentz/internal/apply"
-	"github.com/szaher/designs/agentz/internal/cli"
 	"github.com/szaher/designs/agentz/internal/events"
 	"github.com/szaher/designs/agentz/internal/plan"
 	"github.com/szaher/designs/agentz/internal/state"
 
 	// Register adapters
 	_ "github.com/szaher/designs/agentz/internal/adapters/compose"
+	_ "github.com/szaher/designs/agentz/internal/adapters/docker"
+	_ "github.com/szaher/designs/agentz/internal/adapters/kubernetes"
 	_ "github.com/szaher/designs/agentz/internal/adapters/local"
+	_ "github.com/szaher/designs/agentz/internal/adapters/process"
 )
 
 func newApplyCmd() *cobra.Command {
@@ -30,15 +32,9 @@ func newApplyCmd() *cobra.Command {
 		Use:   "apply",
 		Short: "Apply desired state idempotently",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			files, err := resolveAZFiles(args)
+			files, err := resolveFiles(args)
 			if err != nil {
 				return err
-			}
-
-			for _, file := range files {
-				if err := cli.CheckExtensionDeprecation(file); err != nil {
-					return err
-				}
 			}
 
 			doc, err := parseAndLower(files)
@@ -46,14 +42,21 @@ func newApplyCmd() *cobra.Command {
 				return err
 			}
 
+			adapterName := ""
 			binding, _ := plan.ResolveBinding(doc.Bindings, target)
-			if binding == nil {
-				return fmt.Errorf("no binding found (use --target to specify)")
+			if binding != nil {
+				adapterName = binding.Adapter
+			} else {
+				dt, _ := plan.ResolveDeployTarget(doc.DeployTargets, target)
+				if dt == nil {
+					return fmt.Errorf("no deploy target found (use --target to specify)")
+				}
+				adapterName = plan.DeployTargetAdapter(dt.Target)
 			}
 
-			factory, err := adapters.Get(binding.Adapter)
+			factory, err := adapters.Get(adapterName)
 			if err != nil {
-				return fmt.Errorf("adapter %q: %w", binding.Adapter, err)
+				return fmt.Errorf("adapter %q: %w", adapterName, err)
 			}
 			adapter := factory()
 

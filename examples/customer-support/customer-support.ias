@@ -1,4 +1,4 @@
-package "customer-support" version "0.1.0" lang "1.0"
+package "customer-support" version "0.1.0" lang "2.0"
 
 prompt "support" {
   content "You are a customer support agent for Acme Corp.\n           Be empathetic, concise, and solution-oriented.\n           Always greet the customer by name when available.\n           If you cannot resolve an issue, escalate to a human agent."
@@ -12,7 +12,9 @@ skill "lookup-ticket" {
   output {
     ticket string
   }
-  execution command "ticket-lookup"
+  tool command {
+    binary "ticket-lookup"
+  }
 }
 
 skill "search-kb" {
@@ -23,7 +25,9 @@ skill "search-kb" {
   output {
     articles string
   }
-  execution command "kb-search"
+  tool command {
+    binary "kb-search"
+  }
 }
 
 skill "escalate" {
@@ -34,7 +38,9 @@ skill "escalate" {
   output {
     escalation_id string
   }
-  execution command "escalate-tool"
+  tool command {
+    binary "escalate-tool"
+  }
 }
 
 agent "support-bot" {
@@ -61,6 +67,6 @@ environment "prod" {
   }
 }
 
-binding "local" adapter "local-mcp" {
+deploy "local" target "process" {
   default true
 }

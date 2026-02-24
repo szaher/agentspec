@@ -1,0 +1,40 @@
+package "type-defs" version "1.0.0" lang "2.0"
+
+type "user" {
+  name string required
+  email string required
+  age int
+  active bool default "true"
+}
+
+type "status" enum ["pending", "active", "archived"]
+
+type "tags" list string
+
+prompt "sys" {
+  content "You manage users."
+}
+
+skill "create-user" {
+  description "Create a new user"
+  input {
+    name string required
+    email string required
+  }
+  output {
+    user_id string
+  }
+  tool command {
+    binary "user-create"
+  }
+}
+
+agent "user-mgr" {
+  uses prompt "sys"
+  uses skill "create-user"
+  model "claude-sonnet-4-20250514"
+}
+
+deploy "local" target "process" {
+  default true
+}
