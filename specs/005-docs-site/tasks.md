@@ -27,7 +27,7 @@
 - [X] T006 Create custom Pygments lexer with IntentLang token definitions (~50 keywords, strings, comments, numbers, booleans, operators) in `docs-tools/pygments_intentlang/lexer.py`
 - [X] T007 Create Pygments lexer setup.py with entry point registration in `docs-tools/pygments_intentlang/setup.py`
 - [X] T008 Create site homepage with project overview, audience links (User Guide / Developer Guide), and feature highlights in `docs/index.md`
-- [X] T009 Create GitHub Actions docs workflow (build Go binary, validate examples, install MkDocs, build site with --strict, deploy to GitHub Pages) in `.github/workflows/docs.yml`
+- [X] T009 Create GitHub Actions docs workflow (build Go binary, validate examples, install MkDocs, build site, deploy to GitHub Pages) in `.github/workflows/docs.yml` (note: `--strict` omitted due to upstream mkdocs-material MkDocs 2.0 warning)
 
 **Checkpoint**: Site builds locally with `mkdocs serve` and CI workflow is defined.
 
@@ -60,7 +60,7 @@
 
 **Goal**: Complete IntentLang 2.0 language reference with all 13 resource types documented. Each page has syntax definition, attribute table, valid values, and annotated examples.
 
-**Independent Test**: Every IntentLang 2.0 keyword in `spec/spec.md` has a reference page with syntax, attributes, and at least one working example. Run `mkdocs build --strict` and verify all language pages render.
+**Independent Test**: Every IntentLang 2.0 keyword in `spec/spec.md` has a reference page with syntax, attributes, and at least one working example. Run `mkdocs build` and verify all language pages render.
 
 ### Implementation for User Story 1
 
@@ -83,7 +83,7 @@
 - [X] T038 [P] [US1] Create error handling page (on_error strategies: stop, retry, fallback, ignore; max_retries; fallback agent) in `docs/user-guide/configuration/error-handling.md`
 - [X] T039 [P] [US1] Create agent delegation page (delegates block, delegate-to pattern, inter-agent communication) in `docs/user-guide/configuration/delegation.md`
 
-**Checkpoint**: All 18 language reference and configuration pages exist with syntax, attributes, and examples. `mkdocs build --strict` passes.
+**Checkpoint**: All 18 language reference and configuration pages exist with syntax, attributes, and examples. `mkdocs build` passes.
 
 ---
 
@@ -236,7 +236,7 @@
 - [X] T100 [US8] Add sitemap plugin configuration and SEO meta descriptions to `mkdocs.yml`
 - [X] T101 [US8] Update `mkdocs.yml` nav section to include all pages from US1–US7 and verify complete navigation tree
 
-**Checkpoint**: Full navigation tree defined. Site builds with `mkdocs build --strict`. Search and sitemap functional.
+**Checkpoint**: Full navigation tree defined. Site builds with `mkdocs build`. Search and sitemap functional.
 
 ---
 
@@ -244,7 +244,7 @@
 
 **Purpose**: Validation pass, cross-linking, consistency review, and final build verification.
 
-- [X] T102 Run `mkdocs build --strict` and fix all warnings (broken links, missing pages, invalid references)
+- [X] T102 Run `mkdocs build` and fix all warnings (broken links, missing pages, invalid references) (note: `--strict` omitted due to upstream mkdocs-material MkDocs 2.0 warning)
 - [X] T103 Run `go test ./integration_tests/ -run TestDocExamples -v` and fix all example validation failures
 - [X] T104 [P] Add cross-links between related pages (language reference ↔ use cases, CLI ↔ API, getting started → language reference, deployment → use cases)
 - [X] T105 [P] Review all pages for consistency in tone, formatting, heading structure, and depth
@@ -338,7 +338,7 @@ Task: "Create Agent Delegation use-case in docs/user-guide/use-cases/delegation.
 2. Complete Phase 2: Foundational (example files, validation test)
 3. Complete Phase 3: User Story 1 — Language Reference (18 pages)
 4. Complete Phase 4: User Story 2 — Getting Started (4 pages)
-5. **STOP and VALIDATE**: Run `mkdocs build --strict`, verify examples, test search
+5. **STOP and VALIDATE**: Run `mkdocs build`, verify examples, test search
 6. Deploy MVP — Users can learn IntentLang and get started
 
 ### Incremental Delivery
