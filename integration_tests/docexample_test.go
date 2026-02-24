@@ -128,7 +128,7 @@ func extractIASBlocks(t *testing.T, mdPath string) []iasBlock {
 	if err != nil {
 		t.Fatalf("failed to open %s: %v", mdPath, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var blocks []iasBlock
 	scanner := bufio.NewScanner(f)
