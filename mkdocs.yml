@@ -1,8 +1,8 @@
 site_name: AgentSpec Documentation
 site_description: Declarative language for defining, deploying, and managing AI agents
-site_url: https://szaher.github.io/agentz/
-repo_url: https://github.com/szaher/agentz
-repo_name: szaher/agentz
+site_url: https://szaher.github.io/agentspec/
+repo_url: https://github.com/szaher/agentspec
+repo_name: szaher/agentspec
 
 theme:
   name: material
