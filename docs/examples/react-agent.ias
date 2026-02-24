@@ -1,0 +1,67 @@
+package "react-agent" version "0.1.0" lang "2.0"
+
+prompt "researcher" {
+  content "You are a research assistant. Use available tools to\ngather information, analyze findings, and synthesize\nclear answers. Think step by step: observe the question,\nreason about what tools to use, and act accordingly."
+}
+
+skill "web-search" {
+  description "Search the web for information"
+  input {
+    query string required
+  }
+  output {
+    results string
+  }
+  tool command {
+    binary "search-tool"
+  }
+}
+
+skill "summarize" {
+  description "Summarize a body of text"
+  input {
+    text string required
+  }
+  output {
+    summary string
+  }
+  tool command {
+    binary "summarize-tool"
+  }
+}
+
+skill "fact-check" {
+  description "Verify a claim against known sources"
+  input {
+    claim string required
+  }
+  output {
+    verification string
+  }
+  tool command {
+    binary "fact-check-tool"
+  }
+}
+
+agent "researcher" {
+  uses prompt "researcher"
+  uses skill "web-search"
+  uses skill "summarize"
+  uses skill "fact-check"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 15
+  timeout "60s"
+  token_budget 200000
+  stream true
+  on_error "retry"
+  max_retries 3
+}
+
+deploy "local" target "process" {
+  default true
+  port 8080
+  health {
+    path "/healthz"
+  }
+}

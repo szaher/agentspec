@@ -1,0 +1,93 @@
+package "router-agent" version "0.1.0" lang "2.0"
+
+prompt "triage" {
+  content "You are a request router. Analyze the user's request and\ndelegate it to the most appropriate specialist agent.\nConsider the topic, complexity, and required expertise\nwhen making routing decisions."
+}
+
+prompt "tech-support" {
+  content "You are a technical support specialist. Help users\nresolve technical issues with software and hardware.\nAsk clarifying questions when needed."
+}
+
+prompt "billing" {
+  content "You are a billing specialist. Help users with\ninvoices, payments, refunds, and subscription management.\nAlways verify account details before making changes."
+}
+
+prompt "general" {
+  content "You are a general assistant. Handle inquiries that\ndo not require specialized expertise. Be helpful and\ndirect the user to specialists if needed."
+}
+
+skill "lookup-account" {
+  description "Look up a customer account by email or ID"
+  input {
+    identifier string required
+  }
+  output {
+    account string
+  }
+  tool command {
+    binary "account-lookup"
+  }
+}
+
+skill "check-system-status" {
+  description "Check the status of internal systems and services"
+  input {
+    service string required
+  }
+  output {
+    status string
+  }
+  tool command {
+    binary "status-check"
+  }
+}
+
+skill "process-refund" {
+  description "Process a customer refund"
+  input {
+    order_id string required
+    reason string required
+  }
+  output {
+    refund_id string
+  }
+  tool command {
+    binary "refund-tool"
+  }
+}
+
+agent "tech-agent" {
+  uses prompt "tech-support"
+  uses skill "check-system-status"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 10
+}
+
+agent "billing-agent" {
+  uses prompt "billing"
+  uses skill "lookup-account"
+  uses skill "process-refund"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 10
+}
+
+agent "general-agent" {
+  uses prompt "general"
+  model "claude-sonnet-4-20250514"
+  max_turns 5
+}
+
+agent "router" {
+  uses prompt "triage"
+  model "claude-sonnet-4-20250514"
+  delegate to agent "tech-agent" when "user has a technical issue"
+  delegate to agent "billing-agent" when "user has a billing question"
+  delegate to agent "general-agent" when "user has a general inquiry"
+}
+
+deploy "local" target "process" {
+  default true
+  port 8080
+}

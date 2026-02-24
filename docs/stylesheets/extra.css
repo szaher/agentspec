@@ -1,0 +1,16 @@
+/* AgentSpec Documentation - Custom CSS */
+
+/* IntentLang code block styling */
+.highlight code {
+  font-size: 0.85em;
+}
+
+/* Attribute tables */
+.md-typeset table:not([class]) th {
+  min-width: 8rem;
+}
+
+/* Navigation section headers */
+.md-nav__item--nested > .md-nav__link {
+  font-weight: 600;
+}

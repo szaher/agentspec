@@ -1,0 +1,155 @@
+site_name: AgentSpec Documentation
+site_description: Declarative language for defining, deploying, and managing AI agents
+site_url: https://szaher.github.io/agentz/
+repo_url: https://github.com/szaher/agentz
+repo_name: szaher/agentz
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.details
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search:
+      lang: en
+  - tags
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - User Guide:
+    - Getting Started:
+      - Overview: user-guide/getting-started/index.md
+      - Quick Start: user-guide/getting-started/quickstart.md
+      - Core Concepts: user-guide/getting-started/concepts.md
+    - Language Reference:
+      - Overview: user-guide/language/index.md
+      - agent: user-guide/language/agent.md
+      - prompt: user-guide/language/prompt.md
+      - skill: user-guide/language/skill.md
+      - tool: user-guide/language/tool.md
+      - deploy: user-guide/language/deploy.md
+      - pipeline: user-guide/language/pipeline.md
+      - type: user-guide/language/type.md
+      - server: user-guide/language/server.md
+      - client: user-guide/language/client.md
+      - secret: user-guide/language/secret.md
+      - environment: user-guide/language/environment.md
+      - policy: user-guide/language/policy.md
+      - plugin: user-guide/language/plugin.md
+    - Configuration:
+      - Runtime Attributes: user-guide/configuration/runtime.md
+      - Prompt Variables: user-guide/configuration/prompt-variables.md
+      - Error Handling: user-guide/configuration/error-handling.md
+      - Agent Delegation: user-guide/configuration/delegation.md
+    - Use Cases:
+      - Architecture Overview: user-guide/use-cases/index.md
+      - ReAct Agent: user-guide/use-cases/react.md
+      - Plan-and-Execute: user-guide/use-cases/plan-execute.md
+      - Reflexion: user-guide/use-cases/reflexion.md
+      - Router / Triage: user-guide/use-cases/router.md
+      - Map-Reduce: user-guide/use-cases/map-reduce.md
+      - Multi-Agent Pipeline: user-guide/use-cases/pipeline.md
+      - Agent Delegation: user-guide/use-cases/delegation.md
+    - Deployment:
+      - Overview: user-guide/deployment/index.md
+      - Local Process: user-guide/deployment/process.md
+      - Docker: user-guide/deployment/docker.md
+      - Docker Compose: user-guide/deployment/compose.md
+      - Kubernetes: user-guide/deployment/kubernetes.md
+      - Best Practices: user-guide/deployment/best-practices.md
+    - CLI Reference:
+      - Overview: user-guide/cli/index.md
+      - validate: user-guide/cli/validate.md
+      - fmt: user-guide/cli/fmt.md
+      - plan: user-guide/cli/plan.md
+      - apply: user-guide/cli/apply.md
+      - run: user-guide/cli/run.md
+      - dev: user-guide/cli/dev.md
+      - status: user-guide/cli/status.md
+      - logs: user-guide/cli/logs.md
+      - destroy: user-guide/cli/destroy.md
+      - init: user-guide/cli/init.md
+      - migrate: user-guide/cli/migrate.md
+      - export: user-guide/cli/export.md
+      - diff: user-guide/cli/diff.md
+      - sdk: user-guide/cli/sdk.md
+      - version: user-guide/cli/version.md
+    - HTTP API:
+      - Overview: user-guide/api/index.md
+      - Agent Endpoints: user-guide/api/agents.md
+      - Session Endpoints: user-guide/api/sessions.md
+      - Pipeline Endpoints: user-guide/api/pipelines.md
+      - Health & Metrics: user-guide/api/health-metrics.md
+    - SDKs:
+      - Python: user-guide/sdks/python.md
+      - TypeScript: user-guide/sdks/typescript.md
+      - Go: user-guide/sdks/go.md
+    - Migration Guide: user-guide/migration.md
+    - Changelog: user-guide/changelog.md
+  - Developer Guide:
+    - Architecture:
+      - Overview: developer-guide/architecture/index.md
+      - Parser Pipeline: developer-guide/architecture/parser.md
+      - IR & Plan Engine: developer-guide/architecture/ir.md
+      - Runtime: developer-guide/architecture/runtime.md
+      - Adapter System: developer-guide/architecture/adapters.md
+      - Plugin Host: developer-guide/architecture/plugins.md
+    - Contributing:
+      - Build from Source: developer-guide/contributing/index.md
+      - Running Tests: developer-guide/contributing/testing.md
+      - Code Style: developer-guide/contributing/code-style.md
+      - Pull Requests: developer-guide/contributing/pull-requests.md
+    - Extending:
+      - Custom Adapters: developer-guide/extending/adapters.md
+      - WASM Plugins: developer-guide/extending/plugins.md
+    - Internals:
+      - State Management: developer-guide/internals/state.md
+      - Secret Resolution: developer-guide/internals/secrets.md
+      - Telemetry: developer-guide/internals/telemetry.md
+      - SDK Generation: developer-guide/internals/sdk-generation.md

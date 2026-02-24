@@ -1,0 +1,75 @@
+package "customer-support" version "0.1.0" lang "2.0"
+
+prompt "support" {
+  content "You are a customer support agent for Acme Corp.\nBe empathetic, concise, and solution-oriented.\nAlways greet the customer by name when available.\nIf you cannot resolve an issue, escalate to a human agent."
+}
+
+skill "lookup-ticket" {
+  description "Look up a customer support ticket by ID"
+  input {
+    ticket_id string required
+  }
+  output {
+    ticket string
+  }
+  tool command {
+    binary "ticket-lookup"
+  }
+}
+
+skill "search-kb" {
+  description "Search the knowledge base for relevant articles"
+  input {
+    query string required
+  }
+  output {
+    articles string
+  }
+  tool command {
+    binary "kb-search"
+  }
+}
+
+skill "escalate" {
+  description "Escalate the conversation to a human agent"
+  input {
+    reason string required
+  }
+  output {
+    escalation_id string
+  }
+  tool command {
+    binary "escalate-tool"
+  }
+}
+
+agent "support-bot" {
+  uses prompt "support"
+  uses skill "lookup-ticket"
+  uses skill "search-kb"
+  uses skill "escalate"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 15
+  timeout "60s"
+}
+
+secret "api-key" {
+  env(ACME_API_KEY)
+}
+
+environment "dev" {
+  agent "support-bot" {
+    model "claude-haiku-latest"
+  }
+}
+
+environment "prod" {
+  agent "support-bot" {
+    model "claude-sonnet-4-20250514"
+  }
+}
+
+deploy "local" target "process" {
+  default true
+}

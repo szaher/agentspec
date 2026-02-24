@@ -1,0 +1,110 @@
+package "code-review" version "0.1.0" lang "2.0"
+
+prompt "analyzer" {
+  content "You are a code analysis expert. Identify code smells,\nanti-patterns, and suggest improvements. Focus on\nreadability, maintainability, and performance."
+}
+
+prompt "security-reviewer" {
+  content "You are a security expert. Scan code for vulnerabilities\nincluding injection flaws, authentication issues, and\ndata exposure risks. Reference OWASP Top 10 where applicable."
+}
+
+prompt "summarizer" {
+  content "You are a review summarizer. Combine analysis and security\nfindings into a concise, actionable review. Prioritize\nissues by severity: critical, high, medium, low."
+}
+
+skill "read-diff" {
+  description "Read a git diff or pull request"
+  input {
+    pr_url string required
+  }
+  output {
+    diff string
+  }
+  tool command {
+    binary "git-diff-reader"
+  }
+}
+
+skill "analyze-code" {
+  description "Run static analysis on code"
+  input {
+    code string required
+  }
+  output {
+    findings string
+  }
+  tool command {
+    binary "static-analyzer"
+  }
+}
+
+skill "scan-security" {
+  description "Scan code for security vulnerabilities"
+  input {
+    code string required
+  }
+  output {
+    vulnerabilities string
+  }
+  tool command {
+    binary "security-scanner"
+  }
+}
+
+skill "post-review" {
+  description "Post review comments to a pull request"
+  input {
+    pr_url string required
+  }
+  output {
+    comment_id string
+  }
+  tool command {
+    binary "pr-commenter"
+  }
+}
+
+agent "code-analyzer" {
+  uses prompt "analyzer"
+  uses skill "read-diff"
+  uses skill "analyze-code"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "security-scanner" {
+  uses prompt "security-reviewer"
+  uses skill "read-diff"
+  uses skill "scan-security"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "review-summarizer" {
+  uses prompt "summarizer"
+  uses skill "post-review"
+  model "claude-sonnet-4-20250514"
+}
+
+pipeline "code-review" {
+  step "analyze" {
+    agent "code-analyzer"
+    input "pull request URL"
+    output "code analysis findings"
+  }
+  step "security" {
+    agent "security-scanner"
+    input "pull request URL"
+    output "security findings"
+  }
+  step "summarize" {
+    agent "review-summarizer"
+    depends_on ["analyze", "security"]
+    output "final review summary"
+  }
+}
+
+deploy "local" target "process" {
+  default true
+}
+
+deploy "ci" target "docker-compose" {
+}

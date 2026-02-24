@@ -1,0 +1,78 @@
+package "map-reduce" version "0.1.0" lang "2.0"
+
+prompt "mapper" {
+  content "You are a data analysis specialist. Process individual\ndata chunks independently. Extract key insights, metrics,\nand patterns from each chunk you receive."
+}
+
+prompt "reducer" {
+  content "You are a synthesis specialist. Combine multiple analysis\nresults into a single coherent summary. Identify common\npatterns, aggregate metrics, and highlight outliers across\nall inputs."
+}
+
+skill "analyze-chunk" {
+  description "Analyze a single chunk of data"
+  input {
+    chunk string required
+  }
+  output {
+    analysis string
+  }
+  tool command {
+    binary "chunk-analyzer"
+  }
+}
+
+skill "merge-results" {
+  description "Merge multiple analysis results into a summary"
+  input {
+    results string required
+  }
+  output {
+    summary string
+  }
+  tool command {
+    binary "result-merger"
+  }
+}
+
+agent "mapper" {
+  uses prompt "mapper"
+  uses skill "analyze-chunk"
+  model "claude-sonnet-4-20250514"
+  max_turns 5
+  timeout "30s"
+}
+
+agent "reducer" {
+  uses prompt "reducer"
+  uses skill "merge-results"
+  model "claude-sonnet-4-20250514"
+  max_turns 5
+  timeout "60s"
+}
+
+pipeline "map-reduce" {
+  step "map-1" {
+    agent "mapper"
+    input "data chunk 1"
+    output "analysis 1"
+  }
+  step "map-2" {
+    agent "mapper"
+    input "data chunk 2"
+    output "analysis 2"
+  }
+  step "map-3" {
+    agent "mapper"
+    input "data chunk 3"
+    output "analysis 3"
+  }
+  step "reduce" {
+    agent "reducer"
+    depends_on ["map-1", "map-2", "map-3"]
+    output "final summary"
+  }
+}
+
+deploy "local" target "process" {
+  default true
+}

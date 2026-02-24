@@ -1,5 +1,6 @@
 # Binaries
 /agentspec
+/agentz
 *.exe
 *.test
 *.out
@@ -44,3 +45,15 @@ runtime-config.json
 
 # Container build context
 .docker-build/
+
+# Python (MkDocs / Pygments lexer)
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# MkDocs build output
+site/
+.cache/
