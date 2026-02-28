@@ -175,7 +175,8 @@ error: missing package header
 
 **Fix:** Every `.ias` file must begin with a package header as the first non-comment line. Add one at the top of your file:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 package "hello" version "0.1.0" lang "2.0"
 ```
 
@@ -227,7 +228,8 @@ error: missing required attribute "model" on agent "assistant"
 
 **Fix:** Add the missing attribute. In this case, every `agent` block requires a `model` attribute:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 agent "assistant" {
   uses prompt "system"
   model "claude-sonnet-4-20250514"

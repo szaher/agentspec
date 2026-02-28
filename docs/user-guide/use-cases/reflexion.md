@@ -36,7 +36,8 @@ Each cycle through the loop typically consumes 2-3 turns (critique + revision), 
 
 Enable the Reflexion pattern by setting `strategy "reflexion"` on an agent:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 agent "writer" {
   strategy "reflexion"
   max_turns 10

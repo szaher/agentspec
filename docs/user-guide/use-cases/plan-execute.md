@@ -39,7 +39,8 @@ If verification fails, the agent can re-plan the remaining steps or retry the fa
 
 Enable the Plan-and-Execute pattern by setting `strategy "plan-and-execute"` on an agent:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 agent "planner" {
   strategy "plan-and-execute"
   max_turns 20

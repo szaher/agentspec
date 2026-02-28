@@ -10,7 +10,8 @@ Never store credentials, API keys, or sensitive values directly in `.ias` files.
 
 ### Use `env()` for Environment Variables
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 secret "api-key" {
   env(ANTHROPIC_API_KEY)
 }
@@ -18,7 +19,8 @@ secret "api-key" {
 
 ### Use `store()` for Secret Managers
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 secret "db-password" {
   store(production/database/password)
 }
@@ -26,7 +28,8 @@ secret "db-password" {
 
 ### Reference Secrets in Deploy Blocks
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "production" target "kubernetes" {
   secrets {
     ANTHROPIC_API_KEY "api-key"
@@ -54,7 +57,8 @@ Always configure a `health` block for production deployments. Health checks enab
 
 ### Recommended Configuration
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 health {
   path "/healthz"
   interval "30s"
@@ -106,7 +110,8 @@ Right-sizing CPU and memory prevents both over-provisioning (wasting resources) 
 
 Add more instances of the same agent to handle increased load:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "production" target "kubernetes" {
   replicas 3
   autoscale {
@@ -127,7 +132,8 @@ deploy "production" target "kubernetes" {
 
 Give each instance more CPU and memory:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 resources {
   cpu "2"
   memory "2Gi"
@@ -202,7 +208,8 @@ jobs:
 
 Configure logging through environment variables in the deploy block:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "production" target "kubernetes" {
   env {
     LOG_LEVEL "warn"
@@ -232,7 +239,8 @@ deploy "production" target "kubernetes" {
 
 Use `environment` blocks to vary configuration across deployment stages without duplicating `.ias` files:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 environment "dev" {
   agent "assistant" {
     model "claude-haiku-latest"
@@ -298,7 +306,8 @@ agentspec apply my-agent.ias --target production
 
 If the rollback only requires a different container image, update the `image` attribute:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "production" target "kubernetes" {
   image "agentspec/assistant:0.9.0"  # Roll back to previous version
 }
@@ -325,7 +334,8 @@ Kubernetes performs a rolling update to the previous image version with zero dow
 
 Use `policy` blocks to enforce security and governance constraints across your agent system:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 policy "production-safety" {
   deny model claude-haiku-latest
   require secret api-key

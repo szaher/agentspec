@@ -187,7 +187,8 @@ package "my-agent" version "2.0.0" lang "2.0"
 
 In 2.0, every skill must declare an `input` block. Even if the skill takes no input, you must provide an empty block:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 skill "no-input-skill" {
   description "A skill with no input"
   input {}

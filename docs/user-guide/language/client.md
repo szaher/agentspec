@@ -8,7 +8,8 @@ exposed by those servers.
 
 ## Syntax
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 client "<name>" {
   connects to server "<server-ref>"
   # ... more server connections
@@ -96,7 +97,8 @@ over stdio.
 
 A client that aggregates skills from several servers.
 
-```ias fragment
+<!-- fragment -->
+```ias
 server "db-server" {
   transport "stdio"
   command "db-mcp-server"
@@ -138,7 +140,8 @@ single client reference.
 
 Multiple agents can use separate clients that connect to the same server.
 
-```ias fragment
+<!-- fragment -->
+```ias
 server "review-server" {
   transport "stdio"
   command "review-mcp-server"

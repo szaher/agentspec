@@ -13,7 +13,8 @@ store**.
 
 ### From Environment Variable
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 secret "<name>" {
   env(<VARIABLE_NAME>)
 }
@@ -24,7 +25,8 @@ runtime.
 
 ### From Secure Store
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 secret "<name>" {
   store(<path/to/secret>)
 }
@@ -70,7 +72,8 @@ Secrets are referenced by other blocks using the `secret "<name>"` syntax.
 
 ### In Server Auth
 
-```ias fragment
+<!-- fragment -->
+```ias
 secret "api-token" {
   env(MCP_API_TOKEN)
 }
@@ -84,7 +87,8 @@ server "remote-server" {
 
 ### In Policy Blocks
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 secret "db-password" {
   store(production/database/password)
 }
@@ -96,7 +100,8 @@ policy "require-db-creds" {
 
 ### In Deploy Blocks
 
-```ias fragment
+<!-- fragment -->
+```ias
 secret "registry-key" {
   env(DOCKER_REGISTRY_KEY)
 }
@@ -160,7 +165,8 @@ agentspec apply secret-demo.ias
 
 For production environments where secrets are managed centrally.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 secret "db-connection" {
   store(production/database/connection-string)
 }
@@ -185,7 +191,8 @@ A package can mix `env` and `store` secrets. This is common when some secrets
 are readily available as environment variables (e.g., in CI) while others must
 come from a centralized store.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 # CI-friendly: set in the pipeline environment
 secret "github-token" {
   env(GITHUB_TOKEN)

@@ -83,7 +83,8 @@ agentspec apply my-agent.ias      # Apply idempotently
 
 Deploy the same agent definition to local processes, Docker, Docker Compose, or Kubernetes — without changing your `.ias` file.
 
-```ias fragment
+<!-- fragment -->
+```ias
 deploy "local" target "process" { default true }
 deploy "staging" target "docker-compose" {}
 deploy "production" target "kubernetes" {

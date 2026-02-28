@@ -15,7 +15,8 @@ The `docker` target packages your agent as a standalone Docker container. AgentS
 
 A Docker deployment specifies the image name, port, resource constraints, and health check:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "staging" target "docker" {
   image "agentspec/my-agent:0.1.0"
   port 8080
@@ -69,7 +70,8 @@ The generated Dockerfile uses a multi-stage build to produce a minimal runtime i
 
 The `resources` block sets CPU and memory constraints on the container. These map directly to Docker's `--cpus` and `--memory` flags.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 resources {
   cpu "500m"
   memory "256Mi"
@@ -90,7 +92,8 @@ resources {
 
 The `health` block generates a Docker `HEALTHCHECK` instruction in the Dockerfile and configures the container health check:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 health {
   path "/healthz"
   interval "30s"
@@ -117,7 +120,8 @@ my-agent            Up 5 minutes (healthy)
 
 Use the `env` block to inject environment variables into the container:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 env {
   LOG_LEVEL "info"
   ENVIRONMENT "staging"
@@ -133,7 +137,8 @@ These variables are set at container creation time and are available to the agen
 
 For agents that need persistent storage or access to host files, use the `volumes` attribute:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "staging" target "docker" {
   image "agentspec/my-agent:0.1.0"
   port 8080
@@ -152,7 +157,8 @@ deploy "staging" target "docker" {
 
 Use the `secrets` block to inject secret values into the container:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 secret "api-key" {
   env(API_KEY)
 }

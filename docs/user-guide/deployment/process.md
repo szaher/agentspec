@@ -15,7 +15,8 @@ The `process` target runs your agent as a local OS process. It is the simplest d
 
 A minimal process deployment requires only the target type:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "local" target "process" {
   default true
   port 8080
@@ -59,7 +60,8 @@ The process runs in the foreground by default. It can be backgrounded using stan
 
 The `health` block configures an HTTP health check endpoint. AgentSpec periodically sends a GET request to the configured path and expects an HTTP 200 response.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 health {
   path "/healthz"
   interval "10s"
@@ -79,7 +81,8 @@ If the health check fails repeatedly, AgentSpec logs a warning but does not auto
 
 Use the `env` block to pass environment variables to the agent process:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "local" target "process" {
   default true
   port 8080
@@ -98,7 +101,8 @@ Environment variables set in the `env` block are merged with the host environmen
 
 Use the `secrets` block to map environment variable names to declared `secret` resources:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 secret "api-key" {
   env(API_KEY)
 }

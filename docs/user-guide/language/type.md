@@ -14,7 +14,8 @@ IntentLang provides three ways to define a type.
 
 A struct type defines a record with named, typed fields.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 type "<name>" {
   <field-name> <field-type> [required] [default "<value>"]
   # ... more fields
@@ -25,7 +26,8 @@ type "<name>" {
 
 An enum type defines a fixed set of allowed string values.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 type "<name>" enum ["<value1>", "<value2>", ...]
 ```
 
@@ -33,7 +35,8 @@ type "<name>" enum ["<value1>", "<value2>", ...]
 
 A list type defines an ordered collection of elements of a single type.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 type "<name>" list <element-type>
 ```
 
@@ -130,7 +133,8 @@ deploy "local" target "process" {
 
 Restrict a field to a known set of values.
 
-```ias fragment
+<!-- fragment -->
+```ias
 type "priority" enum ["low", "medium", "high", "critical"]
 
 type "ticket-status" enum ["open", "in_progress", "resolved", "closed"]
@@ -143,7 +147,8 @@ validator rejects any value not in the enum list.
 
 Define a collection type for repeated elements.
 
-```ias fragment
+<!-- fragment -->
+```ias
 type "tags" list string
 
 type "scores" list float
@@ -155,7 +160,8 @@ type "ids" list int
 
 Types can be composed to build richer schemas.
 
-```ias fragment
+<!-- fragment -->
+```ias
 type "severity" enum ["low", "medium", "high", "critical"]
 
 type "finding" {

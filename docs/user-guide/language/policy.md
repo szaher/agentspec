@@ -6,7 +6,8 @@ The `policy` block defines security and governance constraints that are enforced
 
 ## Syntax
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 policy "<name>" {
   deny <resource-type> <resource-name>
   require <resource-type> <resource-name>
@@ -24,7 +25,8 @@ The policy name must be unique within the package. Each policy block contains on
 
 Prohibits the use of a specific resource. If any agent or configuration references a denied resource, validation fails with an error.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deny model claude-haiku-latest
 deny skill unsafe-execute
 ```
@@ -33,7 +35,8 @@ deny skill unsafe-execute
 
 Mandates that a specific resource is defined in the package. Validation fails if the required resource does not exist.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 require secret api-key
 require secret db-connection
 ```
@@ -42,7 +45,8 @@ require secret db-connection
 
 Explicitly permits a resource. This is useful in combination with broad deny rules or when documenting approved resources for compliance purposes.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 allow model claude-sonnet-4-20250514
 allow skill web-search
 ```
@@ -155,7 +159,8 @@ deploy "local" target "process" {
 
 A simple policy that ensures a single secret is always present:
 
-```ias fragment
+<!-- fragment -->
+```ias
 policy "api-access" {
   require secret api-key
 }
@@ -165,7 +170,8 @@ policy "api-access" {
 
 Policies can combine multiple actions to express complex constraints:
 
-```ias fragment
+<!-- fragment -->
+```ias
 policy "compliance" {
   deny model claude-haiku-latest
   deny skill raw-sql-execute

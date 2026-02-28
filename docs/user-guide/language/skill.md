@@ -6,7 +6,8 @@ The `skill` block defines a capability that an agent can invoke. A skill has a d
 
 ## Syntax
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 skill "<name>" {
   description "<text>"
   input {
@@ -40,7 +41,8 @@ The `input` and `output` blocks define typed field schemas. Each field has a nam
 
 ### Field Syntax
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 input {
   <name> <type> [required]
 }
@@ -59,7 +61,8 @@ input {
 
 Adding the `required` keyword after the type makes the field mandatory. The runtime will reject skill invocations that omit required fields.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 input {
   query string required    # Must be provided
   limit int                # Optional
@@ -89,13 +92,15 @@ For full details on each variant, including all attributes and examples, see the
 
 **MCP tool** -- delegates to an MCP server:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 tool mcp "file-server/read-file"
 ```
 
 **HTTP tool** -- calls an external API:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 tool http {
   method "POST"
   url "https://api.example.com/search"
@@ -110,7 +115,8 @@ tool http {
 
 **Command tool** -- runs a local binary:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 tool command {
   binary "search-tool"
   args ["--format", "json"]
@@ -120,7 +126,8 @@ tool command {
 
 **Inline tool** -- executes embedded code:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 tool inline {
   language "python"
   code "import json\nresult = json.dumps({'message': f'Hello, {input[\"name\"]}!'})\nprint(result)"

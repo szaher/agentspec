@@ -8,7 +8,8 @@ Prompt templates in IntentLang support variable interpolation using the `{{varia
 
 Variables are referenced in prompt `content` strings using double curly braces, and declared in a `variables` block within the prompt:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 prompt "<name>" {
   content "Text with {{variable_name}} placeholders."
   variables {
@@ -23,7 +24,8 @@ prompt "<name>" {
 
 Each variable is declared on its own line inside the `variables` block. A declaration consists of a name, a type, and optional modifiers.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 variables {
   name string required
   role string required default "assistant"
@@ -113,7 +115,8 @@ The resolved prompt becomes: `Hello Alice, welcome to our service.`
 
 A variable can be both `required` and have a `default`. The `required` modifier documents that the variable is significant, while the `default` ensures the prompt is valid even without an explicit value:
 
-```ias fragment
+<!-- fragment -->
+```ias
 prompt "greeting" {
   content "Hello {{name}}, you are a {{role}}."
   variables {
@@ -132,7 +135,8 @@ Result: `Hello Bob, you are a assistant.`
 
 ### Multiple Variables with Mixed Modifiers
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 prompt "report-generator" {
   content "Generate a {{report_type}} report for {{company}} covering
            the period {{period}}. Use {{language}} language.

@@ -39,7 +39,8 @@ Unlike the Router pattern (which selects exactly one specialist per request), th
 
 The Delegation pattern uses multiple `delegate to agent ... when ...` rules on the manager agent:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 agent "project-manager" {
   uses prompt "manager"
   model "claude-sonnet-4-20250514"

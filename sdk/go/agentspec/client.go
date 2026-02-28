@@ -82,11 +82,11 @@ type PipelineStepResult struct {
 
 // PipelineResult holds the result of a pipeline execution.
 type PipelineResult struct {
-	Pipeline       string                        `json:"pipeline"`
-	Status         string                        `json:"status"`
-	Steps          map[string]PipelineStepResult  `json:"steps"`
+	Pipeline        string                        `json:"pipeline"`
+	Status          string                        `json:"status"`
+	Steps           map[string]PipelineStepResult `json:"steps"`
 	TotalDurationMs int                           `json:"total_duration_ms"`
-	Tokens         TokenUsage                    `json:"tokens"`
+	Tokens          TokenUsage                    `json:"tokens"`
 }
 
 // HealthResponse is the response from the health check endpoint.

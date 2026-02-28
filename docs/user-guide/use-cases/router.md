@@ -35,7 +35,8 @@ The router agent does not process the request itself. It reads the `when` condit
 
 The Router pattern uses the `delegate to agent ... when ...` syntax inside the router agent's block:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 agent "router" {
   uses prompt "triage"
   model "claude-sonnet-4-20250514"
@@ -208,7 +209,8 @@ The `when` conditions are natural-language descriptions interpreted by the route
 - **Avoid overlap.** If two conditions are too similar, the router may make inconsistent decisions. Test with edge cases.
 - **Cover the full space.** Include a catch-all specialist (like `"general-agent"`) for requests that do not match any specific category.
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 # Good: specific, non-overlapping conditions
 delegate to agent "tech-agent" when "user reports a bug or needs help with software"
 delegate to agent "billing-agent" when "user asks about invoices, payments, or subscriptions"

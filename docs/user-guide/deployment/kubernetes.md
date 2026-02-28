@@ -16,7 +16,8 @@ The `kubernetes` target deploys your agent to a Kubernetes cluster with full sup
 
 A Kubernetes deployment specifies the namespace, replicas, resources, health probes, and autoscaling:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "production" target "kubernetes" {
   namespace "agents"
   image "agentspec/my-agent:0.1.0"
@@ -84,7 +85,8 @@ When you run `agentspec apply` with a `kubernetes` target, AgentSpec:
 
 The `namespace` attribute specifies which Kubernetes namespace the resources are deployed into:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "production" target "kubernetes" {
   namespace "agents"
 }
@@ -104,7 +106,8 @@ If the namespace does not exist, AgentSpec creates it before applying the manife
 
 The `replicas` attribute sets the initial number of pod replicas in the Deployment:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 deploy "production" target "kubernetes" {
   replicas 3
 }
@@ -118,7 +121,8 @@ If `autoscale` is also configured, the `replicas` value serves as the initial co
 
 The `resources` block sets CPU and memory requests and limits for each pod:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 resources {
   cpu "1"
   memory "1Gi"
@@ -148,7 +152,8 @@ AgentSpec sets both the Kubernetes `requests` and `limits` to the same value, en
 
 The `health` block configures both liveness and readiness probes for the pods:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 health {
   path "/healthz"
   interval "30s"
@@ -178,7 +183,8 @@ Both probes use the same path, interval, and timeout. The liveness probe has a h
 
 The `autoscale` block creates a HorizontalPodAutoscaler (HPA) resource that automatically adjusts the number of replicas based on observed metrics:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 autoscale {
   min 3
   max 10
@@ -218,7 +224,8 @@ autoscale {
 
 The `secrets` block maps environment variable names to declared `secret` resources. AgentSpec creates Kubernetes Secret objects and mounts them as environment variables in the pods:
 
-```ias novalidate
+<!-- novalidate -->
+```ias
 secret "api-key" {
   env(API_KEY)
 }
