@@ -59,19 +59,21 @@ func (a *Adapter) Apply(ctx context.Context, actions []adapters.Action) ([]adapt
 	port := agentPort(resources)
 	a.imageName = "agentspec-runtime"
 
-	// Write runtime config
+	// Write runtime config to the build context (current directory)
+	// so Docker can COPY it into the image.
 	configData, err := json.MarshalIndent(resources, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("marshal config: %w", err)
 	}
 
+	if err := os.WriteFile("runtime-config.json", configData, 0644); err != nil {
+		return nil, fmt.Errorf("write config: %w", err)
+	}
+	defer os.Remove("runtime-config.json")
+
 	tmpDir, err := os.MkdirTemp("", "agentspec-docker-*")
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir: %w", err)
-	}
-
-	if err := os.WriteFile(tmpDir+"/runtime-config.json", configData, 0644); err != nil {
-		return nil, fmt.Errorf("write config: %w", err)
 	}
 
 	dockerfile := GenerateDockerfile(resources, port)
