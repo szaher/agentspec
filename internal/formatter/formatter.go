@@ -67,6 +67,8 @@ func formatStatement(sb *strings.Builder, stmt ast.Statement) {
 		formatTypeDef(sb, s)
 	case *ast.Pipeline:
 		formatPipeline(sb, s)
+	case *ast.Import:
+		formatImport(sb, s)
 	}
 }
 
@@ -186,6 +188,19 @@ func formatAgent(sb *strings.Builder, a *ast.Agent) {
 	}
 	for _, d := range a.Delegates {
 		fmt.Fprintf(sb, "  delegate to agent %q when %q\n", d.AgentRef, d.Condition)
+	}
+	// IntentLang 3.0: config, validate, eval, on input
+	if len(a.ConfigParams) > 0 {
+		formatConfigBlock(sb, a.ConfigParams, "  ")
+	}
+	if len(a.ValidationRules) > 0 {
+		formatValidateBlock(sb, a.ValidationRules, "  ")
+	}
+	if len(a.EvalCases) > 0 {
+		formatEvalBlock(sb, a.EvalCases, "  ")
+	}
+	if a.OnInput != nil {
+		formatOnInputBlock(sb, a.OnInput, "  ")
 	}
 	formatMetadata(sb, a.Metadata)
 	sb.WriteString("}\n")
@@ -547,6 +562,157 @@ func formatPipeline(sb *strings.Builder, p *ast.Pipeline) {
 		sb.WriteString("  }\n")
 	}
 	sb.WriteString("}\n")
+}
+
+// ---------------------------------------------------------------------------
+// IntentLang 3.0: Import, Config, Validate, Eval, On Input formatters
+// ---------------------------------------------------------------------------
+
+func formatImport(sb *strings.Builder, imp *ast.Import) {
+	fmt.Fprintf(sb, "import %q", imp.Path)
+	if imp.Version != "" {
+		fmt.Fprintf(sb, " version %q", imp.Version)
+	}
+	if imp.Alias != "" {
+		fmt.Fprintf(sb, " as %s", imp.Alias)
+	}
+	sb.WriteString("\n")
+}
+
+func formatConfigBlock(sb *strings.Builder, params []*ast.ConfigParam, indent string) {
+	sb.WriteString(indent + "config {\n")
+	for _, p := range params {
+		fmt.Fprintf(sb, "%s  %s %s", indent, p.Name, p.Type)
+		if p.Required {
+			sb.WriteString(" required")
+		}
+		if p.Secret {
+			sb.WriteString(" secret")
+		}
+		if p.HasDefault {
+			fmt.Fprintf(sb, " default %q", p.Default)
+		}
+		sb.WriteString("\n")
+		if p.Description != "" {
+			fmt.Fprintf(sb, "%s    %q\n", indent, p.Description)
+		}
+	}
+	sb.WriteString(indent + "}\n")
+}
+
+func formatValidateBlock(sb *strings.Builder, rules []*ast.ValidationRule, indent string) {
+	sb.WriteString(indent + "validate {\n")
+	for _, r := range rules {
+		fmt.Fprintf(sb, "%s  rule %s %s", indent, r.Name, r.Severity)
+		if r.MaxRetries > 0 {
+			fmt.Fprintf(sb, " max_retries %d", r.MaxRetries)
+		}
+		sb.WriteString("\n")
+		if r.Message != "" {
+			fmt.Fprintf(sb, "%s    %q\n", indent, r.Message)
+		}
+		if r.Expression != "" {
+			fmt.Fprintf(sb, "%s    when %s\n", indent, r.Expression)
+		}
+	}
+	sb.WriteString(indent + "}\n")
+}
+
+func formatEvalBlock(sb *strings.Builder, cases []*ast.EvalCase, indent string) {
+	sb.WriteString(indent + "eval {\n")
+	for _, c := range cases {
+		fmt.Fprintf(sb, "%s  case %s\n", indent, c.Name)
+		fmt.Fprintf(sb, "%s    input %q\n", indent, c.Input)
+		fmt.Fprintf(sb, "%s    expect %q\n", indent, c.Expected)
+		if c.Scoring != "" {
+			fmt.Fprintf(sb, "%s    scoring %s", indent, c.Scoring)
+			if c.Threshold != 0.8 {
+				fmt.Fprintf(sb, " threshold %g", c.Threshold)
+			}
+			sb.WriteString("\n")
+		}
+		if len(c.Tags) > 0 {
+			fmt.Fprintf(sb, "%s    tags [", indent)
+			for i, tag := range c.Tags {
+				if i > 0 {
+					sb.WriteString(", ")
+				}
+				fmt.Fprintf(sb, "%q", tag)
+			}
+			sb.WriteString("]\n")
+		}
+	}
+	sb.WriteString(indent + "}\n")
+}
+
+func formatOnInputBlock(sb *strings.Builder, block *ast.OnInputBlock, indent string) {
+	sb.WriteString(indent + "on input {\n")
+	for _, stmt := range block.Statements {
+		formatOnInputStmt(sb, stmt, indent+"  ")
+	}
+	sb.WriteString(indent + "}\n")
+}
+
+func formatOnInputStmt(sb *strings.Builder, stmt ast.OnInputStmt, indent string) {
+	switch s := stmt.(type) {
+	case *ast.UseSkillStmt:
+		fmt.Fprintf(sb, "%suse skill %s", indent, s.SkillName)
+		if len(s.Params) > 0 {
+			sb.WriteString(" with { ")
+			keys := make([]string, 0, len(s.Params))
+			for k := range s.Params {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for i, k := range keys {
+				if i > 0 {
+					sb.WriteString(", ")
+				}
+				fmt.Fprintf(sb, "%s: %s", k, s.Params[k])
+			}
+			sb.WriteString(" }")
+		}
+		sb.WriteString("\n")
+	case *ast.DelegateToStmt:
+		fmt.Fprintf(sb, "%sdelegate to %s\n", indent, s.AgentName)
+	case *ast.RespondStmt:
+		fmt.Fprintf(sb, "%srespond %q\n", indent, s.Expression)
+	case *ast.IfBlock:
+		formatIfBlock(sb, s, indent)
+	case *ast.ForEachBlock:
+		formatForEachBlock(sb, s, indent)
+	}
+}
+
+func formatIfBlock(sb *strings.Builder, block *ast.IfBlock, indent string) {
+	fmt.Fprintf(sb, "%sif %s {\n", indent, block.Condition)
+	for _, stmt := range block.Body {
+		formatOnInputStmt(sb, stmt, indent+"  ")
+	}
+	sb.WriteString(indent + "}")
+	for _, elseIf := range block.ElseIfs {
+		fmt.Fprintf(sb, " else if %s {\n", elseIf.Condition)
+		for _, stmt := range elseIf.Body {
+			formatOnInputStmt(sb, stmt, indent+"  ")
+		}
+		sb.WriteString(indent + "}")
+	}
+	if block.ElseBody != nil {
+		sb.WriteString(" else {\n")
+		for _, stmt := range block.ElseBody {
+			formatOnInputStmt(sb, stmt, indent+"  ")
+		}
+		sb.WriteString(indent + "}")
+	}
+	sb.WriteString("\n")
+}
+
+func formatForEachBlock(sb *strings.Builder, block *ast.ForEachBlock, indent string) {
+	fmt.Fprintf(sb, "%sfor each %s in %s {\n", indent, block.Variable, block.Collection)
+	for _, stmt := range block.Body {
+		formatOnInputStmt(sb, stmt, indent+"  ")
+	}
+	sb.WriteString(indent + "}\n")
 }
 
 func sortedKeys(m map[string]string) []string {

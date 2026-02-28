@@ -1,8 +1,8 @@
 {
   "name": "vscode-agentspec",
   "displayName": "AgentSpec IntentLang",
-  "description": "Language support for IntentLang (.ias) files - syntax highlighting, snippets, diagnostics, and code intelligence",
-  "version": "0.1.0",
+  "description": "Language support for IntentLang 3.0 (.ias) files — syntax highlighting, snippets, diagnostics, and code intelligence for AgentSpec",
+  "version": "0.3.0",
   "publisher": "agentspec",
   "license": "MIT",
   "engines": {

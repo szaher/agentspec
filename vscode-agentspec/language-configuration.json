@@ -1,7 +1,6 @@
 {
   "comments": {
-    "lineComment": "//",
-    "blockComment": null
+    "lineComment": "//"
   },
   "brackets": [
     ["{", "}"],
@@ -22,7 +21,7 @@
   ],
   "folding": {
     "markers": {
-      "start": "^\\s*(agent|prompt|skill|deploy|pipeline|step|tool|type|delegate|memory|health|autoscale|resources|variables)\\s",
+      "start": "^\\s*(agent|prompt|skill|deploy|pipeline|step|tool|type|delegate|memory|health|autoscale|resources|variables|config|validate|eval|on\\s+input|if|else|for\\s+each|environment|secret|input|output)\\s",
       "end": "^\\s*\\}"
     }
   },
@@ -30,5 +29,15 @@
     "increaseIndentPattern": "\\{\\s*$",
     "decreaseIndentPattern": "^\\s*\\}"
   },
-  "wordPattern": "[a-zA-Z_][a-zA-Z0-9_-]*"
+  "wordPattern": "[a-zA-Z_][a-zA-Z0-9_.-]*",
+  "onEnterRules": [
+    {
+      "beforeText": "\\{\\s*$",
+      "action": { "indent": "indent" }
+    },
+    {
+      "beforeText": "^\\s*\\}",
+      "action": { "indent": "outdent" }
+    }
+  ]
 }

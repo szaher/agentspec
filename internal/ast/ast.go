@@ -54,12 +54,14 @@ type Import struct {
 	Path     string
 	Version  string
 	SHA      string
+	Alias    string // IntentLang 3.0: optional import alias (import "..." as alias)
 	StartPos Pos
 	EndPos   Pos
 }
 
-func (i *Import) Pos() Pos { return i.StartPos }
-func (i *Import) End() Pos { return i.EndPos }
+func (i *Import) Pos() Pos  { return i.StartPos }
+func (i *Import) End() Pos  { return i.EndPos }
+func (i *Import) stmtNode() {}
 
 // PluginRef declares a plugin dependency.
 type PluginRef struct {
@@ -97,6 +99,12 @@ type Agent struct {
 	Fallback    string // fallback agent name
 	MemoryCfg   *MemoryConfig
 	Delegates   []*Delegate
+
+	// IntentLang 3.0: agent compilation extensions
+	ConfigParams    []*ConfigParam
+	ValidationRules []*ValidationRule
+	EvalCases       []*EvalCase
+	OnInput         *OnInputBlock
 
 	StartPos Pos
 	EndPos   Pos
@@ -472,3 +480,140 @@ type PipelineStep struct {
 
 func (s *PipelineStep) Pos() Pos { return s.StartPos }
 func (s *PipelineStep) End() Pos { return s.EndPos }
+
+// ---------------------------------------------------------------------------
+// IntentLang 3.0: Agent compilation extensions
+// ---------------------------------------------------------------------------
+
+// ConfigParam declares a runtime configuration parameter within an agent.
+type ConfigParam struct {
+	Name        string
+	Type        string // "string", "int", "float", "bool"
+	Description string
+	Required    bool
+	Secret      bool
+	Default     string
+	HasDefault  bool // distinguish empty string default from unset
+	StartPos    Pos
+	EndPos      Pos
+}
+
+func (c *ConfigParam) Pos() Pos { return c.StartPos }
+func (c *ConfigParam) End() Pos { return c.EndPos }
+
+// ValidationRule declares an output validation rule within an agent.
+type ValidationRule struct {
+	Name       string
+	Severity   string // "error" or "warning"
+	MaxRetries int
+	Message    string
+	Expression string // "when" expression (expr syntax)
+	StartPos   Pos
+	EndPos     Pos
+}
+
+func (v *ValidationRule) Pos() Pos { return v.StartPos }
+func (v *ValidationRule) End() Pos { return v.EndPos }
+
+// EvalCase declares an evaluation test case within an agent.
+type EvalCase struct {
+	Name      string
+	Input     string
+	Expected  string
+	Scoring   string  // "exact", "contains", "semantic", "custom"
+	Threshold float64 // similarity threshold (default 0.8)
+	Tags      []string
+	StartPos  Pos
+	EndPos    Pos
+}
+
+func (e *EvalCase) Pos() Pos { return e.StartPos }
+func (e *EvalCase) End() Pos { return e.EndPos }
+
+// OnInputBlock defines the agent's request processing flow.
+type OnInputBlock struct {
+	Statements []OnInputStmt
+	StartPos   Pos
+	EndPos     Pos
+}
+
+func (o *OnInputBlock) Pos() Pos { return o.StartPos }
+func (o *OnInputBlock) End() Pos { return o.EndPos }
+
+// OnInputStmt is the interface for statements within an on input block.
+type OnInputStmt interface {
+	Node
+	onInputStmtNode()
+}
+
+// UseSkillStmt invokes a skill with optional parameters.
+type UseSkillStmt struct {
+	SkillName string
+	Params    map[string]string // key-value pairs for "with { ... }"
+	StartPos  Pos
+	EndPos    Pos
+}
+
+func (u *UseSkillStmt) Pos() Pos        { return u.StartPos }
+func (u *UseSkillStmt) End() Pos        { return u.EndPos }
+func (u *UseSkillStmt) onInputStmtNode() {}
+
+// DelegateToStmt hands off processing to another agent.
+type DelegateToStmt struct {
+	AgentName string
+	StartPos  Pos
+	EndPos    Pos
+}
+
+func (d *DelegateToStmt) Pos() Pos        { return d.StartPos }
+func (d *DelegateToStmt) End() Pos        { return d.EndPos }
+func (d *DelegateToStmt) onInputStmtNode() {}
+
+// RespondStmt returns a response directly.
+type RespondStmt struct {
+	Expression string
+	StartPos   Pos
+	EndPos     Pos
+}
+
+func (r *RespondStmt) Pos() Pos        { return r.StartPos }
+func (r *RespondStmt) End() Pos        { return r.EndPos }
+func (r *RespondStmt) onInputStmtNode() {}
+
+// IfBlock represents an if/else if/else conditional block.
+type IfBlock struct {
+	Condition  string // expr expression
+	Body       []OnInputStmt
+	ElseIfs    []*ElseIfClause
+	ElseBody   []OnInputStmt // nil if no else block
+	StartPos   Pos
+	EndPos     Pos
+}
+
+func (i *IfBlock) Pos() Pos        { return i.StartPos }
+func (i *IfBlock) End() Pos        { return i.EndPos }
+func (i *IfBlock) onInputStmtNode() {}
+
+// ElseIfClause represents an else if clause.
+type ElseIfClause struct {
+	Condition string
+	Body      []OnInputStmt
+	StartPos  Pos
+	EndPos    Pos
+}
+
+func (e *ElseIfClause) Pos() Pos { return e.StartPos }
+func (e *ElseIfClause) End() Pos { return e.EndPos }
+
+// ForEachBlock represents a for each iteration loop.
+type ForEachBlock struct {
+	Variable   string // loop variable name
+	Collection string // expr expression for the collection
+	Body       []OnInputStmt
+	StartPos   Pos
+	EndPos     Pos
+}
+
+func (f *ForEachBlock) Pos() Pos        { return f.StartPos }
+func (f *ForEachBlock) End() Pos        { return f.EndPos }
+func (f *ForEachBlock) onInputStmtNode() {}

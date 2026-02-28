@@ -167,6 +167,13 @@ func Lower(f *ast.File) (*Document, error) {
 			r.Hash = ComputeHash(r.Attributes)
 			doc.Resources = append(doc.Resources, r)
 
+		case *ast.Import:
+			doc.Imports = append(doc.Imports, Import{
+				Path:    s.Path,
+				Version: s.Version,
+				Alias:   s.Alias,
+			})
+
 		case *ast.Agent:
 			attrs := map[string]interface{}{
 				"model": s.Model,
@@ -237,6 +244,77 @@ func Lower(f *ast.File) (*Document, error) {
 				}
 				attrs["delegates"] = delegates
 			}
+			// IntentLang 3.0: config, validate, eval, on input
+			if len(s.ConfigParams) > 0 {
+				params := make([]interface{}, 0, len(s.ConfigParams))
+				for _, p := range s.ConfigParams {
+					pd := map[string]interface{}{
+						"name": p.Name,
+						"type": p.Type,
+					}
+					if p.Description != "" {
+						pd["description"] = p.Description
+					}
+					if p.Required {
+						pd["required"] = true
+					}
+					if p.Secret {
+						pd["secret"] = true
+					}
+					if p.HasDefault {
+						pd["default"] = p.Default
+					}
+					params = append(params, pd)
+				}
+				attrs["config_params"] = params
+			}
+			if len(s.ValidationRules) > 0 {
+				rules := make([]interface{}, 0, len(s.ValidationRules))
+				for _, r := range s.ValidationRules {
+					rd := map[string]interface{}{
+						"name":       r.Name,
+						"severity":   r.Severity,
+						"expression": r.Expression,
+					}
+					if r.MaxRetries > 0 {
+						rd["max_retries"] = r.MaxRetries
+					}
+					if r.Message != "" {
+						rd["message"] = r.Message
+					}
+					rules = append(rules, rd)
+				}
+				attrs["validation_rules"] = rules
+			}
+			if len(s.EvalCases) > 0 {
+				cases := make([]interface{}, 0, len(s.EvalCases))
+				for _, c := range s.EvalCases {
+					cd := map[string]interface{}{
+						"name":     c.Name,
+						"input":    c.Input,
+						"expected": c.Expected,
+					}
+					if c.Scoring != "" {
+						cd["scoring"] = c.Scoring
+					}
+					if c.Threshold != 0.8 {
+						cd["threshold"] = c.Threshold
+					}
+					if len(c.Tags) > 0 {
+						tags := make([]interface{}, len(c.Tags))
+						for i, t := range c.Tags {
+							tags[i] = t
+						}
+						cd["tags"] = tags
+					}
+					cases = append(cases, cd)
+				}
+				attrs["eval_cases"] = cases
+			}
+			if s.OnInput != nil {
+				attrs["on_input"] = lowerOnInputStmts(s.OnInput.Statements)
+			}
+
 			r := Resource{
 				Kind:       "Agent",
 				Name:       s.Name,
@@ -536,6 +614,62 @@ func Lower(f *ast.File) (*Document, error) {
 
 	SortResources(doc.Resources)
 	return doc, nil
+}
+
+// lowerOnInputStmts converts on-input AST statements to IR representation.
+func lowerOnInputStmts(stmts []ast.OnInputStmt) []interface{} {
+	result := make([]interface{}, 0, len(stmts))
+	for _, stmt := range stmts {
+		switch s := stmt.(type) {
+		case *ast.UseSkillStmt:
+			sd := map[string]interface{}{
+				"type":  "use_skill",
+				"skill": s.SkillName,
+			}
+			if len(s.Params) > 0 {
+				sd["params"] = strMapToInterface(s.Params)
+			}
+			result = append(result, sd)
+		case *ast.DelegateToStmt:
+			result = append(result, map[string]interface{}{
+				"type":  "delegate",
+				"agent": s.AgentName,
+			})
+		case *ast.RespondStmt:
+			result = append(result, map[string]interface{}{
+				"type":       "respond",
+				"expression": s.Expression,
+			})
+		case *ast.IfBlock:
+			id := map[string]interface{}{
+				"type":      "if",
+				"condition": s.Condition,
+				"body":      lowerOnInputStmts(s.Body),
+			}
+			if len(s.ElseIfs) > 0 {
+				elseIfs := make([]interface{}, 0, len(s.ElseIfs))
+				for _, ei := range s.ElseIfs {
+					elseIfs = append(elseIfs, map[string]interface{}{
+						"condition": ei.Condition,
+						"body":      lowerOnInputStmts(ei.Body),
+					})
+				}
+				id["else_ifs"] = elseIfs
+			}
+			if s.ElseBody != nil {
+				id["else_body"] = lowerOnInputStmts(s.ElseBody)
+			}
+			result = append(result, id)
+		case *ast.ForEachBlock:
+			result = append(result, map[string]interface{}{
+				"type":       "for_each",
+				"variable":   s.Variable,
+				"collection": s.Collection,
+				"body":       lowerOnInputStmts(s.Body),
+			})
+		}
+	}
+	return result
 }
 
 func strMapToInterface(m map[string]string) map[string]interface{} {

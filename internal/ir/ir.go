@@ -12,10 +12,18 @@ type Document struct {
 	IRVersion     string         `json:"ir_version"`
 	LangVersion   string         `json:"lang_version"`
 	Package       Package        `json:"package"`
+	Imports       []Import       `json:"imports,omitempty"`
 	Resources     []Resource     `json:"resources"`
 	Policies      []Policy       `json:"policies,omitempty"`
 	Bindings      []Binding      `json:"bindings,omitempty"`
 	DeployTargets []DeployTarget `json:"deploy_targets,omitempty"`
+}
+
+// Import represents a resolved import dependency.
+type Import struct {
+	Path    string `json:"path"`
+	Version string `json:"version,omitempty"`
+	Alias   string `json:"alias,omitempty"`
 }
 
 // Package holds resolved package metadata.

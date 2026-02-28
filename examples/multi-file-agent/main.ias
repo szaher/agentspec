@@ -1,0 +1,18 @@
+package "multi-file-agent" version "1.0.0" lang "3.0"
+
+import "./skills/search.ias"
+import "./skills/respond.ias"
+
+prompt "system" {
+  content "You are a helpful assistant that can search the web and format responses."
+}
+
+agent "assistant" {
+  model "claude-sonnet-4-20250514"
+  prompt "system"
+  strategy "react"
+  max_turns 5
+
+  uses skill "web_search"
+  uses skill "format_response"
+}

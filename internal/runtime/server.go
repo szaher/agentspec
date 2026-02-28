@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/szaher/designs/agentz/internal/controlflow"
+	"github.com/szaher/designs/agentz/internal/frontend"
 	"github.com/szaher/designs/agentz/internal/llm"
 	"github.com/szaher/designs/agentz/internal/loop"
 	"github.com/szaher/designs/agentz/internal/session"
@@ -31,6 +33,7 @@ type Server struct {
 	apiKey      string
 	metrics     *telemetry.Metrics
 	rateLimiter *rateLimiter
+	enableUI    bool
 }
 
 // ServerOption configures the Server.
@@ -56,6 +59,11 @@ func WithRateLimit(rate float64, burst int) ServerOption {
 	return func(s *Server) {
 		s.rateLimiter = newRateLimiter(rate, burst)
 	}
+}
+
+// WithUI enables the built-in web frontend.
+func WithUI(enable bool) ServerOption {
+	return func(s *Server) { s.enableUI = enable }
 }
 
 // NewServer creates a new runtime HTTP server.
@@ -88,6 +96,11 @@ func NewServer(config *RuntimeConfig, llmClient llm.Client, registry *tools.Regi
 	mux.HandleFunc("POST /v1/pipelines/{name}/run", s.handlePipelineRun)
 	mux.Handle("GET /v1/metrics", s.metrics.Handler())
 
+	// Mount built-in frontend when enabled
+	if s.enableUI {
+		frontend.Mount(mux, frontend.NewHandler("/"))
+	}
+
 	s.mux = mux
 	return s
 }
@@ -119,6 +132,12 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Health check doesn't require auth
 		if r.URL.Path == "/healthz" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Frontend static assets don't require auth
+		if s.enableUI && !strings.HasPrefix(r.URL.Path, "/v1/") {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -186,6 +205,12 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid request body")
+		return
+	}
+
+	// If agent has on_input control flow, execute it instead of default LLM flow
+	if len(agent.OnInput) > 0 {
+		s.handleControlFlowInvoke(w, r, agent, req.Message)
 		return
 	}
 
@@ -530,6 +555,124 @@ func (s *Server) executePipeline(ctx context.Context, name string, steps []pipel
 	}
 
 	return result
+}
+
+// handleControlFlowInvoke processes an invoke request using the agent's on_input control flow.
+func (s *Server) handleControlFlowInvoke(w http.ResponseWriter, r *http.Request, agent *AgentConfig, message string) {
+	rc := controlflow.NewRuntimeContext(message, nil, nil)
+
+	// Build skill invoker that uses the LLM or registered tools
+	skillInvoker := &serverSkillInvoker{server: s, agent: agent}
+	agentDelegator := &serverAgentDelegator{server: s}
+
+	executor := controlflow.NewExecutor(skillInvoker, agentDelegator)
+
+	start := time.Now()
+	actions, output, err := executor.ExecuteBlock(r.Context(), agent.OnInput, rc)
+	if err != nil {
+		s.metrics.RecordInvocation(agent.Name, "failed", time.Since(start), 0, 0)
+		writeError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	s.metrics.RecordInvocation(agent.Name, "completed", time.Since(start), 0, 0)
+
+	// Build activity trace from actions
+	activity := make([]map[string]interface{}, len(actions))
+	for i, a := range actions {
+		entry := map[string]interface{}{
+			"type": a.Type,
+		}
+		switch a.Type {
+		case "use_skill":
+			entry["content"] = fmt.Sprintf("Invoked skill: %s", a.SkillName)
+		case "delegate":
+			entry["content"] = fmt.Sprintf("Delegated to agent: %s", a.AgentName)
+		case "respond":
+			entry["content"] = fmt.Sprintf("Responded with expression: %s", a.Expression)
+		}
+		activity[i] = entry
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"output":      output,
+		"activity":    activity,
+		"duration_ms": time.Since(start).Milliseconds(),
+	})
+}
+
+// serverSkillInvoker invokes skills through the server's registered tools or LLM.
+type serverSkillInvoker struct {
+	server *Server
+	agent  *AgentConfig
+}
+
+func (si *serverSkillInvoker) InvokeSkill(ctx context.Context, skillName string, params map[string]string, input interface{}) (string, error) {
+	// Try registered tool first
+	if si.server.registry != nil {
+		toolInput := make(map[string]interface{})
+		if params != nil {
+			for k, v := range params {
+				toolInput[k] = v
+			}
+		}
+		if input != nil {
+			toolInput["input"] = input
+		}
+		call := llm.ToolCall{
+			ID:    fmt.Sprintf("cf_%s_%d", skillName, time.Now().UnixNano()),
+			Name:  skillName,
+			Input: toolInput,
+		}
+		result, err := si.server.registry.Execute(ctx, call)
+		if err == nil {
+			return result, nil
+		}
+		// If tool not found, fall through to LLM
+	}
+
+	// Fall back to LLM invocation with skill context
+	inv := loop.Invocation{
+		AgentName: si.agent.Name,
+		Model:     si.agent.Model,
+		System:    si.agent.System,
+		Input:     fmt.Sprintf("Use the skill '%s' to process: %v", skillName, input),
+		MaxTurns:  si.agent.MaxTurns,
+		MaxTokens: 4096,
+	}
+
+	resp, err := si.server.strategy.Execute(ctx, inv, si.server.llmClient, si.server.registry, nil)
+	if err != nil {
+		return "", err
+	}
+	return resp.Output, nil
+}
+
+// serverAgentDelegator delegates to another agent through the server.
+type serverAgentDelegator struct {
+	server *Server
+}
+
+func (ad *serverAgentDelegator) DelegateToAgent(ctx context.Context, agentName string, input interface{}) (string, error) {
+	agent := ad.server.findAgent(agentName)
+	if agent == nil {
+		return "", fmt.Errorf("agent %q not found for delegation", agentName)
+	}
+
+	inv := loop.Invocation{
+		AgentName: agent.Name,
+		Model:     agent.Model,
+		System:    agent.System,
+		Input:     fmt.Sprintf("%v", input),
+		MaxTurns:  agent.MaxTurns,
+		MaxTokens: 4096,
+	}
+
+	resp, err := ad.server.strategy.Execute(ctx, inv, ad.server.llmClient, ad.server.registry, nil)
+	if err != nil {
+		return "", err
+	}
+	return resp.Output, nil
 }
 
 func (s *Server) findPipeline(name string) *PipelineConfig {

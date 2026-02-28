@@ -25,6 +25,31 @@ type AgentConfig struct {
 	Fallback    string           `json:"fallback,omitempty"`
 	Memory      *MemoryConfig    `json:"memory,omitempty"`
 	Delegates   []DelegateConfig `json:"delegates,omitempty"`
+
+	// IntentLang 3.0: compilation-specific fields
+	ConfigParams    []ConfigParamDef    `json:"config_params,omitempty"`
+	ValidationRules []ValidationRuleDef `json:"validation_rules,omitempty"`
+	EvalCases       []EvalCaseDef       `json:"eval_cases,omitempty"`
+	OnInput         []interface{}       `json:"on_input,omitempty"` // control flow block
+}
+
+// ValidationRuleDef describes a validation rule from the IR.
+type ValidationRuleDef struct {
+	Name       string `json:"name"`
+	Expression string `json:"expression"`
+	Severity   string `json:"severity"`
+	Message    string `json:"message"`
+	MaxRetries int    `json:"max_retries"`
+}
+
+// EvalCaseDef describes an eval test case from the IR.
+type EvalCaseDef struct {
+	Name      string   `json:"name"`
+	Input     string   `json:"input"`
+	Expected  string   `json:"expected"`
+	Scoring   string   `json:"scoring"`
+	Threshold float64  `json:"threshold"`
+	Tags      []string `json:"tags,omitempty"`
 }
 
 // MemoryConfig holds memory strategy configuration.
@@ -135,6 +160,85 @@ func FromIR(doc *ir.Document) (*RuntimeConfig, error) {
 					}
 				}
 			}
+			if skills, ok := r.Attributes["skills"].([]interface{}); ok {
+				for _, sk := range skills {
+					if s, ok := sk.(string); ok {
+						agent.Skills = append(agent.Skills, s)
+					}
+				}
+			}
+
+			// IntentLang 3.0: config params
+			agent.ConfigParams = ExtractConfigParams(r.Attributes)
+
+			// IntentLang 3.0: validation rules
+			if vr, ok := r.Attributes["validation_rules"].([]interface{}); ok {
+				for _, item := range vr {
+					if m, ok := item.(map[string]interface{}); ok {
+						rule := ValidationRuleDef{
+							Severity:   "error",
+							MaxRetries: 3,
+						}
+						if n, ok := m["name"].(string); ok {
+							rule.Name = n
+						}
+						if e, ok := m["expression"].(string); ok {
+							rule.Expression = e
+						}
+						if s, ok := m["severity"].(string); ok {
+							rule.Severity = s
+						}
+						if msg, ok := m["message"].(string); ok {
+							rule.Message = msg
+						}
+						if mr, ok := m["max_retries"]; ok {
+							rule.MaxRetries = toInt(mr)
+						}
+						agent.ValidationRules = append(agent.ValidationRules, rule)
+					}
+				}
+			}
+
+			// IntentLang 3.0: eval cases
+			if ec, ok := r.Attributes["eval_cases"].([]interface{}); ok {
+				for _, item := range ec {
+					if m, ok := item.(map[string]interface{}); ok {
+						c := EvalCaseDef{
+							Scoring:   "semantic",
+							Threshold: 0.8,
+						}
+						if n, ok := m["name"].(string); ok {
+							c.Name = n
+						}
+						if i, ok := m["input"].(string); ok {
+							c.Input = i
+						}
+						if e, ok := m["expected"].(string); ok {
+							c.Expected = e
+						}
+						if s, ok := m["scoring"].(string); ok {
+							c.Scoring = s
+						}
+						if t, ok := m["threshold"]; ok {
+							c.Threshold = toFloat(t)
+						}
+						if tags, ok := m["tags"].([]interface{}); ok {
+							for _, t := range tags {
+								if s, ok := t.(string); ok {
+									c.Tags = append(c.Tags, s)
+								}
+							}
+						}
+						agent.EvalCases = append(agent.EvalCases, c)
+					}
+				}
+			}
+
+			// IntentLang 3.0: on_input control flow
+			if oi, ok := r.Attributes["on_input"].([]interface{}); ok {
+				agent.OnInput = oi
+			}
+
 			config.Agents = append(config.Agents, agent)
 
 		case "Prompt":
@@ -210,6 +314,16 @@ func FromIR(doc *ir.Document) (*RuntimeConfig, error) {
 	for i, agent := range config.Agents {
 		for _, r := range doc.Resources {
 			if r.Kind == "Agent" && r.Name == agent.Name {
+				// Handle single prompt reference (IntentLang 3.0)
+				if name, ok := r.Attributes["prompt"].(string); ok {
+					if content, exists := config.Prompts[name]; exists {
+						if config.Agents[i].System != "" {
+							config.Agents[i].System += "\n\n"
+						}
+						config.Agents[i].System += content
+					}
+				}
+				// Handle list of prompt refs (IntentLang 2.0)
 				if refs, ok := r.Attributes["prompt_refs"].([]interface{}); ok {
 					for _, ref := range refs {
 						if name, ok := ref.(string); ok {

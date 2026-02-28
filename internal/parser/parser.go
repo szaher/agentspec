@@ -358,6 +358,32 @@ func (p *Parser) parseAgent() *ast.Agent {
 		case p.check(TokenMetadata):
 			p.advance()
 			p.parseMetadataBlock(agent.Metadata)
+		// IntentLang 3.0: prompt shorthand (same as uses prompt)
+		case p.check(TokenPrompt):
+			p.advance()
+			ref := &ast.Ref{
+				Kind:     "prompt",
+				Name:     p.expectStringOrIdent("prompt reference"),
+				StartPos: p.currentPos(),
+			}
+			ref.EndPos = p.currentPos()
+			agent.Prompt = ref
+		// IntentLang 3.0: config, validate, eval, on input, loop
+		case p.check(TokenConfig):
+			p.advance()
+			agent.ConfigParams = p.parseConfigBlock()
+		case p.check(TokenValidate):
+			p.advance()
+			agent.ValidationRules = p.parseValidateBlock()
+		case p.check(TokenEval):
+			p.advance()
+			agent.EvalCases = p.parseEvalBlock()
+		case p.check(TokenOn):
+			p.advance()
+			agent.OnInput = p.parseOnInputBlock()
+		case p.check(TokenLoop):
+			p.advance()
+			agent.Strategy = p.expectString("loop strategy")
 		default:
 			p.addError(fmt.Sprintf("unexpected token %s in agent block", p.current().Type), "")
 			p.advance()
@@ -728,11 +754,6 @@ func (p *Parser) parseImportAsStmt() ast.Statement {
 	startPos := p.currentPos()
 	p.expect(TokenImport)
 
-	pkg := p.parseFile().Package
-	if pkg == nil {
-		return nil
-	}
-
 	imp := &ast.Import{
 		Path:     p.expectString("import path"),
 		StartPos: startPos,
@@ -741,16 +762,12 @@ func (p *Parser) parseImportAsStmt() ast.Statement {
 		p.advance()
 		imp.Version = p.expectString("import version")
 	}
-	imp.EndPos = p.currentPos()
-
-	// Wrap in a PluginRef to satisfy Statement interface
-	pluginRef := &ast.PluginRef{
-		Name:     imp.Path,
-		Version:  imp.Version,
-		StartPos: imp.StartPos,
-		EndPos:   imp.EndPos,
+	if p.check(TokenAs) {
+		p.advance()
+		imp.Alias = p.expectStringOrIdent("import alias")
 	}
-	return pluginRef
+	imp.EndPos = p.currentPos()
+	return imp
 }
 
 // Helper methods
@@ -1512,6 +1529,434 @@ func (p *Parser) parsePipelineStep() *ast.PipelineStep {
 	step.EndPos = p.currentPos()
 	return step
 }
+
+// ---------------------------------------------------------------------------
+// IntentLang 3.0: Config, Validate, Eval, On Input, Control Flow parsers
+// ---------------------------------------------------------------------------
+
+// parseConfigBlock parses: config { name type [required] [secret] [default value] "description" ... }
+// Called after 'config' keyword has been consumed.
+func (p *Parser) parseConfigBlock() []*ast.ConfigParam {
+	var params []*ast.ConfigParam
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		param := &ast.ConfigParam{StartPos: p.currentPos()}
+		param.Name = p.expectStringOrIdent("config param name")
+		param.Type = p.expectStringOrIdent("config param type")
+
+		// Parse optional modifiers: required, secret, default
+	modLoop:
+		for !p.isAtEnd() && !p.check(TokenNewline) && !p.check(TokenRBrace) && !p.check(TokenString) {
+			switch {
+			case p.check(TokenRequired):
+				p.advance()
+				param.Required = true
+			case p.check(TokenSecret):
+				p.advance()
+				param.Secret = true
+			case p.check(TokenDefault):
+				p.advance()
+				param.HasDefault = true
+				if p.check(TokenString) {
+					param.Default = p.advance().Literal
+				} else if p.check(TokenNumber) {
+					param.Default = p.advance().Literal
+				} else if p.check(TokenTrue) {
+					param.Default = p.advance().Literal
+				} else if p.check(TokenFalse) {
+					param.Default = p.advance().Literal
+				} else {
+					param.Default = p.expectStringOrIdent("default value")
+				}
+			default:
+				break modLoop
+			}
+		}
+
+		p.skipNewlines()
+
+		// Optional description string
+		if p.check(TokenString) {
+			param.Description = p.advance().Literal
+		}
+
+		param.EndPos = p.currentPos()
+		params = append(params, param)
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	return params
+}
+
+// parseValidateBlock parses: validate { rule name severity [max_retries n] "message" when expression ... }
+// Called after 'validate' keyword has been consumed.
+func (p *Parser) parseValidateBlock() []*ast.ValidationRule {
+	var rules []*ast.ValidationRule
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		if !p.check(TokenRule) {
+			p.addError(fmt.Sprintf("unexpected token %s in validate block", p.current().Type), "expected 'rule'")
+			p.advance()
+			continue
+		}
+		p.advance() // consume 'rule'
+
+		rule := &ast.ValidationRule{StartPos: p.currentPos()}
+		rule.Name = p.expectStringOrIdent("rule name")
+		rule.Severity = p.expectStringOrIdent("rule severity")
+
+		// Optional max_retries
+		if p.check(TokenMaxRetries) {
+			p.advance()
+			rule.MaxRetries = p.expectInt("max_retries")
+		}
+
+		p.skipNewlines()
+
+		// Description string
+		if p.check(TokenString) {
+			rule.Message = p.advance().Literal
+		}
+
+		p.skipNewlines()
+
+		// when expression (collects until next 'rule' or '}')
+		if p.check(TokenWhen) {
+			p.advance()
+			rule.Expression = p.collectExpressionUntil(TokenRule, TokenRBrace)
+		}
+
+		rule.EndPos = p.currentPos()
+		rules = append(rules, rule)
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	return rules
+}
+
+// parseEvalBlock parses: eval { case name input "..." expect "..." scoring method [threshold f] [tags [...]] ... }
+// Called after 'eval' keyword has been consumed.
+func (p *Parser) parseEvalBlock() []*ast.EvalCase {
+	var cases []*ast.EvalCase
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		if !p.check(TokenCase) {
+			p.addError(fmt.Sprintf("unexpected token %s in eval block", p.current().Type), "expected 'case'")
+			p.advance()
+			continue
+		}
+		p.advance() // consume 'case'
+
+		ec := &ast.EvalCase{
+			StartPos:  p.currentPos(),
+			Threshold: 0.8, // default threshold
+		}
+		ec.Name = p.expectStringOrIdent("eval case name")
+
+		p.skipNewlines()
+
+		// Parse case attributes until next 'case' or '}'
+		for !p.check(TokenCase) && !p.check(TokenRBrace) && !p.isAtEnd() {
+			p.skipNewlines()
+			if p.check(TokenCase) || p.check(TokenRBrace) {
+				break
+			}
+
+			switch {
+			case p.check(TokenInput):
+				p.advance()
+				ec.Input = p.expectString("eval input")
+			case p.current().Literal == "expect":
+				p.advance()
+				ec.Expected = p.expectString("expected output")
+			case p.check(TokenScoring):
+				p.advance()
+				ec.Scoring = p.expectStringOrIdent("scoring method")
+				if p.check(TokenThreshold) {
+					p.advance()
+					ec.Threshold = p.expectFloat("threshold")
+				}
+			case p.check(TokenTags):
+				p.advance()
+				ec.Tags = p.parseStringList()
+			default:
+				p.addError(fmt.Sprintf("unexpected token %s in eval case", p.current().Type), "expected 'input', 'expect', 'scoring', or 'tags'")
+				p.advance()
+			}
+			p.skipNewlines()
+		}
+
+		ec.EndPos = p.currentPos()
+		cases = append(cases, ec)
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	return cases
+}
+
+// parseOnInputBlock parses: on input { statements... }
+// Called after 'on' keyword has been consumed.
+func (p *Parser) parseOnInputBlock() *ast.OnInputBlock {
+	block := &ast.OnInputBlock{StartPos: p.currentPos()}
+
+	// 'on' already consumed, expect 'input'
+	if p.check(TokenInput) {
+		p.advance()
+	} else {
+		p.addError("expected 'input' after 'on'", "")
+	}
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	block.Statements = p.parseOnInputStatements()
+
+	p.expectToken(TokenRBrace)
+	block.EndPos = p.currentPos()
+	return block
+}
+
+// parseOnInputStatements parses statements within an on input block.
+func (p *Parser) parseOnInputStatements() []ast.OnInputStmt {
+	var stmts []ast.OnInputStmt
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		switch {
+		case p.check(TokenUse):
+			stmts = append(stmts, p.parseUseSkillStmt())
+		case p.check(TokenDelegate):
+			stmts = append(stmts, p.parseDelegateToStmt())
+		case p.check(TokenRespond):
+			stmts = append(stmts, p.parseRespondStmt())
+		case p.check(TokenIf):
+			stmts = append(stmts, p.parseIfBlock())
+		case p.check(TokenFor):
+			stmts = append(stmts, p.parseForEachBlock())
+		default:
+			p.addError(fmt.Sprintf("unexpected token %s in on input block", p.current().Type),
+				"expected 'use', 'delegate', 'respond', 'if', or 'for'")
+			p.advance()
+		}
+		p.skipNewlines()
+	}
+
+	return stmts
+}
+
+// parseUseSkillStmt parses: use skill <name> [with { key: value, ... }]
+func (p *Parser) parseUseSkillStmt() *ast.UseSkillStmt {
+	stmt := &ast.UseSkillStmt{StartPos: p.currentPos()}
+	p.expect(TokenUse)
+
+	if p.check(TokenSkill) {
+		p.advance()
+	}
+
+	stmt.SkillName = p.expectStringOrIdent("skill name")
+
+	// Optional with block
+	if p.check(TokenWith) {
+		p.advance()
+		stmt.Params = make(map[string]string)
+		p.expectToken(TokenLBrace)
+		p.skipNewlines()
+
+		for !p.check(TokenRBrace) && !p.isAtEnd() {
+			p.skipNewlines()
+			if p.check(TokenRBrace) {
+				break
+			}
+
+			key := p.expectStringOrIdent("param key")
+			p.expectToken(TokenColon)
+			value := p.collectExpressionUntil(TokenComma, TokenRBrace, TokenNewline)
+			stmt.Params[key] = value
+
+			if p.check(TokenComma) {
+				p.advance()
+			}
+			p.skipNewlines()
+		}
+		p.expectToken(TokenRBrace)
+	}
+
+	stmt.EndPos = p.currentPos()
+	return stmt
+}
+
+// parseDelegateToStmt parses: delegate to <agent_name>
+func (p *Parser) parseDelegateToStmt() *ast.DelegateToStmt {
+	stmt := &ast.DelegateToStmt{StartPos: p.currentPos()}
+	p.expect(TokenDelegate)
+
+	if p.check(TokenTo) {
+		p.advance()
+	}
+
+	stmt.AgentName = p.expectStringOrIdent("agent name")
+	stmt.EndPos = p.currentPos()
+	return stmt
+}
+
+// parseRespondStmt parses: respond <expression>
+func (p *Parser) parseRespondStmt() *ast.RespondStmt {
+	stmt := &ast.RespondStmt{StartPos: p.currentPos()}
+	p.expect(TokenRespond)
+
+	if p.check(TokenString) {
+		stmt.Expression = p.advance().Literal
+	} else {
+		stmt.Expression = p.collectExpressionUntil(TokenNewline, TokenRBrace)
+	}
+
+	stmt.EndPos = p.currentPos()
+	return stmt
+}
+
+// parseIfBlock parses: if <expression> { ... } [else if <expression> { ... }]* [else { ... }]
+func (p *Parser) parseIfBlock() *ast.IfBlock {
+	block := &ast.IfBlock{StartPos: p.currentPos()}
+	p.expect(TokenIf)
+
+	block.Condition = p.collectExpressionUntil(TokenLBrace)
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+	block.Body = p.parseOnInputStatements()
+	p.expectToken(TokenRBrace)
+
+	p.skipNewlines()
+
+	// Parse else if / else chains
+	for p.check(TokenElse) {
+		p.advance()
+
+		if p.check(TokenIf) {
+			// else if
+			p.advance()
+			elseIf := &ast.ElseIfClause{StartPos: p.currentPos()}
+			elseIf.Condition = p.collectExpressionUntil(TokenLBrace)
+
+			p.expectToken(TokenLBrace)
+			p.skipNewlines()
+			elseIf.Body = p.parseOnInputStatements()
+			p.expectToken(TokenRBrace)
+			elseIf.EndPos = p.currentPos()
+
+			block.ElseIfs = append(block.ElseIfs, elseIf)
+			p.skipNewlines()
+		} else {
+			// else
+			p.expectToken(TokenLBrace)
+			p.skipNewlines()
+			block.ElseBody = p.parseOnInputStatements()
+			p.expectToken(TokenRBrace)
+			break
+		}
+	}
+
+	block.EndPos = p.currentPos()
+	return block
+}
+
+// parseForEachBlock parses: for each <variable> in <collection_expression> { ... }
+func (p *Parser) parseForEachBlock() *ast.ForEachBlock {
+	block := &ast.ForEachBlock{StartPos: p.currentPos()}
+	p.expect(TokenFor)
+
+	if p.check(TokenEach) {
+		p.advance()
+	}
+
+	block.Variable = p.expectStringOrIdent("loop variable")
+
+	if p.check(TokenIn) {
+		p.advance()
+	} else {
+		p.addError("expected 'in' in for each loop", "")
+	}
+
+	block.Collection = p.collectExpressionUntil(TokenLBrace)
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+	block.Body = p.parseOnInputStatements()
+	p.expectToken(TokenRBrace)
+
+	block.EndPos = p.currentPos()
+	return block
+}
+
+// collectExpressionUntil collects token literals into an expression string until
+// one of the stop tokens is encountered. Handles dot-separated property access
+// and preserves string literals with quotes.
+func (p *Parser) collectExpressionUntil(stopTokens ...TokenType) string {
+	var parts []string
+	for !p.isAtEnd() && !p.isStopToken(stopTokens) {
+		if p.check(TokenNewline) {
+			p.advance()
+			continue
+		}
+		tok := p.current()
+		switch {
+		case tok.Type == TokenString:
+			parts = append(parts, `"`+tok.Literal+`"`)
+		case tok.Type == TokenDot:
+			// Attach dot to previous part for property access
+			if len(parts) > 0 {
+				parts[len(parts)-1] += "."
+			}
+		default:
+			// If previous part ends with dot, append without space
+			if len(parts) > 0 && strings.HasSuffix(parts[len(parts)-1], ".") {
+				parts[len(parts)-1] += tok.Literal
+			} else {
+				parts = append(parts, tok.Literal)
+			}
+		}
+		p.advance()
+	}
+	return strings.TrimSpace(strings.Join(parts, " "))
+}
+
+// isStopToken checks if the current token matches any of the given stop tokens.
+func (p *Parser) isStopToken(stops []TokenType) bool {
+	for _, stop := range stops {
+		if p.check(stop) {
+			return true
+		}
+	}
+	return false
+}
+
+// expectToken for TokenColon (needed for with { key: value } syntax)
+// Already handled by the generic expectToken method.
 
 // AllNames returns all registered names for duplicate checking and suggestions.
 func (p *Parser) AllNames() map[string]map[string]bool {

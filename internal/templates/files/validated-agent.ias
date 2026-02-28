@@ -1,0 +1,33 @@
+// {{.PackageName}} — IntentLang 3.0 agent with config, validation, eval, and control flow.
+
+package "{{.PackageName}}" version "1.0.0" lang "3.0"
+
+agent "{{.PackageName}}" {
+  model "claude-sonnet-4-5-20250514"
+  strategy "react"
+  max_turns 5
+  system "You are a helpful assistant."
+
+  config {
+    greeting string default "Hello! How can I help?" "Greeting message"
+    max_response_length int default "1000" "Maximum response length"
+    api_key string required secret "API key for authentication"
+  }
+
+  validate {
+    rule response_length warning "Response exceeds maximum length" when output != ""
+    rule professional_tone warning "Keep a professional tone" when output != ""
+  }
+
+  eval {
+    case greeting input "Hello" expect "help" scoring contains
+  }
+
+  on input {
+    if contains(lower(input.message), "help") {
+      respond config.greeting
+    }
+
+    respond "I received your message. Let me help you with that."
+  }
+}

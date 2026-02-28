@@ -90,6 +90,37 @@ func (l *Lexer) nextToken() (Token, error) {
 		return l.scanString()
 	case isDigit(ch) || (ch == '-' && l.peekAt(1) != 0 && isDigit(l.peekAt(1))):
 		return l.scanNumber()
+	case ch == ':':
+		l.advance()
+		return l.makeToken(TokenColon, ":"), nil
+	case ch == '=':
+		l.advance()
+		if l.peek() == '=' {
+			l.advance()
+			return l.makeToken(TokenEqual, "=="), nil
+		}
+		return Token{}, fmt.Errorf("%s:%d:%d: unexpected character '=' (did you mean '=='?)", l.file, l.startLn, l.startCl)
+	case ch == '!':
+		l.advance()
+		if l.peek() == '=' {
+			l.advance()
+			return l.makeToken(TokenNotEqual, "!="), nil
+		}
+		return Token{}, fmt.Errorf("%s:%d:%d: unexpected character '!'", l.file, l.startLn, l.startCl)
+	case ch == '>':
+		l.advance()
+		if l.peek() == '=' {
+			l.advance()
+			return l.makeToken(TokenGreaterEq, ">="), nil
+		}
+		return l.makeToken(TokenGreater, ">"), nil
+	case ch == '<':
+		l.advance()
+		if l.peek() == '=' {
+			l.advance()
+			return l.makeToken(TokenLessEq, "<="), nil
+		}
+		return l.makeToken(TokenLess, "<"), nil
 	case isIdentStart(ch):
 		return l.scanIdentOrKeyword()
 	default:

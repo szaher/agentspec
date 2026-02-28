@@ -4,10 +4,15 @@ import * as vscode from "vscode";
  * Register the IntentLang go-to-definition provider.
  *
  * Resolves references like:
- *   uses prompt "name"  -> prompt "name" { ... } block
- *   uses skill "name"   -> skill "name" { ... } block
- *   agent = "name"      -> agent "name" { ... } block (in pipeline steps)
- *   depends_on = ["x"]  -> step "x" { ... } block (in pipeline steps)
+ *   uses prompt "name"       -> prompt "name" { ... }
+ *   uses skill "name"        -> skill "name" { ... }
+ *   use skill "name"         -> skill "name" { ... } (in on input blocks)
+ *   prompt "name"            -> prompt "name" { ... } (agent attribute)
+ *   delegate to "name"       -> agent "name" { ... }
+ *   agent "name"             -> agent "name" { ... } (in pipeline steps)
+ *   depends_on ["name"]      -> step "name" { ... }
+ *   fallback "name"          -> agent "name" { ... }
+ *   import "./path.ias" as x -> opens the file
  */
 export function registerDefinitionProvider(context: vscode.ExtensionContext) {
   const provider = vscode.languages.registerDefinitionProvider(
@@ -30,6 +35,12 @@ class IntentLangDefinitionProvider implements vscode.DefinitionProvider {
     const nameAtCursor = this.getQuotedNameAtPosition(lineText, position.character);
     if (!nameAtCursor) return undefined;
 
+    // Handle import — open the referenced file
+    const importMatch = lineText.match(/^\s*import\s+"([^"]+)"/);
+    if (importMatch && nameAtCursor === importMatch[1]) {
+      return this.resolveImportPath(document, importMatch[1]);
+    }
+
     // Determine what kind of reference this is
     const ref = this.classifyReference(lineText, nameAtCursor);
     if (!ref) return undefined;
@@ -42,12 +53,11 @@ class IntentLangDefinitionProvider implements vscode.DefinitionProvider {
     line: string,
     character: number
   ): string | undefined {
-    // Find the quoted string that the cursor is within
     const regex = /"([^"]+)"/g;
     let match;
 
     while ((match = regex.exec(line)) !== null) {
-      const start = match.index + 1; // after opening quote
+      const start = match.index + 1;
       const end = start + match[1].length;
       if (character >= start && character <= end) {
         return match[1];
@@ -66,28 +76,33 @@ class IntentLangDefinitionProvider implements vscode.DefinitionProvider {
       return { kind: "prompt", name };
     }
 
-    // uses skill "name"
-    if (line.match(/uses\s+skill\s+"/)) {
+    // prompt "name" (as agent attribute — no brace on same line)
+    if (line.match(/^\s+prompt\s+"/) && !line.match(/\{/)) {
+      return { kind: "prompt", name };
+    }
+
+    // uses skill "name" or use skill "name"
+    if (line.match(/uses?\s+skill\s+"/)) {
       return { kind: "skill", name };
     }
 
-    // agent = "name" (in pipeline step)
-    if (line.match(/agent\s*=\s*"/)) {
+    // delegate to "name"
+    if (line.match(/delegate\s+to\s+"/)) {
       return { kind: "agent", name };
     }
 
-    // depends_on = ["name"]
-    if (line.match(/depends_on\s*=\s*\[/)) {
+    // agent "name" in pipeline step (indented)
+    if (line.match(/^\s+agent\s+"/) && !line.match(/\{/)) {
+      return { kind: "agent", name };
+    }
+
+    // depends_on ["name"]
+    if (line.match(/depends_on\s*\[/)) {
       return { kind: "step", name };
     }
 
-    // delegate to agent "name"
-    if (line.match(/delegate\s+to\s+agent\s+"/)) {
-      return { kind: "agent", name };
-    }
-
-    // fallback = "name"
-    if (line.match(/fallback\s*=\s*"/)) {
+    // fallback "name"
+    if (line.match(/fallback\s+"/)) {
       return { kind: "agent", name };
     }
 
@@ -102,12 +117,10 @@ class IntentLangDefinitionProvider implements vscode.DefinitionProvider {
     const text = document.getText();
     const lines = text.split("\n");
 
-    // Build regex for block definition
     const regex = new RegExp(`^\\s*${kind}\\s+"${escapeRegex(name)}"\\s*\\{?`);
 
     for (let i = 0; i < lines.length; i++) {
       if (regex.test(lines[i])) {
-        // Find the column where the name starts
         const nameIndex = lines[i].indexOf(`"${name}"`);
         const col = nameIndex >= 0 ? nameIndex + 1 : 0;
         return new vscode.Location(
@@ -118,6 +131,16 @@ class IntentLangDefinitionProvider implements vscode.DefinitionProvider {
     }
 
     return undefined;
+  }
+
+  private resolveImportPath(
+    document: vscode.TextDocument,
+    importPath: string
+  ): vscode.Location | undefined {
+    // Resolve relative to the current file
+    const dir = vscode.Uri.joinPath(document.uri, "..");
+    const resolved = vscode.Uri.joinPath(dir, importPath);
+    return new vscode.Location(resolved, new vscode.Position(0, 0));
   }
 }
 

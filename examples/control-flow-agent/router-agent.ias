@@ -1,0 +1,77 @@
+package "router-agent" version "1.0.0" lang "3.0"
+
+prompt "router-system" {
+  content "You are a routing agent that directs requests to the appropriate handler."
+}
+
+skill "greet_user" {
+  description "Greet the user warmly"
+
+  input {
+    name string required
+  }
+
+  output {
+    greeting string required
+  }
+
+  tool command {
+    binary "echo"
+    args "Hello, welcome!"
+  }
+}
+
+skill "search_faq" {
+  description "Search the FAQ database"
+
+  input {
+    query string required
+  }
+
+  output {
+    answer string required
+  }
+
+  tool command {
+    binary "echo"
+    args "FAQ result for query"
+  }
+}
+
+skill "escalate" {
+  description "Escalate to human support"
+
+  input {
+    reason string required
+  }
+
+  output {
+    ticket string required
+  }
+
+  tool command {
+    binary "echo"
+    args "Escalated to human support"
+  }
+}
+
+agent "router" {
+  model "claude-sonnet-4-20250514"
+  prompt "router-system"
+  strategy "react"
+  max_turns 5
+
+  uses skill "greet_user"
+  uses skill "search_faq"
+  uses skill "escalate"
+
+  on input {
+    if input == "hello" {
+      use skill "greet_user"
+    } else if input == "help" {
+      use skill "search_faq"
+    } else {
+      use skill "escalate"
+    }
+  }
+}

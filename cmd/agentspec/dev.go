@@ -16,6 +16,7 @@ import (
 
 func newDevCmd() *cobra.Command {
 	var port int
+	var enableUI bool
 
 	cmd := &cobra.Command{
 		Use:   "dev [file.ias]",
@@ -34,16 +35,17 @@ func newDevCmd() *cobra.Command {
 			ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
 
-			return runDevLoop(ctx, files, port, logger)
+			return runDevLoop(ctx, files, port, enableUI, logger)
 		},
 	}
 
 	cmd.Flags().IntVar(&port, "port", 8080, "HTTP server port")
+	cmd.Flags().BoolVar(&enableUI, "ui", true, "Enable built-in web frontend")
 
 	return cmd
 }
 
-func runDevLoop(ctx context.Context, files []string, port int, logger *slog.Logger) error {
+func runDevLoop(ctx context.Context, files []string, port int, enableUI bool, logger *slog.Logger) error {
 	var rt *runtime.Runtime
 
 	startRuntime := func() error {
@@ -65,8 +67,9 @@ func runDevLoop(ctx context.Context, files []string, port int, logger *slog.Logg
 		}
 
 		rt, err = runtime.New(config, runtime.Options{
-			Port:   port,
-			Logger: logger,
+			Port:     port,
+			Logger:   logger,
+			EnableUI: enableUI,
 		})
 		if err != nil {
 			return fmt.Errorf("runtime error: %w", err)
@@ -82,7 +85,7 @@ func runDevLoop(ctx context.Context, files []string, port int, logger *slog.Logg
 	}
 
 	// Initial start
-	logger.Info("starting dev server", "files", files, "port", port)
+	logger.Info("starting dev server", "files", files, "port", port, "ui", enableUI)
 	if err := startRuntime(); err != nil {
 		logger.Error("initial start failed", "error", err)
 		return err

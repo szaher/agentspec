@@ -43,9 +43,9 @@ Go 1.25+: Follow standard conventions
 - Go module path: `github.com/szaher/designs/agentz` (unchanged)
 
 ## Recent Changes
+- 006-agent-compile-deploy: Added Go 1.25+ (compiler, runtime embedding), expr-lang/expr (expression eval), go:embed (frontend + config bundling), Vanilla JS + SSE (built-in frontend)
 - 005-docs-site: Added Python 3.9+ (MkDocs), Go 1.25+ (example validation), Markdown (content)
 - 004-runtime-platform: Added Go 1.25+ (existing)
-- 003-intentlang-rename: Renamed language to IntentLang, file extension `.az` → `.ias`, binary `agentz` → `agentspec`
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
