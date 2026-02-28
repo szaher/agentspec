@@ -9,7 +9,7 @@ custom environment.
 
 ## Syntax
 
-```ias novalidate
+```ias
 environment "<name>" {
   agent "<agent-name>" {
     <attribute> <value>
@@ -60,7 +60,7 @@ The environment block itself has no direct attributes beyond its name. It contai
 
 Consider an agent defined with a base model:
 
-```ias novalidate
+```ias
 agent "assistant" {
   uses prompt "greeting"
   uses skill "search"
@@ -71,7 +71,7 @@ agent "assistant" {
 An environment overlay can change the model without duplicating the rest of the
 definition:
 
-```ias novalidate
+```ias
 environment "dev" {
   agent "assistant" {
     model "claude-haiku-latest"
@@ -143,7 +143,7 @@ deploy "local" target "process" {
 
 Override different agents within the same environment.
 
-```ias novalidate
+```ias
 agent "code-analyzer" {
   uses prompt "analyzer"
   uses skill "analyze-code"
@@ -216,7 +216,7 @@ Environment overrides interact with [policy](policy.md) blocks. A policy that
 denies a specific model will reject an environment that overrides an agent to use
 that model.
 
-```ias novalidate
+```ias
 policy "no-haiku-in-prod" {
   deny model claude-haiku-latest
 }

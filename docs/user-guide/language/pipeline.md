@@ -9,7 +9,7 @@ run in parallel by default.
 
 ## Syntax
 
-```ias novalidate
+```ias
 pipeline "<name>" {
   step "<step-name>" {
     agent   "<agent-ref>"
@@ -130,7 +130,7 @@ The execution order is always: extract, transform, load.
 
 Two independent analysis steps run concurrently before a final merge step.
 
-```ias fragment
+```ias
 pipeline "dual-analysis" {
   step "sentiment" {
     agent "sentiment-analyzer"
@@ -160,7 +160,7 @@ parallel. `merge` waits for both to finish before it runs.
 A code review pipeline that fans out to multiple reviewers and fans in to a
 summarizer.
 
-```ias fragment
+```ias
 pipeline "code-review" {
   step "analyze" {
     agent "code-analyzer"

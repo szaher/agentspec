@@ -6,7 +6,7 @@ The `deploy` block defines a deployment target for your agent system. A single `
 
 ## Syntax
 
-```ias novalidate
+```ias
 deploy "<name>" target "<type>" {
   default <bool>
   port <int>
@@ -72,7 +72,7 @@ deploy "<name>" target "<type>" {
 
 The `resources` block sets CPU and memory constraints for the deployed service.
 
-```ias novalidate
+```ias
 resources {
   cpu "<cpu-spec>"
   memory "<memory-spec>"
@@ -90,7 +90,7 @@ resources {
 
 The `health` block configures health checking for the deployed service.
 
-```ias novalidate
+```ias
 health {
   path "<endpoint>"
   interval "<duration>"
@@ -110,7 +110,7 @@ health {
 
 The `autoscale` block defines horizontal pod autoscaling rules. Only applicable to the `"kubernetes"` target.
 
-```ias novalidate
+```ias
 autoscale {
   min <int>
   max <int>

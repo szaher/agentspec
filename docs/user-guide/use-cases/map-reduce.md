@@ -35,7 +35,7 @@ In IntentLang, this pattern is expressed as a `pipeline` where the map steps hav
 
 The Map-Reduce pattern uses a `pipeline` block with parallel map steps and a dependent reduce step:
 
-```ias novalidate
+```ias
 pipeline "map-reduce" {
   step "map-1" {
     agent "mapper"
@@ -192,7 +192,7 @@ Consider a different pattern when:
 
 To process more data chunks, add more map steps to the pipeline and update the reduce step's `depends_on` list:
 
-```ias novalidate
+```ias
 pipeline "large-map-reduce" {
   step "map-1" {
     agent "mapper"
@@ -231,7 +231,7 @@ pipeline "large-map-reduce" {
 
 For very large data sets, you can introduce intermediate reduce steps to avoid overwhelming a single reducer:
 
-```ias novalidate
+```ias
 pipeline "hierarchical-map-reduce" {
   step "map-1" { agent "mapper" input "chunk 1" output "r1" }
   step "map-2" { agent "mapper" input "chunk 2" output "r2" }

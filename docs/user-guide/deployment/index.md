@@ -28,7 +28,7 @@ Every deployment follows the same four-step workflow, regardless of the target.
 
 Add a `deploy` block to your `.ias` file specifying the target type and its configuration:
 
-```ias novalidate
+```ias
 deploy "production" target "kubernetes" {
   namespace "agents"
   replicas 3
@@ -85,7 +85,7 @@ curl http://localhost:8080/healthz
 
 The `deploy` block has the following general structure:
 
-```ias novalidate
+```ias
 deploy "<name>" target "<type>" {
   default <bool>
   port <int>
@@ -126,7 +126,7 @@ These attributes are available across all deployment targets.
 
 The port the agent service listens on:
 
-```ias novalidate
+```ias
 deploy "local" target "process" {
   port 8080
 }
@@ -136,7 +136,7 @@ deploy "local" target "process" {
 
 Health check configuration. AgentSpec uses this to verify the agent is running correctly after deployment:
 
-```ias novalidate
+```ias
 health {
   path "/healthz"
   interval "30s"
@@ -154,7 +154,7 @@ health {
 
 Environment variables passed to the deployed service:
 
-```ias novalidate
+```ias
 env {
   LOG_LEVEL "info"
   ENVIRONMENT "staging"
@@ -165,7 +165,7 @@ env {
 
 Maps environment variable names to declared `secret` resources. Secrets are resolved at deploy time from their configured source (environment variable or secret store):
 
-```ias novalidate
+```ias
 secrets {
   API_KEY "api-key"
   DATABASE_URL "db-url"
@@ -179,7 +179,7 @@ secrets {
 
 Mark one deploy block as the default target. This is the target used when you run `agentspec apply` without the `--target` flag:
 
-```ias novalidate
+```ias
 deploy "local" target "process" {
   default true
 }

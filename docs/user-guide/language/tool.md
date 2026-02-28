@@ -12,7 +12,7 @@ The `mcp` variant delegates execution to a tool exposed by an MCP (Model Context
 
 ### Syntax
 
-```ias novalidate
+```ias
 tool mcp "<server-name>/<tool-name>"
 ```
 
@@ -79,7 +79,7 @@ The `http` variant makes HTTP requests to external APIs. This is useful for inte
 
 ### Syntax
 
-```ias novalidate
+```ias
 tool http {
   method "<HTTP-method>"
   url "<endpoint-url>"
@@ -169,7 +169,7 @@ The `command` variant executes a local binary or script. The binary receives inp
 
 ### Syntax
 
-```ias novalidate
+```ias
 tool command {
   binary "<executable>"
   args ["<arg1>", "<arg2>"]
@@ -253,7 +253,7 @@ The `inline` variant executes embedded code in a sandboxed WebAssembly (WASM) en
 
 ### Syntax
 
-```ias novalidate
+```ias
 tool inline {
   language "<language>"
   code "<source-code>"
