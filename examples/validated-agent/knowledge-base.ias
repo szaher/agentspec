@@ -1,5 +1,3 @@
-// Knowledge base prompts and skills for the support agent.
-
 package "knowledge-base" version "1.0.0" lang "3.0"
 
 prompt "knowledge-base-context" {
@@ -8,15 +6,12 @@ prompt "knowledge-base-context" {
 
 skill "format-response" {
   description "Format support responses with proper headers and sections"
-
   input {
     text string required
   }
-
   output {
     formatted string required
   }
-
   tool inline {
     language "python"
     code "print(f'Support Response: {input}')"

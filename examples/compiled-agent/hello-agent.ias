@@ -19,9 +19,9 @@ skill "get_time" {
 }
 
 agent "hello" {
-  model "claude-sonnet-4-20250514"
-  prompt "greeting"
+  uses prompt "greeting"
   uses skill "get_time"
+  model "claude-sonnet-4-20250514"
   strategy "react"
   max_turns 5
   timeout "30s"
@@ -29,21 +29,33 @@ agent "hello" {
   stream true
   on_error "retry"
   max_retries 2
-
   config {
-    greeting_style string default "friendly" "Style of greeting: friendly, formal, casual"
-    max_name_length int default "50" "Maximum length for user names"
-    api_key string required secret "API key for the LLM provider"
+    greeting_style string default "friendly"
+      "Style of greeting: friendly, formal, casual"
+    max_name_length int default "50"
+      "Maximum length for user names"
+    api_key string required secret
+      "API key for the LLM provider"
   }
-
   validate {
-    rule output_not_empty error "Response must not be empty" when output != ""
-    rule no_profanity warning "Response should not contain inappropriate language" when output != ""
+    rule output_not_empty error
+      "Response must not be empty"
+      when output != ""
+    rule no_profanity warning
+      "Response should not contain inappropriate language"
+      when output != ""
   }
-
   eval {
-    case greeting_test input "Hello, my name is Alice" expect "Hello Alice" scoring contains threshold 0.7 tags ["greeting" "basic"]
-    case empty_input input "hi" expect "Hello! How can I help you today?" scoring semantic threshold 0.6 tags ["edge-case"]
+    case greeting_test
+      input "Hello, my name is Alice"
+      expect "Hello Alice"
+      scoring contains threshold 0.7
+      tags ["greeting", "basic"]
+    case empty_input
+      input "hi"
+      expect "Hello! How can I help you today?"
+      scoring semantic threshold 0.6
+      tags ["edge-case"]
   }
 }
 
