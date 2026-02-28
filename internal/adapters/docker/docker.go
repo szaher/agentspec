@@ -95,7 +95,7 @@ func (a *Adapter) Apply(ctx context.Context, actions []adapters.Action) ([]adapt
 	if err := os.WriteFile(configPath, configData, 0644); err != nil {
 		return nil, fmt.Errorf("write config: %w", err)
 	}
-	defer os.Remove(configPath)
+	defer func() { _ = os.Remove(configPath) }()
 
 	tmpDir, err := os.MkdirTemp("", "agentspec-docker-*")
 	if err != nil {
