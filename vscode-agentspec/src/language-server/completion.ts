@@ -182,11 +182,15 @@ class IntentLangCompletionProvider implements vscode.CompletionItemProvider {
   private getModelCompletions(): vscode.CompletionItem[] {
     const models = [
       { name: "ollama/llama3.2", detail: "Ollama — Llama 3.2 (local)" },
+      { name: "ollama/llama3.1", detail: "Ollama — Llama 3.1 (local)" },
       { name: "ollama/mistral", detail: "Ollama — Mistral (local)" },
       { name: "ollama/codellama:7b", detail: "Ollama — CodeLlama 7B (local)" },
       { name: "ollama/qwen2.5-coder:7b", detail: "Ollama — Qwen 2.5 Coder (local)" },
       { name: "ollama/deepseek-coder:6.7b", detail: "Ollama — DeepSeek Coder (local)" },
+      { name: "anthropic/claude-sonnet-4-20250514", detail: "Anthropic — Claude Sonnet 4 (provider-prefixed)" },
+      { name: "anthropic/claude-haiku-3-5-20241022", detail: "Anthropic — Claude Haiku 3.5 (provider-prefixed)" },
       { name: "claude-sonnet-4-20250514", detail: "Anthropic — Claude Sonnet 4" },
+      { name: "claude-sonnet-4-5-20250514", detail: "Anthropic — Claude Sonnet 4.5" },
       { name: "claude-haiku-3-5-20241022", detail: "Anthropic — Claude Haiku 3.5" },
       { name: "openai/gpt-4o", detail: "OpenAI — GPT-4o" },
       { name: "openai/gpt-4o-mini", detail: "OpenAI — GPT-4o Mini" },
@@ -213,6 +217,9 @@ class IntentLangCompletionProvider implements vscode.CompletionItemProvider {
       { name: "pipeline", detail: "Define a multi-agent pipeline", kind: vscode.CompletionItemKind.Interface },
       { name: "environment", detail: "Define environment overrides", kind: vscode.CompletionItemKind.Module },
       { name: "secret", detail: "Define a secret reference", kind: vscode.CompletionItemKind.Key },
+      { name: "policy", detail: "Define deployment policy rules", kind: vscode.CompletionItemKind.Module },
+      { name: "server", detail: "Define an MCP server", kind: vscode.CompletionItemKind.Module },
+      { name: "client", detail: "Define an MCP client", kind: vscode.CompletionItemKind.Module },
       { name: "type", detail: "Define a custom type", kind: vscode.CompletionItemKind.Struct },
     ];
 
@@ -267,6 +274,12 @@ class IntentLangCompletionProvider implements vscode.CompletionItemProvider {
         ]);
       case "memory":
         return this.makeAttrItems(["strategy", "max_messages"]);
+      case "policy":
+        return this.makeAttrItems(["allow", "deny", "require"]);
+      case "server":
+        return this.makeAttrItems(["transport", "command", "args"]);
+      case "client":
+        return this.makeAttrItems(["connects"]);
       case "input":
       case "output":
         return this.makeAttrItems(["string", "int", "float", "bool", "required"]);
@@ -282,7 +295,7 @@ class IntentLangCompletionProvider implements vscode.CompletionItemProvider {
     for (let i = position.line; i >= 0; i--) {
       const line = document.lineAt(i).text;
       const match = line.match(
-        /^\s*(agent|prompt|skill|deploy|pipeline|step|tool|type|delegate|memory|health|autoscale|resources|variables|config|validate|eval|on|if|else|for|input|output|environment|secret)\s/
+        /^\s*(agent|prompt|skill|deploy|pipeline|step|tool|type|delegate|memory|health|autoscale|resources|variables|config|validate|eval|on|if|else|for|input|output|environment|secret|policy|server|client)\s/
       );
       if (match) {
         return match[1];

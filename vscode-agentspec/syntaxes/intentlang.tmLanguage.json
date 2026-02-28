@@ -93,7 +93,7 @@
         },
         {
           "name": "keyword.control.action.intentlang",
-          "match": "\\b(respond)\\b"
+          "match": "\\b(respond|allow|deny|require)\\b"
         },
         {
           "name": "keyword.control.event.intentlang",
@@ -137,7 +137,7 @@
         },
         {
           "name": "storage.type.intentlang",
-          "match": "\\b(deploy|target|pipeline|step|delegate|type|tool|memory|health|autoscale|resources|variables|environment|secret)\\b"
+          "match": "\\b(deploy|target|pipeline|step|delegate|type|tool|memory|health|autoscale|resources|variables|environment|secret|policy|server|client)\\b"
         },
         {
           "name": "storage.type.config.intentlang",

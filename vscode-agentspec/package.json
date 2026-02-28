@@ -88,6 +88,18 @@
       {
         "command": "agentspec.plan",
         "title": "AgentSpec: Show Plan"
+      },
+      {
+        "command": "agentspec.compile",
+        "title": "AgentSpec: Compile Current File"
+      },
+      {
+        "command": "agentspec.eval",
+        "title": "AgentSpec: Run Eval"
+      },
+      {
+        "command": "agentspec.package",
+        "title": "AgentSpec: Package Agent"
       }
     ]
   },

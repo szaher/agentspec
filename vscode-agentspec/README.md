@@ -104,6 +104,9 @@ Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) and type "AgentSpec":
 | **AgentSpec: Validate Current File** | Run `agentspec validate` on the active file |
 | **AgentSpec: Format Current File** | Run `agentspec fmt` on the active file |
 | **AgentSpec: Show Plan** | Run `agentspec plan` and display results |
+| **AgentSpec: Compile Current File** | Run `agentspec compile` on the active file |
+| **AgentSpec: Run Eval** | Run `agentspec eval` on the active file |
+| **AgentSpec: Package Agent** | Run `agentspec package` on the active file |
 
 ## Snippets
 
@@ -134,6 +137,11 @@ Type any of these prefixes and press `Tab`:
 | `tool-inline` | Inline code tool |
 | `tool-mcp` | MCP tool |
 | `memory` | Memory configuration |
+| `environment` | Environment-specific configuration |
+| `secret` | Secret definition |
+| `policy` | Deployment policy rules |
+| `server` | MCP server definition |
+| `client` | MCP client definition |
 
 ## IntentLang 3.0 Support
 

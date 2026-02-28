@@ -268,5 +268,52 @@
       "  max_messages ${2:20}",
       "}"
     ]
+  },
+  "Environment": {
+    "prefix": "environment",
+    "body": [
+      "environment \"${1:name}\" {",
+      "  ${2:key} \"${3:value}\"",
+      "}"
+    ],
+    "description": "Environment-specific configuration"
+  },
+  "Secret": {
+    "prefix": "secret",
+    "body": [
+      "secret \"${1:name}\" {",
+      "  env \"${2:ENV_VAR}\"",
+      "}"
+    ],
+    "description": "Secret definition with env source"
+  },
+  "Policy": {
+    "prefix": "policy",
+    "body": [
+      "policy \"${1:name}\" {",
+      "  ${2|deny,require,allow|} \"${3:rule}\"",
+      "}"
+    ],
+    "description": "Deployment policy rules"
+  },
+  "MCP Server": {
+    "prefix": "server",
+    "body": [
+      "server \"${1:name}\" {",
+      "  transport \"${2|stdio,sse|}\"",
+      "  command \"${3:binary}\"",
+      "  args \"${4:args}\"",
+      "}"
+    ],
+    "description": "MCP server definition"
+  },
+  "MCP Client": {
+    "prefix": "client",
+    "body": [
+      "client \"${1:name}\" {",
+      "  connects \"${2:server-name}\"",
+      "}"
+    ],
+    "description": "MCP client definition"
   }
 }
