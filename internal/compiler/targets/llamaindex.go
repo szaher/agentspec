@@ -96,7 +96,7 @@ func (t *LlamaIndexTarget) generateTools(skills []ir.Resource) plugins.Generated
 			desc = fmt.Sprintf("%s tool", skill.Name)
 		}
 
-		sb.WriteString(fmt.Sprintf("def _%s_fn(", safeName))
+		fmt.Fprintf(&sb, "def _%s_fn(", safeName)
 
 		if inputs, ok := skill.Attributes["input"].([]interface{}); ok {
 			var params []string
@@ -121,7 +121,7 @@ func (t *LlamaIndexTarget) generateTools(skills []ir.Resource) plugins.Generated
 		}
 
 		sb.WriteString(") -> str:\n")
-		sb.WriteString(fmt.Sprintf("    \"\"\"%s\"\"\"\n", desc))
+		fmt.Fprintf(&sb, "    \"\"\"%s\"\"\"\n", desc)
 
 		if tool, ok := skill.Attributes["tool"].(map[string]interface{}); ok {
 			toolType, _ := tool["type"].(string)
@@ -130,10 +130,10 @@ func (t *LlamaIndexTarget) generateTools(skills []ir.Resource) plugins.Generated
 				binary, _ := tool["binary"].(string)
 				args, _ := tool["args"].(string)
 				if binary != "" {
-					sb.WriteString(fmt.Sprintf("    result = subprocess.run([%q", binary))
+					fmt.Fprintf(&sb, "    result = subprocess.run([%q", binary)
 					if args != "" {
 						for _, arg := range strings.Fields(args) {
-							sb.WriteString(fmt.Sprintf(", %q", arg))
+							fmt.Fprintf(&sb, ", %q", arg)
 						}
 					}
 					sb.WriteString("], capture_output=True, text=True)\n")
@@ -148,7 +148,7 @@ func (t *LlamaIndexTarget) generateTools(skills []ir.Resource) plugins.Generated
 					if method == "" {
 						method = "GET"
 					}
-					sb.WriteString(fmt.Sprintf("    req = urllib.request.Request(%q, method=%q)\n", url, method))
+					fmt.Fprintf(&sb, "    req = urllib.request.Request(%q, method=%q)\n", url, method)
 					sb.WriteString("    with urllib.request.urlopen(req) as resp:\n")
 					sb.WriteString("        return resp.read().decode()\n")
 				} else {
@@ -171,10 +171,10 @@ func (t *LlamaIndexTarget) generateTools(skills []ir.Resource) plugins.Generated
 		if desc == "" {
 			desc = fmt.Sprintf("%s tool", skill.Name)
 		}
-		sb.WriteString(fmt.Sprintf("%s = FunctionTool.from_defaults(\n", safeName))
-		sb.WriteString(fmt.Sprintf("    fn=_%s_fn,\n", safeName))
-		sb.WriteString(fmt.Sprintf("    name=%q,\n", safeName))
-		sb.WriteString(fmt.Sprintf("    description=%q,\n", desc))
+		fmt.Fprintf(&sb, "%s = FunctionTool.from_defaults(\n", safeName)
+		fmt.Fprintf(&sb, "    fn=_%s_fn,\n", safeName)
+		fmt.Fprintf(&sb, "    name=%q,\n", safeName)
+		fmt.Fprintf(&sb, "    description=%q,\n", desc)
 		sb.WriteString(")\n\n")
 	}
 
@@ -216,9 +216,9 @@ func (t *LlamaIndexTarget) generateAgent(doc *ir.Document, agents []ir.Resource,
 			prompt = fmt.Sprintf("You are a %s agent.", agent.Name)
 		}
 
-		sb.WriteString(fmt.Sprintf("def create_%s():\n", safeName))
-		sb.WriteString(fmt.Sprintf("    \"\"\"Create the %s agent.\"\"\"\n", agent.Name))
-		sb.WriteString(fmt.Sprintf("    llm = OpenAI(model=%q)\n", model))
+		fmt.Fprintf(&sb, "def create_%s():\n", safeName)
+		fmt.Fprintf(&sb, "    \"\"\"Create the %s agent.\"\"\"\n", agent.Name)
+		fmt.Fprintf(&sb, "    llm = OpenAI(model=%q)\n", model)
 
 		maxTurns := getIntAttr(agent, "max_turns")
 
@@ -226,20 +226,20 @@ func (t *LlamaIndexTarget) generateAgent(doc *ir.Document, agents []ir.Resource,
 			sb.WriteString("    agent = ReActAgent.from_tools(\n")
 			sb.WriteString("        tools=all_tools,\n")
 			sb.WriteString("        llm=llm,\n")
-			sb.WriteString(fmt.Sprintf("        system_prompt=%q,\n", prompt))
+			fmt.Fprintf(&sb, "        system_prompt=%q,\n", prompt)
 			sb.WriteString("        verbose=True,\n")
 			if maxTurns > 0 {
-				sb.WriteString(fmt.Sprintf("        max_iterations=%d,\n", maxTurns))
+				fmt.Fprintf(&sb, "        max_iterations=%d,\n", maxTurns)
 			}
 			sb.WriteString("    )\n")
 		} else {
 			sb.WriteString("    agent = ReActAgent.from_tools(\n")
 			sb.WriteString("        tools=[],\n")
 			sb.WriteString("        llm=llm,\n")
-			sb.WriteString(fmt.Sprintf("        system_prompt=%q,\n", prompt))
+			fmt.Fprintf(&sb, "        system_prompt=%q,\n", prompt)
 			sb.WriteString("        verbose=True,\n")
 			if maxTurns > 0 {
-				sb.WriteString(fmt.Sprintf("        max_iterations=%d,\n", maxTurns))
+				fmt.Fprintf(&sb, "        max_iterations=%d,\n", maxTurns)
 			}
 			sb.WriteString("    )\n")
 		}

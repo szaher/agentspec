@@ -39,7 +39,7 @@ func TestAuthRejectsWithoutKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Errorf("expected 401 without key, got %d", resp.StatusCode)
@@ -58,7 +58,7 @@ func TestAuthSucceedsWithValidKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 with valid X-API-Key, got %d", resp.StatusCode)
 	}
@@ -70,7 +70,7 @@ func TestAuthSucceedsWithValidKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request error: %v", err)
 	}
-	defer resp2.Body.Close()
+	defer func() { _ = resp2.Body.Close() }()
 	if resp2.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 with valid Bearer token, got %d", resp2.StatusCode)
 	}
@@ -87,7 +87,7 @@ func TestAuthRejectsInvalidKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Errorf("expected 401 with invalid key, got %d", resp.StatusCode)
@@ -103,7 +103,7 @@ func TestNoAuthBypassesAuth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 with no auth configured, got %d", resp.StatusCode)
@@ -120,7 +120,7 @@ func TestHealthzAlwaysAccessible(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 for /healthz without auth, got %d", resp.StatusCode)

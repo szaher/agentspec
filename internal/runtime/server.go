@@ -611,10 +611,8 @@ func (si *serverSkillInvoker) InvokeSkill(ctx context.Context, skillName string,
 	// Try registered tool first
 	if si.server.registry != nil {
 		toolInput := make(map[string]interface{})
-		if params != nil {
-			for k, v := range params {
-				toolInput[k] = v
-			}
+		for k, v := range params {
+			toolInput[k] = v
 		}
 		if input != nil {
 			toolInput["input"] = input

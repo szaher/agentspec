@@ -22,11 +22,11 @@ type AgentConfigRef struct {
 func GenerateConfigRef(agents []AgentConfigRef, artifactName string) string {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("# Configuration Reference: %s\n\n", artifactName))
-	b.WriteString(fmt.Sprintf("Generated: %s\n\n", time.Now().UTC().Format("2006-01-02 15:04:05 UTC")))
+	fmt.Fprintf(&b, "# Configuration Reference: %s\n\n", artifactName)
+	fmt.Fprintf(&b, "Generated: %s\n\n", time.Now().UTC().Format("2006-01-02 15:04:05 UTC"))
 
 	for _, agent := range agents {
-		b.WriteString(fmt.Sprintf("## Agent: %s\n\n", agent.AgentName))
+		fmt.Fprintf(&b, "## Agent: %s\n\n", agent.AgentName)
 
 		if len(agent.Params) == 0 {
 			b.WriteString("No configuration parameters declared.\n\n")
@@ -55,8 +55,8 @@ func GenerateConfigRef(agents []AgentConfigRef, artifactName string) string {
 				desc = "-"
 			}
 
-			b.WriteString(fmt.Sprintf("| `%s` | %s | %s | %s | %s | `%s` | %s |\n",
-				p.Name, p.Type, required, secret, def, envVar, desc))
+			fmt.Fprintf(&b, "| `%s` | %s | %s | %s | %s | `%s` | %s |\n",
+				p.Name, p.Type, required, secret, def, envVar, desc)
 		}
 		b.WriteString("\n")
 
@@ -66,13 +66,13 @@ func GenerateConfigRef(agents []AgentConfigRef, artifactName string) string {
 		for _, p := range agent.Params {
 			envVar := configEnvKey(agent.AgentName, p.Name)
 			if p.Secret {
-				b.WriteString(fmt.Sprintf("export %s=<secret>  # %s (required: %v)\n", envVar, p.Description, p.Required))
+				fmt.Fprintf(&b, "export %s=<secret>  # %s (required: %v)\n", envVar, p.Description, p.Required)
 			} else if p.HasDefault {
-				b.WriteString(fmt.Sprintf("# export %s=%s  # %s (optional, default shown)\n", envVar, p.Default, p.Description))
+				fmt.Fprintf(&b, "# export %s=%s  # %s (optional, default shown)\n", envVar, p.Default, p.Description)
 			} else if p.Required {
-				b.WriteString(fmt.Sprintf("export %s=<value>  # %s\n", envVar, p.Description))
+				fmt.Fprintf(&b, "export %s=<value>  # %s\n", envVar, p.Description)
 			} else {
-				b.WriteString(fmt.Sprintf("# export %s=<value>  # %s (optional)\n", envVar, p.Description))
+				fmt.Fprintf(&b, "# export %s=<value>  # %s (optional)\n", envVar, p.Description)
 			}
 		}
 		b.WriteString("```\n\n")

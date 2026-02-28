@@ -14,7 +14,7 @@ import (
 type RuleDef struct {
 	Name       string `json:"name"`
 	Expression string `json:"expression"`
-	Severity   string `json:"severity"`   // "error" or "warning"
+	Severity   string `json:"severity"`    // "error" or "warning"
 	Message    string `json:"message"`     // Human-readable failure message
 	MaxRetries int    `json:"max_retries"` // Only for "error" severity
 }

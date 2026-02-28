@@ -1924,10 +1924,10 @@ func (p *Parser) collectExpressionUntil(stopTokens ...TokenType) string {
 			continue
 		}
 		tok := p.current()
-		switch {
-		case tok.Type == TokenString:
+		switch tok.Type {
+		case TokenString:
 			parts = append(parts, `"`+tok.Literal+`"`)
-		case tok.Type == TokenDot:
+		case TokenDot:
 			// Attach dot to previous part for property access
 			if len(parts) > 0 {
 				parts[len(parts)-1] += "."

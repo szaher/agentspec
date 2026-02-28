@@ -108,7 +108,7 @@ func (t *CrewAITarget) generateAgentsYAML(doc *ir.Document, agents []ir.Resource
 
 	for _, agent := range agents {
 		safeName := pythonSafe(agent.Name)
-		sb.WriteString(fmt.Sprintf("%s:\n", safeName))
+		fmt.Fprintf(&sb, "%s:\n", safeName)
 
 		// Role from prompt or agent name
 		promptName := getStringAttr(agent, "prompt")
@@ -119,18 +119,18 @@ func (t *CrewAITarget) generateAgentsYAML(doc *ir.Document, agents []ir.Resource
 			if idx := strings.Index(prompt, "."); idx > 0 && idx < 100 {
 				role = prompt[:idx]
 			}
-			sb.WriteString(fmt.Sprintf("  role: >-\n    %s\n", role))
-			sb.WriteString(fmt.Sprintf("  backstory: >-\n    %s\n", prompt))
+			fmt.Fprintf(&sb, "  role: >-\n    %s\n", role)
+			fmt.Fprintf(&sb, "  backstory: >-\n    %s\n", prompt)
 		} else {
-			sb.WriteString(fmt.Sprintf("  role: >-\n    %s agent\n", agent.Name))
-			sb.WriteString(fmt.Sprintf("  backstory: >-\n    You are a %s agent.\n", agent.Name))
+			fmt.Fprintf(&sb, "  role: >-\n    %s agent\n", agent.Name)
+			fmt.Fprintf(&sb, "  backstory: >-\n    You are a %s agent.\n", agent.Name)
 		}
 
-		sb.WriteString(fmt.Sprintf("  goal: >-\n    Accomplish tasks as the %s agent\n", agent.Name))
+		fmt.Fprintf(&sb, "  goal: >-\n    Accomplish tasks as the %s agent\n", agent.Name)
 
 		model := getStringAttr(agent, "model")
 		if model != "" {
-			sb.WriteString(fmt.Sprintf("  llm: %s\n", model))
+			fmt.Fprintf(&sb, "  llm: %s\n", model)
 		}
 
 		sb.WriteString("\n")
@@ -144,10 +144,10 @@ func (t *CrewAITarget) generateTasksYAML(agents []ir.Resource) plugins.Generated
 
 	for _, agent := range agents {
 		safeName := pythonSafe(agent.Name)
-		sb.WriteString(fmt.Sprintf("%s_task:\n", safeName))
-		sb.WriteString(fmt.Sprintf("  description: >-\n    Execute the %s agent task with the given input: {input}\n", agent.Name))
-		sb.WriteString(fmt.Sprintf("  expected_output: >-\n    The result of the %s agent processing\n", agent.Name))
-		sb.WriteString(fmt.Sprintf("  agent: %s\n", safeName))
+		fmt.Fprintf(&sb, "%s_task:\n", safeName)
+		fmt.Fprintf(&sb, "  description: >-\n    Execute the %s agent task with the given input: {input}\n", agent.Name)
+		fmt.Fprintf(&sb, "  expected_output: >-\n    The result of the %s agent processing\n", agent.Name)
+		fmt.Fprintf(&sb, "  agent: %s\n", safeName)
 		sb.WriteString("\n")
 	}
 
@@ -169,8 +169,8 @@ func (t *CrewAITarget) generateTools(skills []ir.Resource) plugins.GeneratedFile
 			desc = fmt.Sprintf("%s tool", skill.Name)
 		}
 
-		sb.WriteString(fmt.Sprintf("@tool\n"))
-		sb.WriteString(fmt.Sprintf("def %s(", safeName))
+		sb.WriteString("@tool\n")
+		fmt.Fprintf(&sb, "def %s(", safeName)
 
 		// Generate input parameters
 		if inputs, ok := skill.Attributes["input"].([]interface{}); ok {
@@ -195,8 +195,8 @@ func (t *CrewAITarget) generateTools(skills []ir.Resource) plugins.GeneratedFile
 			sb.WriteString(strings.Join(params, ", "))
 		}
 
-		sb.WriteString(fmt.Sprintf(") -> str:\n"))
-		sb.WriteString(fmt.Sprintf("    \"\"\"%s\"\"\"\n", desc))
+		sb.WriteString(") -> str:\n")
+		fmt.Fprintf(&sb, "    \"\"\"%s\"\"\"\n", desc)
 
 		// Generate tool body based on tool type
 		if tool, ok := skill.Attributes["tool"].(map[string]interface{}); ok {
@@ -206,10 +206,10 @@ func (t *CrewAITarget) generateTools(skills []ir.Resource) plugins.GeneratedFile
 				binary, _ := tool["binary"].(string)
 				args, _ := tool["args"].(string)
 				if binary != "" {
-					sb.WriteString(fmt.Sprintf("    result = subprocess.run([%q", binary))
+					fmt.Fprintf(&sb, "    result = subprocess.run([%q", binary)
 					if args != "" {
 						for _, arg := range strings.Fields(args) {
-							sb.WriteString(fmt.Sprintf(", %q", arg))
+							fmt.Fprintf(&sb, ", %q", arg)
 						}
 					}
 					sb.WriteString("], capture_output=True, text=True)\n")
@@ -225,7 +225,7 @@ func (t *CrewAITarget) generateTools(skills []ir.Resource) plugins.GeneratedFile
 					if method == "" {
 						method = "GET"
 					}
-					sb.WriteString(fmt.Sprintf("    req = urllib.request.Request(%q, method=%q)\n", url, method))
+					fmt.Fprintf(&sb, "    req = urllib.request.Request(%q, method=%q)\n", url, method)
 					sb.WriteString("    with urllib.request.urlopen(req) as resp:\n")
 					sb.WriteString("        return resp.read().decode()\n")
 				} else {
@@ -280,8 +280,8 @@ func (t *CrewAITarget) generateCrew(doc *ir.Document, agents []ir.Resource, skil
 	// Create agent methods
 	for _, agent := range agents {
 		safeName := pythonSafe(agent.Name)
-		sb.WriteString(fmt.Sprintf("    def %s(self):\n", safeName))
-		sb.WriteString(fmt.Sprintf("        config = self.agents_config[\"%s\"]\n", safeName))
+		fmt.Fprintf(&sb, "    def %s(self):\n", safeName)
+		fmt.Fprintf(&sb, "        config = self.agents_config[\"%s\"]\n", safeName)
 
 		// Determine which tools this agent uses
 		agentSkills := getStringSliceAttr(agent, "skills")
@@ -301,7 +301,7 @@ func (t *CrewAITarget) generateCrew(doc *ir.Document, agents []ir.Resource, skil
 		}
 		sb.WriteString("            verbose=True,\n")
 		if model := getStringAttr(agent, "model"); model != "" {
-			sb.WriteString(fmt.Sprintf("            llm=%q,\n", model))
+			fmt.Fprintf(&sb, "            llm=%q,\n", model)
 		}
 		sb.WriteString("        )\n\n")
 	}
@@ -309,12 +309,12 @@ func (t *CrewAITarget) generateCrew(doc *ir.Document, agents []ir.Resource, skil
 	// Create task methods
 	for _, agent := range agents {
 		safeName := pythonSafe(agent.Name)
-		sb.WriteString(fmt.Sprintf("    def %s_task(self):\n", safeName))
-		sb.WriteString(fmt.Sprintf("        config = self.tasks_config[\"%s_task\"]\n", safeName))
+		fmt.Fprintf(&sb, "    def %s_task(self):\n", safeName)
+		fmt.Fprintf(&sb, "        config = self.tasks_config[\"%s_task\"]\n", safeName)
 		sb.WriteString("        return Task(\n")
 		sb.WriteString("            description=config[\"description\"],\n")
 		sb.WriteString("            expected_output=config[\"expected_output\"],\n")
-		sb.WriteString(fmt.Sprintf("            agent=self.%s(),\n", safeName))
+		fmt.Fprintf(&sb, "            agent=self.%s(),\n", safeName)
 		sb.WriteString("        )\n\n")
 	}
 

@@ -7,12 +7,12 @@ import (
 
 // Action represents the result of executing a control flow statement.
 type Action struct {
-	Type       string                 // "use_skill", "delegate", "respond"
-	SkillName  string                 // for use_skill
-	AgentName  string                 // for delegate
-	Expression string                 // for respond
-	Params     map[string]string      // for use_skill with params
-	Result     interface{}            // evaluated result (for respond)
+	Type       string            // "use_skill", "delegate", "respond"
+	SkillName  string            // for use_skill
+	AgentName  string            // for delegate
+	Expression string            // for respond
+	Params     map[string]string // for use_skill with params
+	Result     interface{}       // evaluated result (for respond)
 }
 
 // SkillInvoker is called when a "use skill" statement is executed.

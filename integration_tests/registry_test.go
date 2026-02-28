@@ -258,7 +258,9 @@ func TestResolverWithPackageResolver(t *testing.T) {
 	iasContent := `prompt "test-prompt" {
   content = "Hello from package"
 }`
-	os.WriteFile(filepath.Join(pkgDir, "main.ias"), []byte(iasContent), 0644)
+	if err := os.WriteFile(filepath.Join(pkgDir, "main.ias"), []byte(iasContent), 0644); err != nil {
+		t.Fatalf("writing test .ias file: %v", err)
+	}
 
 	// Create a mock package resolver
 	resolver := imports.NewResolver(t.TempDir(), nil)

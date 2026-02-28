@@ -30,11 +30,11 @@ func CompareResults(current, previous *RunResult) string {
 	// Overall score change
 	diff := current.OverallScore - previous.OverallScore
 	if diff > 0 {
-		b.WriteString(fmt.Sprintf("  Overall: %.2f → %.2f (+%.2f)\n", previous.OverallScore, current.OverallScore, diff))
+		fmt.Fprintf(&b, "  Overall: %.2f → %.2f (+%.2f)\n", previous.OverallScore, current.OverallScore, diff)
 	} else if diff < 0 {
-		b.WriteString(fmt.Sprintf("  Overall: %.2f → %.2f (%.2f)\n", previous.OverallScore, current.OverallScore, diff))
+		fmt.Fprintf(&b, "  Overall: %.2f → %.2f (%.2f)\n", previous.OverallScore, current.OverallScore, diff)
 	} else {
-		b.WriteString(fmt.Sprintf("  Overall: %.2f → %.2f (no change)\n", previous.OverallScore, current.OverallScore))
+		fmt.Fprintf(&b, "  Overall: %.2f → %.2f (no change)\n", previous.OverallScore, current.OverallScore)
 	}
 
 	// Find regressions and improvements
@@ -54,13 +54,13 @@ func CompareResults(current, previous *RunResult) string {
 		}
 	}
 
-	b.WriteString(fmt.Sprintf("  Regressions: %d\n", len(regressions)))
+	fmt.Fprintf(&b, "  Regressions: %d\n", len(regressions))
 	for _, r := range regressions {
-		b.WriteString(fmt.Sprintf("    - %s\n", r))
+		fmt.Fprintf(&b, "    - %s\n", r)
 	}
-	b.WriteString(fmt.Sprintf("  Improvements: %d\n", len(improvements)))
+	fmt.Fprintf(&b, "  Improvements: %d\n", len(improvements))
 	for _, i := range improvements {
-		b.WriteString(fmt.Sprintf("    + %s\n", i))
+		fmt.Fprintf(&b, "    + %s\n", i)
 	}
 
 	return b.String()
@@ -69,7 +69,7 @@ func CompareResults(current, previous *RunResult) string {
 func formatTable(result *RunResult) string {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("Evaluating %s (%d test cases)...\n\n", result.AgentName, result.TotalCases))
+	fmt.Fprintf(&b, "Evaluating %s (%d test cases)...\n\n", result.AgentName, result.TotalCases)
 
 	// Find max name length for alignment
 	maxLen := 20
@@ -85,18 +85,18 @@ func formatTable(result *RunResult) string {
 			icon = "✗"
 		}
 		padding := strings.Repeat(" ", maxLen-len(c.Name)+2)
-		b.WriteString(fmt.Sprintf("  %s %s%sscore: %.2f  (threshold: %.2f)\n",
-			icon, c.Name, padding, c.Score, c.Threshold))
+		fmt.Fprintf(&b, "  %s %s%sscore: %.2f  (threshold: %.2f)\n",
+			icon, c.Name, padding, c.Score, c.Threshold)
 		if c.Error != "" {
-			b.WriteString(fmt.Sprintf("    error: %s\n", c.Error))
+			fmt.Fprintf(&b, "    error: %s\n", c.Error)
 		}
 	}
 
-	b.WriteString(fmt.Sprintf("\nResults: %d/%d passed (%d%%)\n",
+	fmt.Fprintf(&b, "\nResults: %d/%d passed (%d%%)\n",
 		result.PassedCases, result.TotalCases,
-		percentage(result.PassedCases, result.TotalCases)))
-	b.WriteString(fmt.Sprintf("Overall score: %.2f\n", result.OverallScore))
-	b.WriteString(fmt.Sprintf("Duration: %s\n", result.Duration.Round(time.Millisecond)))
+		percentage(result.PassedCases, result.TotalCases))
+	fmt.Fprintf(&b, "Overall score: %.2f\n", result.OverallScore)
+	fmt.Fprintf(&b, "Duration: %s\n", result.Duration.Round(time.Millisecond))
 
 	return b.String()
 }
@@ -112,18 +112,18 @@ func formatJSON(result *RunResult) (string, error) {
 func formatMarkdown(result *RunResult) string {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("# Evaluation Report: %s\n\n", result.AgentName))
-	b.WriteString(fmt.Sprintf("**Date**: %s\n", result.Timestamp.Format("2006-01-02 15:04:05")))
-	b.WriteString(fmt.Sprintf("**Duration**: %s\n\n", result.Duration.Round(time.Millisecond)))
+	fmt.Fprintf(&b, "# Evaluation Report: %s\n\n", result.AgentName)
+	fmt.Fprintf(&b, "**Date**: %s\n", result.Timestamp.Format("2006-01-02 15:04:05"))
+	fmt.Fprintf(&b, "**Duration**: %s\n\n", result.Duration.Round(time.Millisecond))
 
 	b.WriteString("## Summary\n\n")
-	b.WriteString(fmt.Sprintf("| Metric | Value |\n"))
+	b.WriteString("| Metric | Value |\n")
 	b.WriteString("|----|----|\n")
-	b.WriteString(fmt.Sprintf("| Total Cases | %d |\n", result.TotalCases))
-	b.WriteString(fmt.Sprintf("| Passed | %d |\n", result.PassedCases))
-	b.WriteString(fmt.Sprintf("| Failed | %d |\n", result.FailedCases))
-	b.WriteString(fmt.Sprintf("| Pass Rate | %d%% |\n", percentage(result.PassedCases, result.TotalCases)))
-	b.WriteString(fmt.Sprintf("| Overall Score | %.2f |\n", result.OverallScore))
+	fmt.Fprintf(&b, "| Total Cases | %d |\n", result.TotalCases)
+	fmt.Fprintf(&b, "| Passed | %d |\n", result.PassedCases)
+	fmt.Fprintf(&b, "| Failed | %d |\n", result.FailedCases)
+	fmt.Fprintf(&b, "| Pass Rate | %d%% |\n", percentage(result.PassedCases, result.TotalCases))
+	fmt.Fprintf(&b, "| Overall Score | %.2f |\n", result.OverallScore)
 
 	b.WriteString("\n## Results\n\n")
 	b.WriteString("| Test Case | Score | Threshold | Status | Scoring |\n")
@@ -133,8 +133,8 @@ func formatMarkdown(result *RunResult) string {
 		if !c.Passed {
 			status = "FAIL"
 		}
-		b.WriteString(fmt.Sprintf("| %s | %.2f | %.2f | %s | %s |\n",
-			c.Name, c.Score, c.Threshold, status, c.Scoring))
+		fmt.Fprintf(&b, "| %s | %.2f | %.2f | %s | %s |\n",
+			c.Name, c.Score, c.Threshold, status, c.Scoring)
 	}
 
 	// Show details for failed cases
@@ -145,13 +145,13 @@ func formatMarkdown(result *RunResult) string {
 				b.WriteString("\n## Failed Cases\n\n")
 				hasFailed = true
 			}
-			b.WriteString(fmt.Sprintf("### %s\n\n", c.Name))
-			b.WriteString(fmt.Sprintf("- **Score**: %.2f (threshold: %.2f)\n", c.Score, c.Threshold))
-			b.WriteString(fmt.Sprintf("- **Input**: %s\n", c.Input))
-			b.WriteString(fmt.Sprintf("- **Expected**: %s\n", c.Expected))
-			b.WriteString(fmt.Sprintf("- **Actual**: %s\n", c.Actual))
+			fmt.Fprintf(&b, "### %s\n\n", c.Name)
+			fmt.Fprintf(&b, "- **Score**: %.2f (threshold: %.2f)\n", c.Score, c.Threshold)
+			fmt.Fprintf(&b, "- **Input**: %s\n", c.Input)
+			fmt.Fprintf(&b, "- **Expected**: %s\n", c.Expected)
+			fmt.Fprintf(&b, "- **Actual**: %s\n", c.Actual)
 			if c.Error != "" {
-				b.WriteString(fmt.Sprintf("- **Error**: %s\n", c.Error))
+				fmt.Fprintf(&b, "- **Error**: %s\n", c.Error)
 			}
 			b.WriteString("\n")
 		}

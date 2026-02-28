@@ -41,8 +41,8 @@ func (s *SSEWriter) WriteEvent(event string, data interface{}) error {
 		return err
 	}
 
-	fmt.Fprintf(s.w, "event: %s\n", event)
-	fmt.Fprintf(s.w, "data: %s\n\n", jsonData)
+	_, _ = fmt.Fprintf(s.w, "event: %s\n", event)
+	_, _ = fmt.Fprintf(s.w, "data: %s\n\n", jsonData)
 	s.flusher.Flush()
 	return nil
 }

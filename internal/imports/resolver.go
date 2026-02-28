@@ -14,14 +14,14 @@ import (
 
 // ResolvedImport holds the result of resolving a single import statement.
 type ResolvedImport struct {
-	Source      string   // original import path
-	Kind       string   // "local" or "package"
-	Alias      string   // import alias
-	Version    string   // version constraint (packages only)
-	Path       string   // absolute resolved path
-	Hash       string   // content hash (SHA-256)
-	File       *ast.File // parsed AST
-	Resources  []string // resource names provided by this import
+	Source    string    // original import path
+	Kind      string    // "local" or "package"
+	Alias     string    // import alias
+	Version   string    // version constraint (packages only)
+	Path      string    // absolute resolved path
+	Hash      string    // content hash (SHA-256)
+	File      *ast.File // parsed AST
+	Resources []string  // resource names provided by this import
 }
 
 // PackageResolver resolves versioned package imports to local paths.
@@ -173,12 +173,12 @@ func (r *Resolver) resolveImport(imp *ast.Import, fromDir string) (*ResolvedImpo
 
 	ri := &ResolvedImport{
 		Source:    importPath,
-		Kind:     kind,
-		Alias:    imp.Alias,
-		Version:  imp.Version,
-		Path:     absPath,
-		Hash:     hash,
-		File:     f,
+		Kind:      kind,
+		Alias:     imp.Alias,
+		Version:   imp.Version,
+		Path:      absPath,
+		Hash:      hash,
+		File:      f,
 		Resources: resources,
 	}
 

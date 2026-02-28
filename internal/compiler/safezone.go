@@ -35,8 +35,8 @@ func ParseSafeZones(content, commentPrefix string) []SafeZone {
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 
-		switch {
-		case trimmed == genStart:
+		switch trimmed {
+		case genStart:
 			if currentType != "" && current.Len() > 0 {
 				zones = append(zones, SafeZone{Type: currentType, Content: current.String()})
 				current.Reset()
@@ -45,14 +45,14 @@ func ParseSafeZones(content, commentPrefix string) []SafeZone {
 			current.WriteString(line)
 			current.WriteString("\n")
 
-		case trimmed == genEnd:
+		case genEnd:
 			current.WriteString(line)
 			current.WriteString("\n")
 			zones = append(zones, SafeZone{Type: "generated", Content: current.String()})
 			current.Reset()
 			currentType = ""
 
-		case trimmed == userStart:
+		case userStart:
 			if currentType != "" && current.Len() > 0 {
 				zones = append(zones, SafeZone{Type: currentType, Content: current.String()})
 				current.Reset()
@@ -61,7 +61,7 @@ func ParseSafeZones(content, commentPrefix string) []SafeZone {
 			current.WriteString(line)
 			current.WriteString("\n")
 
-		case trimmed == userEnd:
+		case userEnd:
 			current.WriteString(line)
 			current.WriteString("\n")
 			zones = append(zones, SafeZone{Type: "user", Content: current.String()})

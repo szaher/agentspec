@@ -16,7 +16,7 @@ type Client struct {
 
 // LockedDep represents a dependency pinned by the lock file.
 type LockedDep struct {
-	Source   string `json:"source"`
+	Source  string `json:"source"`
 	Version string `json:"version"`
 	Hash    string `json:"hash"`
 }

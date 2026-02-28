@@ -71,10 +71,10 @@ func TestFrontendMountedOnServer(t *testing.T) {
 	config := &runtime.RuntimeConfig{
 		Agents: []runtime.AgentConfig{
 			{
-				Name:    "test-agent",
-				FQN:     "test/test-agent",
-				Model:   "test-model",
-				System:  "You are a test agent.",
+				Name:     "test-agent",
+				FQN:      "test/test-agent",
+				Model:    "test-model",
+				System:   "You are a test agent.",
 				MaxTurns: 1,
 			},
 		},
@@ -98,7 +98,7 @@ func TestFrontendMountedOnServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET / error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 for /, got %d", resp.StatusCode)
@@ -109,7 +109,7 @@ func TestFrontendMountedOnServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /v1/agents error: %v", err)
 	}
-	defer resp2.Body.Close()
+	defer func() { _ = resp2.Body.Close() }()
 
 	if resp2.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 for /v1/agents, got %d", resp2.StatusCode)
@@ -147,7 +147,7 @@ func TestFrontendDisabledByDefault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET / error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Without UI, root should return 404 (no handler registered for /)
 	if resp.StatusCode == http.StatusOK {
@@ -180,7 +180,7 @@ func TestFrontendStaticAssetsSkipAuth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET / error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 for / without auth (static asset), got %d", resp.StatusCode)
 	}
@@ -190,7 +190,7 @@ func TestFrontendStaticAssetsSkipAuth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /v1/agents error: %v", err)
 	}
-	defer resp2.Body.Close()
+	defer func() { _ = resp2.Body.Close() }()
 	if resp2.StatusCode != http.StatusUnauthorized {
 		t.Errorf("expected 401 for /v1/agents without auth, got %d", resp2.StatusCode)
 	}
@@ -202,7 +202,7 @@ func TestFrontendStaticAssetsSkipAuth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /v1/agents with key error: %v", err)
 	}
-	defer resp3.Body.Close()
+	defer func() { _ = resp3.Body.Close() }()
 	if resp3.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 for /v1/agents with valid key, got %d", resp3.StatusCode)
 	}

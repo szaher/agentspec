@@ -18,8 +18,8 @@ import (
 	"github.com/szaher/designs/agentz/internal/parser"
 	"github.com/szaher/designs/agentz/internal/runtime"
 	"github.com/szaher/designs/agentz/internal/session"
-	"github.com/szaher/designs/agentz/internal/tools"
 	"github.com/szaher/designs/agentz/internal/telemetry"
+	"github.com/szaher/designs/agentz/internal/tools"
 	"github.com/szaher/designs/agentz/internal/validate"
 )
 
@@ -280,7 +280,7 @@ func TestCompiledAgentHealthz(t *testing.T) {
 	if err != nil {
 		t.Fatalf("healthz request failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
@@ -400,7 +400,7 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("healthz: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("healthz: expected 200, got %d", resp.StatusCode)
 	}
@@ -410,13 +410,15 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("agents: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("agents: expected 200, got %d", resp.StatusCode)
 	}
 
 	var agentResp map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&agentResp)
+	if err := json.NewDecoder(resp.Body).Decode(&agentResp); err != nil {
+		t.Fatalf("decoding agents response: %v", err)
+	}
 	agents, _ := agentResp["agents"].([]interface{})
 	if len(agents) != 1 {
 		t.Errorf("expected 1 agent, got %d", len(agents))
@@ -427,7 +429,7 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("frontend: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("frontend: expected 200, got %d", resp.StatusCode)
 	}
@@ -437,7 +439,7 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("metrics: %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("metrics: expected 200, got %d", resp.StatusCode)
 	}

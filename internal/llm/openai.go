@@ -71,19 +71,19 @@ func NewOpenAICompatibleClient(baseURL, apiKey string, opts ...OpenAIOption) *Op
 // --- OpenAI API request/response types ---
 
 type oaiRequest struct {
-	Model       string        `json:"model"`
-	Messages    []oaiMessage  `json:"messages"`
-	Tools       []oaiTool     `json:"tools,omitempty"`
-	MaxTokens   int           `json:"max_tokens,omitempty"`
-	Temperature *float64      `json:"temperature,omitempty"`
-	Stream      bool          `json:"stream,omitempty"`
+	Model       string       `json:"model"`
+	Messages    []oaiMessage `json:"messages"`
+	Tools       []oaiTool    `json:"tools,omitempty"`
+	MaxTokens   int          `json:"max_tokens,omitempty"`
+	Temperature *float64     `json:"temperature,omitempty"`
+	Stream      bool         `json:"stream,omitempty"`
 }
 
 type oaiMessage struct {
-	Role       string         `json:"role"`
-	Content    string         `json:"content,omitempty"`
-	ToolCalls  []oaiToolCall  `json:"tool_calls,omitempty"`
-	ToolCallID string         `json:"tool_call_id,omitempty"`
+	Role       string        `json:"role"`
+	Content    string        `json:"content,omitempty"`
+	ToolCalls  []oaiToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string        `json:"tool_call_id,omitempty"`
 }
 
 type oaiTool struct {
@@ -139,7 +139,7 @@ func (c *OpenAIClient) Chat(ctx context.Context, req ChatRequest) (*ChatResponse
 	if err != nil {
 		return nil, err
 	}
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	var oaiResp oaiResponse
 	if err := json.NewDecoder(body).Decode(&oaiResp); err != nil {
@@ -165,7 +165,7 @@ func (c *OpenAIClient) ChatStream(ctx context.Context, req ChatRequest) (<-chan 
 	ch := make(chan StreamEvent, 64)
 	go func() {
 		defer close(ch)
-		defer body.Close()
+		defer func() { _ = body.Close() }()
 
 		var fullContent strings.Builder
 		var toolCalls []ToolCall
@@ -351,7 +351,7 @@ func (c *OpenAIClient) doRequest(ctx context.Context, oaiReq oaiRequest) (io.Rea
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		var oaiErr oaiResponse
 		if err := json.NewDecoder(resp.Body).Decode(&oaiErr); err == nil && oaiErr.Error != nil {
 			return nil, fmt.Errorf("openai: HTTP %d: %s: %s", resp.StatusCode, oaiErr.Error.Type, oaiErr.Error.Message)

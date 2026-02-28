@@ -112,7 +112,7 @@ func (rl *RateLimiter) Middleware(keyFunc func(r *http.Request) string) func(htt
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("Retry-After", fmt.Sprintf("%.0f", 1.0/rl.config.RequestsPerSecond))
 				w.WriteHeader(http.StatusTooManyRequests)
-				fmt.Fprintf(w, `{"error":"rate_limited","message":"Rate limit exceeded. Try again later."}`)
+				_, _ = fmt.Fprintf(w, `{"error":"rate_limited","message":"Rate limit exceeded. Try again later."}`)
 				return
 			}
 

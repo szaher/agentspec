@@ -96,7 +96,7 @@ func (t *LangGraphTarget) generateTools(skills []ir.Resource) plugins.GeneratedF
 		}
 
 		sb.WriteString("@tool\n")
-		sb.WriteString(fmt.Sprintf("def %s(", safeName))
+		fmt.Fprintf(&sb, "def %s(", safeName)
 
 		if inputs, ok := skill.Attributes["input"].([]interface{}); ok {
 			var params []string
@@ -121,7 +121,7 @@ func (t *LangGraphTarget) generateTools(skills []ir.Resource) plugins.GeneratedF
 		}
 
 		sb.WriteString(") -> str:\n")
-		sb.WriteString(fmt.Sprintf("    \"\"\"%s\"\"\"\n", desc))
+		fmt.Fprintf(&sb, "    \"\"\"%s\"\"\"\n", desc)
 
 		if tool, ok := skill.Attributes["tool"].(map[string]interface{}); ok {
 			toolType, _ := tool["type"].(string)
@@ -130,10 +130,10 @@ func (t *LangGraphTarget) generateTools(skills []ir.Resource) plugins.GeneratedF
 				binary, _ := tool["binary"].(string)
 				args, _ := tool["args"].(string)
 				if binary != "" {
-					sb.WriteString(fmt.Sprintf("    result = subprocess.run([%q", binary))
+					fmt.Fprintf(&sb, "    result = subprocess.run([%q", binary)
 					if args != "" {
 						for _, arg := range strings.Fields(args) {
-							sb.WriteString(fmt.Sprintf(", %q", arg))
+							fmt.Fprintf(&sb, ", %q", arg)
 						}
 					}
 					sb.WriteString("], capture_output=True, text=True)\n")
@@ -148,7 +148,7 @@ func (t *LangGraphTarget) generateTools(skills []ir.Resource) plugins.GeneratedF
 					if method == "" {
 						method = "GET"
 					}
-					sb.WriteString(fmt.Sprintf("    req = urllib.request.Request(%q, method=%q)\n", url, method))
+					fmt.Fprintf(&sb, "    req = urllib.request.Request(%q, method=%q)\n", url, method)
 					sb.WriteString("    with urllib.request.urlopen(req) as resp:\n")
 					sb.WriteString("        return resp.read().decode()\n")
 				} else {
@@ -205,9 +205,9 @@ func (t *LangGraphTarget) generateGraph(doc *ir.Document, agents []ir.Resource, 
 			model = "gpt-4"
 		}
 
-		sb.WriteString(fmt.Sprintf("def %s_node(state: AgentState) -> dict:\n", safeName))
-		sb.WriteString(fmt.Sprintf("    \"\"\"Node for the %s agent.\"\"\"\n", agent.Name))
-		sb.WriteString(fmt.Sprintf("    llm = ChatOpenAI(model=%q)\n", model))
+		fmt.Fprintf(&sb, "def %s_node(state: AgentState) -> dict:\n", safeName)
+		fmt.Fprintf(&sb, "    \"\"\"Node for the %s agent.\"\"\"\n", agent.Name)
+		fmt.Fprintf(&sb, "    llm = ChatOpenAI(model=%q)\n", model)
 
 		if len(skills) > 0 {
 			sb.WriteString("    llm_with_tools = llm.bind_tools(all_tools)\n")
@@ -240,15 +240,15 @@ func (t *LangGraphTarget) generateGraph(doc *ir.Document, agents []ir.Resource, 
 		prompt := getPromptContent(doc, promptName)
 		if prompt != "" {
 			safeName := pythonSafe(agent.Name)
-			sb.WriteString(fmt.Sprintf("    # System prompt for %s\n", agent.Name))
-			sb.WriteString(fmt.Sprintf("    %s_system = %q\n\n", safeName, prompt))
+			fmt.Fprintf(&sb, "    # System prompt for %s\n", agent.Name)
+			fmt.Fprintf(&sb, "    %s_system = %q\n\n", safeName, prompt)
 		}
 	}
 
 	// Add nodes
 	for _, agent := range agents {
 		safeName := pythonSafe(agent.Name)
-		sb.WriteString(fmt.Sprintf("    graph.add_node(%q, %s_node)\n", safeName, safeName))
+		fmt.Fprintf(&sb, "    graph.add_node(%q, %s_node)\n", safeName, safeName)
 	}
 
 	if len(skills) > 0 {
@@ -260,31 +260,31 @@ func (t *LangGraphTarget) generateGraph(doc *ir.Document, agents []ir.Resource, 
 	// Add edges
 	if len(agents) == 1 {
 		safeName := pythonSafe(agents[0].Name)
-		sb.WriteString(fmt.Sprintf("    graph.set_entry_point(%q)\n", safeName))
+		fmt.Fprintf(&sb, "    graph.set_entry_point(%q)\n", safeName)
 		if len(skills) > 0 {
-			sb.WriteString(fmt.Sprintf("    graph.add_conditional_edges(%q, should_continue, {\"tools\": \"tools\", \"end\": END})\n", safeName))
-			sb.WriteString(fmt.Sprintf("    graph.add_edge(\"tools\", %q)\n", safeName))
+			fmt.Fprintf(&sb, "    graph.add_conditional_edges(%q, should_continue, {\"tools\": \"tools\", \"end\": END})\n", safeName)
+			fmt.Fprintf(&sb, "    graph.add_edge(\"tools\", %q)\n", safeName)
 		} else {
-			sb.WriteString(fmt.Sprintf("    graph.add_edge(%q, END)\n", safeName))
+			fmt.Fprintf(&sb, "    graph.add_edge(%q, END)\n", safeName)
 		}
 	} else {
 		// Multi-agent: sequential chain
-		sb.WriteString(fmt.Sprintf("    graph.set_entry_point(%q)\n", pythonSafe(agents[0].Name)))
+		fmt.Fprintf(&sb, "    graph.set_entry_point(%q)\n", pythonSafe(agents[0].Name))
 		for i := 0; i < len(agents)-1; i++ {
 			current := pythonSafe(agents[i].Name)
 			next := pythonSafe(agents[i+1].Name)
 			if len(skills) > 0 {
-				sb.WriteString(fmt.Sprintf("    graph.add_conditional_edges(%q, should_continue, {\"tools\": \"tools\", \"end\": %q})\n", current, next))
+				fmt.Fprintf(&sb, "    graph.add_conditional_edges(%q, should_continue, {\"tools\": \"tools\", \"end\": %q})\n", current, next)
 			} else {
-				sb.WriteString(fmt.Sprintf("    graph.add_edge(%q, %q)\n", current, next))
+				fmt.Fprintf(&sb, "    graph.add_edge(%q, %q)\n", current, next)
 			}
 		}
 		lastAgent := pythonSafe(agents[len(agents)-1].Name)
 		if len(skills) > 0 {
-			sb.WriteString(fmt.Sprintf("    graph.add_conditional_edges(%q, should_continue, {\"tools\": \"tools\", \"end\": END})\n", lastAgent))
-			sb.WriteString(fmt.Sprintf("    graph.add_edge(\"tools\", %q)\n", lastAgent))
+			fmt.Fprintf(&sb, "    graph.add_conditional_edges(%q, should_continue, {\"tools\": \"tools\", \"end\": END})\n", lastAgent)
+			fmt.Fprintf(&sb, "    graph.add_edge(\"tools\", %q)\n", lastAgent)
 		} else {
-			sb.WriteString(fmt.Sprintf("    graph.add_edge(%q, END)\n", lastAgent))
+			fmt.Fprintf(&sb, "    graph.add_edge(%q, END)\n", lastAgent)
 		}
 	}
 

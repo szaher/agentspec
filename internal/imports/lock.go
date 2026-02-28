@@ -10,8 +10,8 @@ import (
 // LockFile represents the contents of .agentspec.lock.
 // It records resolved versions and content hashes for reproducible builds.
 type LockFile struct {
-	Version      string        `json:"version"`
-	Dependencies []LockedDep   `json:"dependencies"`
+	Version      string      `json:"version"`
+	Dependencies []LockedDep `json:"dependencies"`
 }
 
 // LockedDep records a single resolved dependency.

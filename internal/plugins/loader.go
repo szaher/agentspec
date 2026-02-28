@@ -18,10 +18,10 @@ type Manifest struct {
 
 // Capabilities lists what the plugin provides.
 type Capabilities struct {
-	ResourceTypes []ResourceType    `json:"resource_types,omitempty"`
-	Validators    []Validator       `json:"validators,omitempty"`
-	Transforms    []Transform       `json:"transforms,omitempty"`
-	Hooks         []Hook            `json:"hooks,omitempty"`
+	ResourceTypes []ResourceType     `json:"resource_types,omitempty"`
+	Validators    []Validator        `json:"validators,omitempty"`
+	Transforms    []Transform        `json:"transforms,omitempty"`
+	Hooks         []Hook             `json:"hooks,omitempty"`
 	Compile       *CompileCapability `json:"compile,omitempty"`
 }
 

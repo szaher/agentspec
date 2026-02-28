@@ -286,7 +286,9 @@ func TestSafeZonePreservation(t *testing.T) {
 
 	// Inject user code section into the file
 	modifiedContent := string(originalContent) + "\n# --- USER CODE START ---\n# Your custom code here is preserved across recompilations\ndef my_custom_helper():\n    return \"preserved\"\n# --- USER CODE END ---\n"
-	os.WriteFile(toolsPath, []byte(modifiedContent), 0644)
+	if err := os.WriteFile(toolsPath, []byte(modifiedContent), 0644); err != nil {
+		t.Fatalf("writing modified tools file: %v", err)
+	}
 
 	// Verify user code extraction works
 	userCode := extractUserCodeForTest(modifiedContent, "#")

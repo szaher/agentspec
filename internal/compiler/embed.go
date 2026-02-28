@@ -39,7 +39,7 @@ func CompileStandalone(config *runtime.RuntimeConfig, opts CompileOptions) (*Sta
 	if err := os.MkdirAll(buildDir, 0755); err != nil {
 		return nil, fmt.Errorf("creating build dir: %w", err)
 	}
-	defer os.RemoveAll(buildDir)
+	defer func() { _ = os.RemoveAll(buildDir) }()
 
 	// Serialize config to JSON
 	configJSON, err := json.MarshalIndent(config, "", "  ")

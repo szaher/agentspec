@@ -32,10 +32,10 @@ func WriteHelmChart(chart *HelmChart, outDir string) error {
 	}
 
 	files := map[string]string{
-		filepath.Join(outDir, "Chart.yaml"):                  chart.ChartYAML,
-		filepath.Join(outDir, "values.yaml"):                 chart.ValuesYAML,
-		filepath.Join(templatesDir, "deployment.yaml"):       chart.DeploymentYAML,
-		filepath.Join(templatesDir, "service.yaml"):          chart.ServiceYAML,
+		filepath.Join(outDir, "Chart.yaml"):            chart.ChartYAML,
+		filepath.Join(outDir, "values.yaml"):           chart.ValuesYAML,
+		filepath.Join(templatesDir, "deployment.yaml"): chart.DeploymentYAML,
+		filepath.Join(templatesDir, "service.yaml"):    chart.ServiceYAML,
 	}
 
 	for path, content := range files {

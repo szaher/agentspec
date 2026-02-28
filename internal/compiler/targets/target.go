@@ -99,28 +99,6 @@ func extractSkills(doc *ir.Document) []ir.Resource {
 	return skills
 }
 
-// extractPrompts returns all Prompt resources from an IR document.
-func extractPrompts(doc *ir.Document) []ir.Resource {
-	var prompts []ir.Resource
-	for _, r := range doc.Resources {
-		if r.Kind == "Prompt" {
-			prompts = append(prompts, r)
-		}
-	}
-	return prompts
-}
-
-// extractPipelines returns all Pipeline resources from an IR document.
-func extractPipelines(doc *ir.Document) []ir.Resource {
-	var pipelines []ir.Resource
-	for _, r := range doc.Resources {
-		if r.Kind == "Pipeline" {
-			pipelines = append(pipelines, r)
-		}
-	}
-	return pipelines
-}
-
 // getPromptContent looks up a prompt name in the document and returns its content.
 func getPromptContent(doc *ir.Document, promptName string) string {
 	for _, r := range doc.Resources {

@@ -554,8 +554,8 @@ type UseSkillStmt struct {
 	EndPos    Pos
 }
 
-func (u *UseSkillStmt) Pos() Pos        { return u.StartPos }
-func (u *UseSkillStmt) End() Pos        { return u.EndPos }
+func (u *UseSkillStmt) Pos() Pos         { return u.StartPos }
+func (u *UseSkillStmt) End() Pos         { return u.EndPos }
 func (u *UseSkillStmt) onInputStmtNode() {}
 
 // DelegateToStmt hands off processing to another agent.
@@ -565,8 +565,8 @@ type DelegateToStmt struct {
 	EndPos    Pos
 }
 
-func (d *DelegateToStmt) Pos() Pos        { return d.StartPos }
-func (d *DelegateToStmt) End() Pos        { return d.EndPos }
+func (d *DelegateToStmt) Pos() Pos         { return d.StartPos }
+func (d *DelegateToStmt) End() Pos         { return d.EndPos }
 func (d *DelegateToStmt) onInputStmtNode() {}
 
 // RespondStmt returns a response directly.
@@ -576,22 +576,22 @@ type RespondStmt struct {
 	EndPos     Pos
 }
 
-func (r *RespondStmt) Pos() Pos        { return r.StartPos }
-func (r *RespondStmt) End() Pos        { return r.EndPos }
+func (r *RespondStmt) Pos() Pos         { return r.StartPos }
+func (r *RespondStmt) End() Pos         { return r.EndPos }
 func (r *RespondStmt) onInputStmtNode() {}
 
 // IfBlock represents an if/else if/else conditional block.
 type IfBlock struct {
-	Condition  string // expr expression
-	Body       []OnInputStmt
-	ElseIfs    []*ElseIfClause
-	ElseBody   []OnInputStmt // nil if no else block
-	StartPos   Pos
-	EndPos     Pos
+	Condition string // expr expression
+	Body      []OnInputStmt
+	ElseIfs   []*ElseIfClause
+	ElseBody  []OnInputStmt // nil if no else block
+	StartPos  Pos
+	EndPos    Pos
 }
 
-func (i *IfBlock) Pos() Pos        { return i.StartPos }
-func (i *IfBlock) End() Pos        { return i.EndPos }
+func (i *IfBlock) Pos() Pos         { return i.StartPos }
+func (i *IfBlock) End() Pos         { return i.EndPos }
 func (i *IfBlock) onInputStmtNode() {}
 
 // ElseIfClause represents an else if clause.
@@ -614,6 +614,6 @@ type ForEachBlock struct {
 	EndPos     Pos
 }
 
-func (f *ForEachBlock) Pos() Pos        { return f.StartPos }
-func (f *ForEachBlock) End() Pos        { return f.EndPos }
+func (f *ForEachBlock) Pos() Pos         { return f.StartPos }
+func (f *ForEachBlock) End() Pos         { return f.EndPos }
 func (f *ForEachBlock) onInputStmtNode() {}

@@ -218,8 +218,8 @@ func TestExamplesValidate(t *testing.T) {
 
 	// Examples that require import resolution at compile time — skip in standalone validation
 	skipDirs := map[string]bool{
-		"multi-file-agent":    true,
-		"control-flow-agent":  true,
+		"multi-file-agent":   true,
+		"control-flow-agent": true,
 	}
 
 	found := 0

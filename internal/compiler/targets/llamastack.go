@@ -79,7 +79,7 @@ func (t *LlamaStackTarget) generateAgent(doc *ir.Document, agents []ir.Resource,
 	var sb strings.Builder
 
 	sb.WriteString("#!/usr/bin/env python3\n")
-	sb.WriteString(fmt.Sprintf("\"\"\"LlamaStack agent generated from AgentSpec.\"\"\"\n\n"))
+	sb.WriteString("\"\"\"LlamaStack agent generated from AgentSpec.\"\"\"\n\n")
 	sb.WriteString("import asyncio\n")
 	sb.WriteString("import subprocess\n")
 	sb.WriteString("import sys\n\n")
@@ -94,7 +94,7 @@ func (t *LlamaStackTarget) generateAgent(doc *ir.Document, agents []ir.Resource,
 			desc = fmt.Sprintf("%s tool", skill.Name)
 		}
 
-		sb.WriteString(fmt.Sprintf("def %s(", safeName))
+		fmt.Fprintf(&sb, "def %s(", safeName)
 
 		if inputs, ok := skill.Attributes["input"].([]interface{}); ok {
 			var params []string
@@ -108,7 +108,7 @@ func (t *LlamaStackTarget) generateAgent(doc *ir.Document, agents []ir.Resource,
 		}
 
 		sb.WriteString(") -> str:\n")
-		sb.WriteString(fmt.Sprintf("    \"\"\"%s\"\"\"\n", desc))
+		fmt.Fprintf(&sb, "    \"\"\"%s\"\"\"\n", desc)
 
 		if tool, ok := skill.Attributes["tool"].(map[string]interface{}); ok {
 			toolType, _ := tool["type"].(string)
@@ -116,10 +116,10 @@ func (t *LlamaStackTarget) generateAgent(doc *ir.Document, agents []ir.Resource,
 				binary, _ := tool["binary"].(string)
 				args, _ := tool["args"].(string)
 				if binary != "" {
-					sb.WriteString(fmt.Sprintf("    result = subprocess.run([%q", binary))
+					fmt.Fprintf(&sb, "    result = subprocess.run([%q", binary)
 					if args != "" {
 						for _, arg := range strings.Fields(args) {
-							sb.WriteString(fmt.Sprintf(", %q", arg))
+							fmt.Fprintf(&sb, ", %q", arg)
 						}
 					}
 					sb.WriteString("], capture_output=True, text=True)\n")
@@ -154,13 +154,13 @@ func (t *LlamaStackTarget) generateAgent(doc *ir.Document, agents []ir.Resource,
 	}
 
 	sb.WriteString("    agent_config = AgentConfig(\n")
-	sb.WriteString(fmt.Sprintf("        model=%q,\n", model))
-	sb.WriteString(fmt.Sprintf("        instructions=%q,\n", prompt))
+	fmt.Fprintf(&sb, "        model=%q,\n", model)
+	fmt.Fprintf(&sb, "        instructions=%q,\n", prompt)
 	sb.WriteString("        enable_session_persistence=False,\n")
 
 	maxTurns := getIntAttr(agent, "max_turns")
 	if maxTurns > 0 {
-		sb.WriteString(fmt.Sprintf("        max_infer_iters=%d,\n", maxTurns))
+		fmt.Fprintf(&sb, "        max_infer_iters=%d,\n", maxTurns)
 	}
 
 	sb.WriteString("    )\n\n")

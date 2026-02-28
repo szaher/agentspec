@@ -264,7 +264,7 @@ func packageHelm(binaryPath string, doc *ir.Document, outputDir, tag string) (*P
 	}
 
 	var files []string
-	filepath.Walk(chartDir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(chartDir, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() {
 			files = append(files, path)
 		}

@@ -15,11 +15,11 @@ import (
 
 func newEvalCmd() *cobra.Command {
 	var (
-		agentName  string
-		tags       string
-		output     string
-		format     string
-		compareTo  string
+		agentName string
+		tags      string
+		output    string
+		format    string
+		compareTo string
 	)
 
 	cmd := &cobra.Command{

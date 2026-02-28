@@ -15,9 +15,9 @@ type Graph struct {
 
 // GraphNode represents a single file in the dependency graph.
 type GraphNode struct {
-	Path     string
-	Hash     string
-	Imports  []string // paths of direct dependencies
+	Path    string
+	Hash    string
+	Imports []string // paths of direct dependencies
 }
 
 // NewGraph creates an empty dependency graph.

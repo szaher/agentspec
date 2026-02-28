@@ -9,7 +9,7 @@ import (
 
 // DetectedFeature represents an AgentSpec feature found in the IR document.
 type DetectedFeature struct {
-	Name       string // canonical feature name
+	Name        string // canonical feature name
 	ResourceFQN string // which resource uses this feature
 }
 
@@ -207,12 +207,12 @@ func gapSuggestion(feature string, level plugins.FeatureSupportLevel) string {
 	if level == plugins.FeatureNone {
 		suggestions := map[string]string{
 			"loop_reflexion":       "Consider using the LangGraph target which supports reflexion loops",
-			"loop_router":         "Consider using the LangGraph target which supports conditional routing",
-			"loop_map_reduce":     "Consider using the LangGraph target for map-reduce patterns",
+			"loop_router":          "Consider using the LangGraph target which supports conditional routing",
+			"loop_map_reduce":      "Consider using the LangGraph target for map-reduce patterns",
 			"pipeline_conditional": "Consider using the LangGraph target for conditional pipelines",
-			"inline_tools":        "Convert inline tools to command or HTTP tools for this target",
-			"mcp_tools":           "Convert MCP tools to HTTP or command tools for this target",
-			"control_flow_if":     "Consider using the standalone or LangGraph target for control flow",
+			"inline_tools":         "Convert inline tools to command or HTTP tools for this target",
+			"mcp_tools":            "Convert MCP tools to HTTP or command tools for this target",
+			"control_flow_if":      "Consider using the standalone or LangGraph target for control flow",
 			"control_flow_foreach": "Consider using the standalone or LangGraph target for loops",
 		}
 		if s, ok := suggestions[feature]; ok {
