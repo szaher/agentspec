@@ -8,11 +8,31 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/szaher/designs/agentz/internal/adapters"
 	"github.com/szaher/designs/agentz/internal/ir"
 )
+
+// findModuleRoot walks up from the current directory to find the nearest
+// directory containing go.mod, which serves as the project root.
+func findModuleRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("go.mod not found in any parent directory")
+		}
+		dir = parent
+	}
+}
 
 func init() {
 	adapters.Register("docker", func() adapters.Adapter {
@@ -59,17 +79,23 @@ func (a *Adapter) Apply(ctx context.Context, actions []adapters.Action) ([]adapt
 	port := agentPort(resources)
 	a.imageName = "agentspec-runtime"
 
-	// Write runtime config to the build context (current directory)
-	// so Docker can COPY it into the image.
+	// Find the project root (directory containing go.mod) to use as
+	// the Docker build context so the Go source is available.
+	projectRoot, err := findModuleRoot()
+	if err != nil {
+		return nil, fmt.Errorf("find project root: %w", err)
+	}
+
 	configData, err := json.MarshalIndent(resources, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("marshal config: %w", err)
 	}
 
-	if err := os.WriteFile("runtime-config.json", configData, 0644); err != nil {
+	configPath := filepath.Join(projectRoot, "runtime-config.json")
+	if err := os.WriteFile(configPath, configData, 0644); err != nil {
 		return nil, fmt.Errorf("write config: %w", err)
 	}
-	defer os.Remove("runtime-config.json")
+	defer os.Remove(configPath)
 
 	tmpDir, err := os.MkdirTemp("", "agentspec-docker-*")
 	if err != nil {
@@ -81,8 +107,8 @@ func (a *Adapter) Apply(ctx context.Context, actions []adapters.Action) ([]adapt
 		return nil, fmt.Errorf("write Dockerfile: %w", err)
 	}
 
-	// Build image
-	buildCmd := exec.CommandContext(ctx, "docker", "build", "-t", a.imageName, "-f", tmpDir+"/Dockerfile", ".")
+	// Build image using the project root as the build context
+	buildCmd := exec.CommandContext(ctx, "docker", "build", "-t", a.imageName, "-f", tmpDir+"/Dockerfile", projectRoot)
 	buildOut, err := buildCmd.CombinedOutput()
 	if err != nil {
 		for _, action := range actions {
