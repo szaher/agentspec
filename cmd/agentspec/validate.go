@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/szaher/designs/agentz/internal/ast"
+	"github.com/szaher/designs/agentz/internal/imports"
 	"github.com/szaher/designs/agentz/internal/parser"
 	"github.com/szaher/designs/agentz/internal/validate"
 )
@@ -42,6 +45,23 @@ func newValidateCmd() *cobra.Command {
 						})
 					}
 					continue
+				}
+
+				// Resolve imports before validation so cross-file references work
+				if f.Package != nil && len(f.Package.Imports) > 0 || hasImportStatements(f) {
+					baseDir := filepath.Dir(file)
+					resolver := imports.NewResolver(baseDir, nil)
+					resolved, resolveErr := resolver.ResolveAll(f)
+					if resolveErr != nil {
+						allErrors = append(allErrors, &validate.ValidationError{
+							File:    file,
+							Line:    1,
+							Column:  1,
+							Message: fmt.Sprintf("import resolution failed: %v", resolveErr),
+						})
+					} else if len(resolved) > 0 {
+						imports.MergeImports(f, resolved)
+					}
 				}
 
 				structErrs := validate.ValidateStructural(f)
@@ -90,4 +110,13 @@ func newValidateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&format, "format", "text", "Output format (text|json)")
 
 	return cmd
+}
+
+func hasImportStatements(f *ast.File) bool {
+	for _, stmt := range f.Statements {
+		if _, ok := stmt.(*ast.Import); ok {
+			return true
+		}
+	}
+	return false
 }
