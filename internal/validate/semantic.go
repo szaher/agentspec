@@ -59,6 +59,10 @@ func ValidateSemantic(f *ast.File) []*ValidationError {
 						fmt.Sprintf("delegate agent %q not found", d.AgentRef), hint))
 				}
 			}
+			// IntentLang 3.0: check on-input block references
+			if s.OnInput != nil {
+				errs = append(errs, validateOnInputRefs(s.OnInput.Statements, names)...)
+			}
 		case *ast.Skill:
 			if s.ToolConfig != nil && s.ToolConfig.Type == "mcp" && s.ToolConfig.ServerTool != "" {
 				parts := strings.SplitN(s.ToolConfig.ServerTool, "/", 2)
@@ -162,6 +166,38 @@ func ValidateSemantic(f *ast.File) []*ValidationError {
 		})
 	}
 
+	return errs
+}
+
+// validateOnInputRefs checks skill and agent references in on-input statements.
+func validateOnInputRefs(stmts []ast.OnInputStmt, names map[string]map[string]bool) []*ValidationError {
+	var errs []*ValidationError
+	for _, stmt := range stmts {
+		switch s := stmt.(type) {
+		case *ast.UseSkillStmt:
+			if !names["Skill"][s.SkillName] {
+				hint := suggestName(s.SkillName, names["Skill"])
+				errs = append(errs, posError(s.StartPos,
+					fmt.Sprintf("skill %q not found", s.SkillName), hint))
+			}
+		case *ast.DelegateToStmt:
+			if !names["Agent"][s.AgentName] {
+				hint := suggestName(s.AgentName, names["Agent"])
+				errs = append(errs, posError(s.StartPos,
+					fmt.Sprintf("delegate agent %q not found", s.AgentName), hint))
+			}
+		case *ast.IfBlock:
+			errs = append(errs, validateOnInputRefs(s.Body, names)...)
+			for _, elseIf := range s.ElseIfs {
+				errs = append(errs, validateOnInputRefs(elseIf.Body, names)...)
+			}
+			if s.ElseBody != nil {
+				errs = append(errs, validateOnInputRefs(s.ElseBody, names)...)
+			}
+		case *ast.ForEachBlock:
+			errs = append(errs, validateOnInputRefs(s.Body, names)...)
+		}
+	}
 	return errs
 }
 

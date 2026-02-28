@@ -32,6 +32,7 @@ type Options struct {
 	APIKey    string
 	Logger    *slog.Logger
 	LLMClient llm.Client
+	EnableUI  bool
 }
 
 // New creates a new runtime from the given config.
@@ -46,10 +47,21 @@ func New(config *RuntimeConfig, opts Options) (*Runtime, error) {
 		port = 8080
 	}
 
-	// Create LLM client
+	// Create LLM client — auto-detect provider from first agent's model string
 	llmClient := opts.LLMClient
 	if llmClient == nil {
-		llmClient = llm.NewAnthropicClient()
+		if len(config.Agents) > 0 {
+			var resolvedModel string
+			llmClient, resolvedModel = llm.NewClientForModel(config.Agents[0].Model)
+			// Update agent model to the resolved name (without provider prefix)
+			for i := range config.Agents {
+				_, m := llm.ParseModelString(config.Agents[i].Model)
+				config.Agents[i].Model = m
+			}
+			_ = resolvedModel
+		} else {
+			llmClient = llm.NewAnthropicClient()
+		}
 	}
 
 	// Create MCP connection pool
@@ -75,6 +87,9 @@ func New(config *RuntimeConfig, opts Options) (*Runtime, error) {
 		serverOpts = append(serverOpts, WithAPIKey(opts.APIKey))
 	}
 	serverOpts = append(serverOpts, WithLogger(logger))
+	if opts.EnableUI {
+		serverOpts = append(serverOpts, WithUI(true))
+	}
 
 	server := NewServer(config, llmClient, registry, sessionMgr, strategy, serverOpts...)
 

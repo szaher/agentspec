@@ -18,10 +18,20 @@ type Manifest struct {
 
 // Capabilities lists what the plugin provides.
 type Capabilities struct {
-	ResourceTypes []ResourceType `json:"resource_types,omitempty"`
-	Validators    []Validator    `json:"validators,omitempty"`
-	Transforms    []Transform    `json:"transforms,omitempty"`
-	Hooks         []Hook         `json:"hooks,omitempty"`
+	ResourceTypes []ResourceType     `json:"resource_types,omitempty"`
+	Validators    []Validator        `json:"validators,omitempty"`
+	Transforms    []Transform        `json:"transforms,omitempty"`
+	Hooks         []Hook             `json:"hooks,omitempty"`
+	Compile       *CompileCapability `json:"compile,omitempty"`
+}
+
+// CompileCapability declares that a plugin can compile AgentSpec IR to a framework target.
+type CompileCapability struct {
+	TargetName          string   `json:"target_name"`
+	OutputType          string   `json:"output_type"`
+	OutputLanguage      string   `json:"output_language"`
+	SupportedFeatures   []string `json:"supported_features,omitempty"`
+	UnsupportedFeatures []string `json:"unsupported_features,omitempty"`
 }
 
 // ResourceType declares a custom resource kind.
@@ -103,9 +113,10 @@ func LoadManifestFromFile(path string) (*Manifest, error) {
 	return &m, nil
 }
 
-// CheckConflicts checks for duplicate resource types across plugins.
+// CheckConflicts checks for duplicate resource types and compile targets across plugins.
 func CheckConflicts(plugins []*LoadedPlugin) error {
-	kinds := make(map[string]string) // kind -> plugin name
+	kinds := make(map[string]string)   // kind -> plugin name
+	targets := make(map[string]string) // target_name -> plugin name
 	for _, p := range plugins {
 		for _, rt := range p.Manifest.Capabilities.ResourceTypes {
 			if existing, ok := kinds[rt.Kind]; ok {
@@ -114,6 +125,36 @@ func CheckConflicts(plugins []*LoadedPlugin) error {
 			}
 			kinds[rt.Kind] = p.Manifest.Name
 		}
+		if p.Manifest.Capabilities.Compile != nil {
+			target := p.Manifest.Capabilities.Compile.TargetName
+			if existing, ok := targets[target]; ok {
+				return fmt.Errorf("compile target %q declared by both %q and %q",
+					target, existing, p.Manifest.Name)
+			}
+			targets[target] = p.Manifest.Name
+		}
 	}
 	return nil
+}
+
+// FindCompilePlugin returns the plugin that provides a given compilation target.
+func FindCompilePlugin(plugins []*LoadedPlugin, targetName string) *LoadedPlugin {
+	for _, p := range plugins {
+		if p.Manifest.Capabilities.Compile != nil &&
+			p.Manifest.Capabilities.Compile.TargetName == targetName {
+			return p
+		}
+	}
+	return nil
+}
+
+// ListCompileTargets returns all available compilation targets from loaded plugins.
+func ListCompileTargets(plugins []*LoadedPlugin) []string {
+	var targets []string
+	for _, p := range plugins {
+		if p.Manifest.Capabilities.Compile != nil {
+			targets = append(targets, p.Manifest.Capabilities.Compile.TargetName)
+		}
+	}
+	return targets
 }

@@ -86,6 +86,12 @@ nav:
       - environment: user-guide/language/environment.md
       - policy: user-guide/language/policy.md
       - plugin: user-guide/language/plugin.md
+      - config: user-guide/language/config.md
+      - validate: user-guide/language/validate.md
+      - eval: user-guide/language/eval.md
+      - control flow: user-guide/language/control-flow.md
+      - import: user-guide/language/imports.md
+      - providers: user-guide/language/providers.md
     - Configuration:
       - Runtime Attributes: user-guide/configuration/runtime.md
       - Prompt Variables: user-guide/configuration/prompt-variables.md
@@ -123,6 +129,11 @@ nav:
       - export: user-guide/cli/export.md
       - diff: user-guide/cli/diff.md
       - sdk: user-guide/cli/sdk.md
+      - compile: user-guide/cli/compile.md
+      - package: user-guide/cli/package.md
+      - eval: user-guide/cli/eval.md
+      - install: user-guide/cli/install.md
+      - publish: user-guide/cli/publish.md
       - version: user-guide/cli/version.md
     - HTTP API:
       - Overview: user-guide/api/index.md

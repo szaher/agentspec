@@ -1,118 +1,319 @@
 {
+  "Package Declaration": {
+    "prefix": "package",
+    "description": "Package declaration with version and lang",
+    "body": [
+      "package \"${1:my-package}\" version \"${2:1.0.0}\" lang \"3.0\"",
+      ""
+    ]
+  },
+  "Import": {
+    "prefix": "import",
+    "description": "Import a local .ias file or package",
+    "body": [
+      "import \"${1:./module.ias}\" as ${2:mod}"
+    ]
+  },
   "Agent Block": {
     "prefix": "agent",
-    "description": "Create an agent block",
+    "description": "Define an agent",
     "body": [
       "agent \"${1:agent-name}\" {",
-      "  model = \"${2:claude-sonnet-4-20250514}\"",
-      "  uses prompt \"${3:system-prompt}\"",
-      "  ${4:uses skill \"skill-name\"}",
+      "  model \"${2|ollama/llama3.2,claude-sonnet-4-20250514,openai/gpt-4o|}\"",
+      "  prompt \"${3:system-prompt}\"",
+      "  strategy \"${4|react,plan_execute,reflexion,router,map_reduce|}\"",
+      "  max_turns ${5:10}",
+      "}"
+    ]
+  },
+  "Agent with Config": {
+    "prefix": "agent-config",
+    "description": "Agent with config, validation, and eval blocks",
+    "body": [
+      "agent \"${1:agent-name}\" {",
+      "  model \"${2|ollama/llama3.2,claude-sonnet-4-20250514,openai/gpt-4o|}\"",
+      "  prompt \"${3:system-prompt}\"",
+      "  strategy \"react\"",
+      "  max_turns ${4:10}",
       "",
-      "  strategy = \"${5|react,plan_execute,reflexion,router,map_reduce|}\"",
-      "  max_turns = ${6:10}",
-      "  temperature = ${7:0.3}",
-      "  stream = ${8|true,false|}",
+      "  uses skill \"${5:skill-name}\"",
+      "",
+      "  config {",
+      "    ${6:param_name} string default \"${7:value}\" \"${8:Description}\"",
+      "  }",
+      "",
+      "  validate {",
+      "    rule ${9:rule_name} ${10|warning,error|} \"${11:Rule description}\" when output != \"\"",
+      "  }",
+      "",
+      "  eval {",
+      "    case ${12:test_name} input \"${13:Hello}\" expect \"${14:hello}\" scoring contains",
+      "  }",
+      "}"
+    ]
+  },
+  "Ollama Agent": {
+    "prefix": "agent-ollama",
+    "description": "Agent using local Ollama model",
+    "body": [
+      "agent \"${1:agent-name}\" {",
+      "  model \"ollama/${2|llama3.2,mistral,codellama:7b,qwen2.5-coder:7b,deepseek-coder:6.7b|}\"",
+      "  prompt \"${3:system-prompt}\"",
+      "  strategy \"react\"",
+      "  max_turns ${4:10}",
+      "  stream true",
       "}"
     ]
   },
   "Prompt Block": {
     "prefix": "prompt",
-    "description": "Create a prompt block",
+    "description": "Define a prompt",
     "body": [
       "prompt \"${1:prompt-name}\" {",
-      "  content = \"\"\"",
-      "    ${2:You are a helpful assistant.}",
-      "  \"\"\"",
+      "  content \"${2:You are a helpful assistant.}\"",
       "}"
     ]
   },
   "Skill Block": {
     "prefix": "skill",
-    "description": "Create a skill block",
+    "description": "Define a skill with input/output and tool",
     "body": [
       "skill \"${1:skill-name}\" {",
-      "  description = \"${2:Description of what this skill does}\"",
-      "  tool ${3|mcp,http,command,inline|} {",
-      "    ${4:server = \"server-name\"}",
+      "  description \"${2:What this skill does}\"",
+      "",
+      "  input {",
+      "    ${3:param} string required",
+      "  }",
+      "",
+      "  output {",
+      "    ${4:result} string required",
+      "  }",
+      "",
+      "  tool ${5|http,command,inline,mcp|} {",
+      "    ${6:method \"POST\"}",
+      "    ${7:url \"https://api.example.com\"}",
       "  }",
       "}"
     ]
   },
+  "Skill Inline": {
+    "prefix": "skill-inline",
+    "description": "Skill with inline code tool",
+    "body": [
+      "skill \"${1:skill-name}\" {",
+      "  description \"${2:What this skill does}\"",
+      "",
+      "  input {",
+      "    ${3:param} string required",
+      "  }",
+      "",
+      "  output {",
+      "    ${4:result} string required",
+      "  }",
+      "",
+      "  tool inline {",
+      "    language \"${5|bash,python|}\"",
+      "    code \"${6:echo hello}\"",
+      "  }",
+      "}"
+    ]
+  },
+  "Config Block": {
+    "prefix": "config",
+    "description": "Config block inside an agent",
+    "body": [
+      "config {",
+      "  ${1:param_name} ${2|string,int,float,bool|} default \"${3:value}\" \"${4:Description}\"",
+      "  ${5:api_key} string required secret \"${6:API key}\"",
+      "}"
+    ]
+  },
+  "Validate Block": {
+    "prefix": "validate",
+    "description": "Validation rules block inside an agent",
+    "body": [
+      "validate {",
+      "  rule ${1:rule_name} ${2|warning,error|} \"${3:Description}\" when ${4:output != \"\"}",
+      "}"
+    ]
+  },
+  "Eval Block": {
+    "prefix": "eval",
+    "description": "Evaluation test cases block inside an agent",
+    "body": [
+      "eval {",
+      "  case ${1:test_name} input \"${2:test input}\" expect \"${3:expected}\" scoring ${4|contains,semantic,exact,regex|}",
+      "}"
+    ]
+  },
+  "On Input Block": {
+    "prefix": "on-input",
+    "description": "On input control flow block",
+    "body": [
+      "on input {",
+      "  if ${1:input == \"hello\"} {",
+      "    ${2:use skill \"skill-name\"}",
+      "  } else {",
+      "    ${3:respond \"I received your message.\"}",
+      "  }",
+      "}"
+    ]
+  },
+  "If Else": {
+    "prefix": "if",
+    "description": "If/else conditional block",
+    "body": [
+      "if ${1:condition} {",
+      "  ${2:use skill \"skill-name\"}",
+      "} else {",
+      "  ${3:respond \"fallback\"}",
+      "}"
+    ]
+  },
+  "For Each": {
+    "prefix": "foreach",
+    "description": "For each loop",
+    "body": [
+      "for each ${1:item} in ${2:items} {",
+      "  ${3:use skill \"skill-name\"}",
+      "}"
+    ]
+  },
+  "Rule": {
+    "prefix": "rule",
+    "description": "Validation rule",
+    "body": [
+      "rule ${1:rule_name} ${2|warning,error|} \"${3:Rule description}\" when ${4:output != \"\"}"
+    ]
+  },
+  "Case": {
+    "prefix": "case",
+    "description": "Evaluation test case",
+    "body": [
+      "case ${1:test_name} input \"${2:test input}\" expect \"${3:expected}\" scoring ${4|contains,semantic,exact,regex|} threshold ${5:0.8}"
+    ]
+  },
   "Deploy Block": {
     "prefix": "deploy",
-    "description": "Create a deploy block",
+    "description": "Deployment target block",
     "body": [
-      "deploy \"${1:local}\" target \"${2|process,docker,kubernetes|}\" {",
-      "  port = ${3:8080}",
+      "deploy \"${1:local}\" target \"${2|process,docker,kubernetes,compose|}\" {",
+      "  port ${3:8080}",
+      "  health {",
+      "    path \"/healthz\"",
+      "  }",
       "}"
     ]
   },
   "Pipeline Block": {
     "prefix": "pipeline",
-    "description": "Create a pipeline block",
+    "description": "Multi-agent pipeline",
     "body": [
       "pipeline \"${1:pipeline-name}\" {",
       "  step \"${2:step-1}\" {",
-      "    agent = \"${3:agent-name}\"",
+      "    agent \"${3:agent-name}\"",
       "  }",
       "  step \"${4:step-2}\" {",
-      "    agent = \"${5:agent-name}\"",
-      "    depends_on = [\"${2:step-1}\"]",
+      "    agent \"${5:agent-name}\"",
+      "    depends_on [\"${2:step-1}\"]",
       "  }",
       "}"
     ]
   },
   "MCP Tool": {
     "prefix": "tool-mcp",
-    "description": "Create an MCP tool configuration",
+    "description": "MCP tool configuration",
     "body": [
       "tool mcp {",
-      "  server = \"${1:server-name}\"",
+      "  server \"${1:server-name}\"",
       "}"
     ]
   },
   "HTTP Tool": {
     "prefix": "tool-http",
-    "description": "Create an HTTP tool configuration",
+    "description": "HTTP tool configuration",
     "body": [
       "tool http {",
-      "  method = \"${1|GET,POST,PUT,DELETE|}\"",
-      "  url = \"${2:http://localhost:8000/api}\"",
+      "  method \"${1|GET,POST,PUT,DELETE|}\"",
+      "  url \"${2:https://api.example.com}\"",
       "}"
     ]
   },
   "Command Tool": {
     "prefix": "tool-command",
-    "description": "Create a command tool configuration",
+    "description": "Command tool configuration",
     "body": [
       "tool command {",
-      "  command = \"${1:python3}\"",
-      "  args = [\"${2:-m}\", \"${3:module}\"]",
+      "  binary \"${1:command}\"",
+      "  args \"${2:arg1}\"",
       "}"
     ]
   },
-  "Delegate Block": {
-    "prefix": "delegate",
-    "description": "Create a delegation rule",
+  "Inline Tool": {
+    "prefix": "tool-inline",
+    "description": "Inline code tool configuration",
     "body": [
-      "delegate to agent \"${1:agent-name}\" when \"${2:condition description}\""
+      "tool inline {",
+      "  language \"${1|bash,python|}\"",
+      "  code \"${2:echo hello}\"",
+      "}"
     ]
   },
   "Memory Block": {
     "prefix": "memory",
-    "description": "Create a memory configuration",
+    "description": "Memory configuration",
     "body": [
       "memory {",
-      "  strategy = \"${1|sliding_window,summary|}\"",
-      "  max_messages = ${2:20}",
+      "  strategy \"${1|sliding_window,summary|}\"",
+      "  max_messages ${2:20}",
       "}"
     ]
   },
-  "Package Declaration": {
-    "prefix": "package",
-    "description": "Create a package declaration",
+  "Environment": {
+    "prefix": "environment",
     "body": [
-      "package \"${1:my-package}\""
-    ]
+      "environment \"${1:name}\" {",
+      "  ${2:key} \"${3:value}\"",
+      "}"
+    ],
+    "description": "Environment-specific configuration"
+  },
+  "Secret": {
+    "prefix": "secret",
+    "body": [
+      "secret \"${1:name}\" {",
+      "  env \"${2:ENV_VAR}\"",
+      "}"
+    ],
+    "description": "Secret definition with env source"
+  },
+  "Policy": {
+    "prefix": "policy",
+    "body": [
+      "policy \"${1:name}\" {",
+      "  ${2|deny,require,allow|} \"${3:rule}\"",
+      "}"
+    ],
+    "description": "Deployment policy rules"
+  },
+  "MCP Server": {
+    "prefix": "server",
+    "body": [
+      "server \"${1:name}\" {",
+      "  transport \"${2|stdio,sse|}\"",
+      "  command \"${3:binary}\"",
+      "  args \"${4:args}\"",
+      "}"
+    ],
+    "description": "MCP server definition"
+  },
+  "MCP Client": {
+    "prefix": "client",
+    "body": [
+      "client \"${1:name}\" {",
+      "  connects \"${2:server-name}\"",
+      "}"
+    ],
+    "description": "MCP client definition"
   }
 }

@@ -72,7 +72,17 @@ func ValidateStructural(f *ast.File) []*ValidationError {
 			errs = append(errs, validateTypeDef(s)...)
 		case *ast.Pipeline:
 			errs = append(errs, validatePipeline(s)...)
+		case *ast.Import:
+			errs = append(errs, validateImport(s)...)
 		}
+	}
+	return errs
+}
+
+func validateImport(imp *ast.Import) []*ValidationError {
+	var errs []*ValidationError
+	if imp.Path == "" {
+		errs = append(errs, posError(imp.StartPos, "import path is required", ""))
 	}
 	return errs
 }
@@ -120,6 +130,147 @@ func validateAgent(a *ast.Agent) []*ValidationError {
 		errs = append(errs, posError(a.StartPos,
 			fmt.Sprintf("agent %q has temperature %.1f out of range [0, 2]", a.Name, a.Temperature),
 			""))
+	}
+	// IntentLang 3.0 validation
+	errs = append(errs, validateConfigParams(a)...)
+	errs = append(errs, validateValidationRules(a)...)
+	errs = append(errs, validateEvalCases(a)...)
+	if a.OnInput != nil {
+		errs = append(errs, validateOnInputBlock(a.Name, a.OnInput)...)
+	}
+	return errs
+}
+
+func validateConfigParams(a *ast.Agent) []*ValidationError {
+	var errs []*ValidationError
+	validTypes := map[string]bool{"string": true, "int": true, "float": true, "bool": true}
+
+	for _, p := range a.ConfigParams {
+		if p.Name == "" {
+			errs = append(errs, posError(p.StartPos, "config param name is required", ""))
+		}
+		if p.Type != "" && !validTypes[p.Type] {
+			errs = append(errs, posError(p.StartPos,
+				fmt.Sprintf("config param %q has invalid type %q", p.Name, p.Type),
+				"valid types: string, int, float, bool"))
+		}
+		if p.Secret && p.HasDefault {
+			errs = append(errs, posError(p.StartPos,
+				fmt.Sprintf("config param %q is marked secret and cannot have a default value", p.Name),
+				"remove the default value or remove the secret modifier"))
+		}
+	}
+	return errs
+}
+
+func validateValidationRules(a *ast.Agent) []*ValidationError {
+	var errs []*ValidationError
+	validSeverity := map[string]bool{"error": true, "warning": true}
+
+	for _, r := range a.ValidationRules {
+		if r.Name == "" {
+			errs = append(errs, posError(r.StartPos, "validation rule name is required", ""))
+		}
+		if r.Severity != "" && !validSeverity[r.Severity] {
+			errs = append(errs, posError(r.StartPos,
+				fmt.Sprintf("validation rule %q has invalid severity %q", r.Name, r.Severity),
+				"valid severities: error, warning"))
+		}
+		if r.MaxRetries < 0 {
+			errs = append(errs, posError(r.StartPos,
+				fmt.Sprintf("validation rule %q has negative max_retries", r.Name), ""))
+		}
+		if r.Expression == "" {
+			errs = append(errs, posError(r.StartPos,
+				fmt.Sprintf("validation rule %q requires a 'when' expression", r.Name),
+				"add 'when <expression>'"))
+		}
+	}
+	return errs
+}
+
+func validateEvalCases(a *ast.Agent) []*ValidationError {
+	var errs []*ValidationError
+	validScoring := map[string]bool{"exact": true, "contains": true, "semantic": true, "custom": true}
+
+	for _, c := range a.EvalCases {
+		if c.Name == "" {
+			errs = append(errs, posError(c.StartPos, "eval case name is required", ""))
+		}
+		if c.Input == "" {
+			errs = append(errs, posError(c.StartPos,
+				fmt.Sprintf("eval case %q requires an input", c.Name), "add 'input \"...\"'"))
+		}
+		if c.Expected == "" {
+			errs = append(errs, posError(c.StartPos,
+				fmt.Sprintf("eval case %q requires an expected output", c.Name), "add 'expect \"...\"'"))
+		}
+		if c.Scoring != "" && !validScoring[c.Scoring] {
+			errs = append(errs, posError(c.StartPos,
+				fmt.Sprintf("eval case %q has invalid scoring method %q", c.Name, c.Scoring),
+				"valid methods: exact, contains, semantic, custom"))
+		}
+		if c.Threshold < 0 || c.Threshold > 1 {
+			errs = append(errs, posError(c.StartPos,
+				fmt.Sprintf("eval case %q has threshold %g out of range [0, 1]", c.Name, c.Threshold), ""))
+		}
+	}
+	return errs
+}
+
+func validateOnInputBlock(agentName string, block *ast.OnInputBlock) []*ValidationError {
+	var errs []*ValidationError
+	for _, stmt := range block.Statements {
+		errs = append(errs, validateOnInputStmt(agentName, stmt)...)
+	}
+	return errs
+}
+
+func validateOnInputStmt(agentName string, stmt ast.OnInputStmt) []*ValidationError {
+	var errs []*ValidationError
+	switch s := stmt.(type) {
+	case *ast.UseSkillStmt:
+		if s.SkillName == "" {
+			errs = append(errs, posError(s.StartPos, "use skill requires a skill name", ""))
+		}
+	case *ast.DelegateToStmt:
+		if s.AgentName == "" {
+			errs = append(errs, posError(s.StartPos, "delegate requires an agent name", ""))
+		}
+	case *ast.RespondStmt:
+		if s.Expression == "" {
+			errs = append(errs, posError(s.StartPos, "respond requires an expression", ""))
+		}
+	case *ast.IfBlock:
+		if s.Condition == "" {
+			errs = append(errs, posError(s.StartPos, "if block requires a condition", ""))
+		}
+		for _, bodyStmt := range s.Body {
+			errs = append(errs, validateOnInputStmt(agentName, bodyStmt)...)
+		}
+		for _, elseIf := range s.ElseIfs {
+			if elseIf.Condition == "" {
+				errs = append(errs, posError(elseIf.StartPos, "else if requires a condition", ""))
+			}
+			for _, bodyStmt := range elseIf.Body {
+				errs = append(errs, validateOnInputStmt(agentName, bodyStmt)...)
+			}
+		}
+		if s.ElseBody != nil {
+			for _, bodyStmt := range s.ElseBody {
+				errs = append(errs, validateOnInputStmt(agentName, bodyStmt)...)
+			}
+		}
+	case *ast.ForEachBlock:
+		if s.Variable == "" {
+			errs = append(errs, posError(s.StartPos, "for each requires a variable name", ""))
+		}
+		if s.Collection == "" {
+			errs = append(errs, posError(s.StartPos, "for each requires a collection expression", ""))
+		}
+		for _, bodyStmt := range s.Body {
+			errs = append(errs, validateOnInputStmt(agentName, bodyStmt)...)
+		}
 	}
 	return errs
 }

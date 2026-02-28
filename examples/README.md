@@ -31,6 +31,10 @@ Verify the build:
 | [Code Review Pipeline](code-review-pipeline/) | `code-review-pipeline.ias` | Multi-agent collaboration, MCP, dual deploy targets |
 | [Data Pipeline](data-pipeline/) | `data-pipeline.ias` | Policies, secrets, three environments |
 | [RAG Chatbot](rag-chatbot/) | `rag-chatbot.ias` | Vector search, MCP transport, secrets |
+| [Ollama Agent](ollama-agent/) | `ollama-agent.ias` | Local Ollama models, inline tools, multi-agent, no API keys |
+| [Compiled Agent](compiled-agent/) | `hello-agent.ias` | Config, validation, eval, deploy |
+| [Control Flow](control-flow-agent/) | `router-agent.ias` | If/else routing, on input blocks |
+| [Validated Agent](validated-agent/) | `support-agent.ias` | Imports, config, validation, eval |
 
 ## Running Any Example
 

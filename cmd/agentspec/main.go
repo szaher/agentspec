@@ -10,8 +10,8 @@ import (
 
 // Version information set at build time.
 var (
-	version     = "0.2.0"
-	langVersion = "1.0"
+	version     = "0.3.0"
+	langVersion = "3.0"
 	irVersion   = "1.0"
 )
 
@@ -62,6 +62,11 @@ via pluggable adapters, and generates SDKs for multiple languages.`,
 	root.AddCommand(newLogsCmd())
 	root.AddCommand(newDestroyCmd())
 	root.AddCommand(newInitCmd())
+	root.AddCommand(newCompileCmd())
+	root.AddCommand(newPackageCmd())
+	root.AddCommand(newEvalCmd())
+	root.AddCommand(newPublishCmd())
+	root.AddCommand(newInstallCmd())
 
 	return root
 }

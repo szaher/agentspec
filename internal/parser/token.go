@@ -117,6 +117,37 @@ const (
 	TokenReplicas
 	TokenImage
 	TokenSecrets
+
+	// IntentLang 3.0 keywords
+	TokenAs        // import alias
+	TokenIf        // conditional
+	TokenElse      // conditional
+	TokenFor       // for each loop
+	TokenEach      // for each loop
+	TokenIn        // for each x in collection
+	TokenConfig    // config block
+	TokenValidate  // validate block
+	TokenEval      // eval block
+	TokenRule      // validation rule
+	TokenCase      // eval case
+	TokenOn        // on input block
+	TokenUse       // use skill
+	TokenWith      // use skill with { params }
+	TokenRespond   // respond expression
+	TokenScoring   // eval case scoring method
+	TokenThreshold // eval case threshold
+	TokenTags      // eval case tags
+	TokenQuery     // http tool query params
+	TokenLoop      // agent loop strategy
+
+	// Expression operators (IntentLang 3.0)
+	TokenColon     // :
+	TokenEqual     // ==
+	TokenNotEqual  // !=
+	TokenGreater   // >
+	TokenGreaterEq // >=
+	TokenLess      // <
+	TokenLessEq    // <=
 )
 
 var tokenNames = map[TokenType]string{
@@ -216,6 +247,33 @@ var tokenNames = map[TokenType]string{
 	TokenReplicas:     "replicas",
 	TokenImage:        "image",
 	TokenSecrets:      "secrets",
+	TokenAs:           "as",
+	TokenIf:           "if",
+	TokenElse:         "else",
+	TokenFor:          "for",
+	TokenEach:         "each",
+	TokenIn:           "in",
+	TokenConfig:       "config",
+	TokenValidate:     "validate",
+	TokenEval:         "eval",
+	TokenRule:         "rule",
+	TokenCase:         "case",
+	TokenOn:           "on",
+	TokenUse:          "use",
+	TokenWith:         "with",
+	TokenRespond:      "respond",
+	TokenScoring:      "scoring",
+	TokenThreshold:    "threshold",
+	TokenTags:         "tags",
+	TokenQuery:        "query",
+	TokenLoop:         "loop",
+	TokenColon:        ":",
+	TokenEqual:        "==",
+	TokenNotEqual:     "!=",
+	TokenGreater:      ">",
+	TokenGreaterEq:    ">=",
+	TokenLess:         "<",
+	TokenLessEq:       "<=",
 }
 
 func (t TokenType) String() string {
@@ -307,6 +365,26 @@ var keywords = map[string]TokenType{
 	"replicas":      TokenReplicas,
 	"image":         TokenImage,
 	"secrets":       TokenSecrets,
+	"as":            TokenAs,
+	"if":            TokenIf,
+	"else":          TokenElse,
+	"for":           TokenFor,
+	"each":          TokenEach,
+	"in":            TokenIn,
+	"config":        TokenConfig,
+	"validate":      TokenValidate,
+	"eval":          TokenEval,
+	"rule":          TokenRule,
+	"case":          TokenCase,
+	"on":            TokenOn,
+	"use":           TokenUse,
+	"with":          TokenWith,
+	"respond":       TokenRespond,
+	"scoring":       TokenScoring,
+	"threshold":     TokenThreshold,
+	"tags":          TokenTags,
+	"query":         TokenQuery,
+	"loop":          TokenLoop,
 }
 
 // LookupKeyword returns the keyword token type for ident, or TokenIdent.

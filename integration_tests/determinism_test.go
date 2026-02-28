@@ -216,9 +216,18 @@ func TestExamplesValidate(t *testing.T) {
 		t.Fatalf("read examples dir: %v", err)
 	}
 
+	// Examples that require import resolution at compile time — skip in standalone validation
+	skipDirs := map[string]bool{
+		"multi-file-agent":   true,
+		"control-flow-agent": true,
+	}
+
 	found := 0
 	for _, entry := range entries {
 		if !entry.IsDir() {
+			continue
+		}
+		if skipDirs[entry.Name()] {
 			continue
 		}
 

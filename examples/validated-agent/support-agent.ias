@@ -1,0 +1,78 @@
+package "validated-agent" version "1.0.0" lang "3.0"
+
+import "./knowledge-base.ias" as kb
+
+prompt "support-system" {
+  content "You are a helpful customer support agent. Use the knowledge base to answer questions accurately."
+}
+
+skill "knowledge-search" {
+  description "Search the company knowledge base"
+  input {
+    query string required
+  }
+  output {
+    result string required
+  }
+  tool http {
+    method "POST"
+    url "https://api.example.com/search"
+  }
+}
+
+agent "support-agent" {
+  uses prompt "support-system"
+  uses skill "knowledge-search"
+  model "claude-sonnet-4-5-20250514"
+  strategy "react"
+  max_turns 10
+  config {
+    company_name string default "Acme Corp"
+      "Company name"
+    max_response_length int default "500"
+      "Max response length"
+    api_key string required secret
+      "API key for external services"
+    support_tier string default "standard"
+      "Support tier level"
+  }
+  validate {
+    rule no_pii error
+      "Response must not contain personally identifiable information"
+      when output != ""
+    rule response_length warning
+      "Response exceeds maximum length"
+      when output != ""
+    rule professional_tone warning
+      "Response should maintain professional tone"
+      when output != ""
+  }
+  eval {
+    case greeting
+      input "Hello, I need help"
+      expect "welcome"
+      scoring contains
+    case product_question
+      input "What are your pricing plans?"
+      expect "pricing"
+      scoring contains
+    case complaint_handling
+      input "Your product is broken and I want a refund"
+      expect "apologize"
+      scoring contains
+  }
+  on input {
+    if input == "urgent" {
+      use skill knowledge-search
+    } else {
+      use skill knowledge-search
+    }
+  }
+}
+
+agent "escalation-agent" {
+  uses prompt "support-system"
+  model "claude-sonnet-4-5-20250514"
+  strategy "react"
+  max_turns 5
+}

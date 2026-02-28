@@ -64,8 +64,9 @@ func newRunCmd() *cobra.Command {
 				return fmt.Errorf("--input is required")
 			}
 
-			// Create LLM client
-			llmClient := llm.NewAnthropicClient()
+			// Create LLM client — auto-detect provider from agent's model string
+			llmClient, resolvedModel := llm.NewClientForModel(agentConfig.Model)
+			agentConfig.Model = resolvedModel
 
 			// Create tool registry
 			registry := tools.NewRegistry()

@@ -55,6 +55,42 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Register compile command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("agentspec.compile", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor || editor.document.languageId !== "intentlang") {
+        vscode.window.showWarningMessage("No IntentLang file is open");
+        return;
+      }
+      await runCliCommand("compile", editor.document);
+    })
+  );
+
+  // Register eval command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("agentspec.eval", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor || editor.document.languageId !== "intentlang") {
+        vscode.window.showWarningMessage("No IntentLang file is open");
+        return;
+      }
+      await runCliCommand("eval", editor.document);
+    })
+  );
+
+  // Register package command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("agentspec.package", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor || editor.document.languageId !== "intentlang") {
+        vscode.window.showWarningMessage("No IntentLang file is open");
+        return;
+      }
+      await runCliCommand("package", editor.document);
+    })
+  );
+
   // Format on save
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async (document) => {
@@ -119,5 +155,26 @@ async function showPlan(document: vscode.TextDocument): Promise<void> {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     vscode.window.showErrorMessage(`AgentSpec plan failed: ${message}`);
+  }
+}
+
+async function runCliCommand(command: string, document: vscode.TextDocument): Promise<void> {
+  const config = vscode.workspace.getConfiguration("agentspec");
+  const execPath = config.get<string>("executablePath", "agentspec");
+
+  try {
+    const { exec } = await import("child_process");
+    const { promisify } = await import("util");
+    const execAsync = promisify(exec);
+
+    const { stdout } = await execAsync(`${execPath} ${command} "${document.fileName}"`);
+
+    const panel = vscode.window.createOutputChannel(`AgentSpec ${command}`);
+    panel.clear();
+    panel.appendLine(stdout);
+    panel.show();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    vscode.window.showErrorMessage(`AgentSpec ${command} failed: ${message}`);
   }
 }

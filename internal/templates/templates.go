@@ -41,6 +41,11 @@ func All() []Template {
 			Description: "Research assistant with web search and summarization",
 			Filename:    "research-assistant.ias",
 		},
+		{
+			Name:        "validated-agent",
+			Description: "Agent with config, validation, eval, and control flow (IntentLang 3.0)",
+			Filename:    "validated-agent.ias",
+		},
 	}
 }
 

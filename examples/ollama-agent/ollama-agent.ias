@@ -1,0 +1,120 @@
+package "ollama-agent" version "1.0.0" lang "3.0"
+
+prompt "coder-system" {
+  content "You are a local coding assistant running on the user's machine via Ollama. You have access to tools that can list files, read files, and run shell commands. Use them to help the user understand and work with their codebase. Be concise and precise. When showing code, use fenced code blocks with the language specified."
+}
+
+prompt "reviewer-system" {
+  content "You are a code reviewer. Analyze code for bugs, security issues, and style problems. Be constructive and specific. Suggest fixes with code examples when possible."
+}
+
+skill "list-files" {
+  description "List files and directories at a given path"
+  input {
+    path string required
+  }
+  output {
+    listing string required
+  }
+  tool inline {
+    language "bash"
+    code "ls -la ${INPUT_PATH:-.}"
+  }
+}
+
+skill "read-file" {
+  description "Read the contents of a file"
+  input {
+    path string required
+  }
+  output {
+    content string required
+  }
+  tool inline {
+    language "bash"
+    code "cat ${INPUT_PATH}"
+  }
+}
+
+skill "run-command" {
+  description "Run a shell command and return the output"
+  input {
+    command string required
+  }
+  output {
+    result string required
+  }
+  tool inline {
+    language "bash"
+    code "eval ${INPUT_COMMAND} 2>&1 | head -100"
+  }
+}
+
+skill "get-time" {
+  description "Get the current date and time"
+  input {
+    timezone string
+  }
+  output {
+    time string required
+  }
+  tool inline {
+    language "bash"
+    code "date"
+  }
+}
+
+agent "coder" {
+  uses prompt "coder-system"
+  uses skill "list-files"
+  uses skill "read-file"
+  uses skill "run-command"
+  uses skill "get-time"
+  model "ollama/llama3.1"
+  strategy "react"
+  max_turns 10
+  stream true
+  config {
+    working_dir string default "."
+      "Working directory for file operations"
+    max_file_size int default "10000"
+      "Maximum file size to read in bytes"
+  }
+  validate {
+    rule no_secrets warning
+      "Response should not expose secrets or credentials"
+      when output != ""
+  }
+  eval {
+    case help_request
+      input "What files are in the current directory?"
+      expect "list"
+      scoring contains
+    case code_question
+      input "How do I read a file in Python?"
+      expect "open"
+      scoring contains
+  }
+}
+
+agent "reviewer" {
+  uses prompt "reviewer-system"
+  uses skill "read-file"
+  model "ollama/llama3.2"
+  strategy "react"
+  max_turns 5
+  stream true
+  eval {
+    case review_request
+      input "Review this code: print('hello')"
+      expect "print"
+      scoring contains
+  }
+}
+
+deploy "local" target "process" {
+  port 8080
+  health {
+    path "/healthz"
+  }
+}
