@@ -6,6 +6,7 @@ The `agent` block defines an AI agent -- the central resource type in IntentLang
 
 ## Syntax
 
+<!-- novalidate -->
 ```ias
 agent "<name>" {
   model "<model-identifier>"
@@ -85,6 +86,7 @@ The `on_error` attribute determines what happens when the agent encounters an er
 
 Delegation allows an agent to route subtasks to specialized agents based on natural-language conditions. Each `delegate to agent` directive specifies a target agent and a condition string that the agent evaluates at runtime.
 
+<!-- novalidate -->
 ```ias
 agent "manager" {
   uses prompt "manager-prompt"

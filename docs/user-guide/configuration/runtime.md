@@ -6,6 +6,7 @@ Agent runtime attributes control how an agent executes: which model it uses, how
 
 ## Syntax Overview
 
+<!-- novalidate -->
 ```ias
 agent "<name>" {
   uses prompt "<prompt-name>"
@@ -41,6 +42,7 @@ All runtime attributes are optional except `model`. If omitted, each attribute f
 
 The `model` attribute specifies which LLM the agent uses. The value is a model identifier string recognized by the underlying provider.
 
+<!-- novalidate -->
 ```ias
 agent "analyst" {
   model "claude-sonnet-4-20250514"
@@ -58,6 +60,7 @@ agent "analyst" {
 !!! tip "Environment overrides"
     Use `environment` blocks to swap models per deployment stage. For example, use `claude-haiku-latest` in development for speed and `claude-sonnet-4-20250514` in production for quality.
 
+<!-- novalidate -->
     ```ias
     environment "dev" {
       agent "analyst" {
@@ -72,6 +75,7 @@ agent "analyst" {
 
 The `strategy` attribute determines how the agent reasons and acts. Each strategy implements a different execution loop suited to particular task types.
 
+<!-- novalidate -->
 ```ias
 agent "planner" {
   model "claude-sonnet-4-20250514"
@@ -98,6 +102,7 @@ agent "planner" {
 
 The `max_turns` attribute limits how many conversation turns (request-response cycles) the agent can take in a single invocation. When the limit is reached, the agent returns its current best response.
 
+<!-- novalidate -->
 ```ias
 agent "researcher" {
   model "claude-sonnet-4-20250514"
@@ -120,6 +125,7 @@ agent "researcher" {
 
 The `timeout` attribute sets the maximum wall-clock duration for a single agent invocation. The value is a duration string with a numeric amount followed by a unit suffix.
 
+<!-- novalidate -->
 ```ias
 agent "fast-responder" {
   model "claude-haiku-latest"
@@ -149,6 +155,7 @@ When the timeout is reached, the agent stops execution and returns whatever part
 
 The `token_budget` attribute caps the total number of tokens (input + output) the agent may consume in a single invocation. This provides cost control independent of the turn limit.
 
+<!-- novalidate -->
 ```ias
 agent "budget-conscious" {
   model "claude-sonnet-4-20250514"
@@ -170,6 +177,7 @@ When the token budget is exhausted, the agent completes its current response and
 
 The `temperature` attribute controls the randomness of LLM responses. The value is a float between `0` and `2`.
 
+<!-- novalidate -->
 ```ias
 agent "creative-writer" {
   model "claude-sonnet-4-20250514"
@@ -193,6 +201,7 @@ agent "creative-writer" {
 
 The `stream` attribute controls whether the agent sends response tokens incrementally as they are generated, rather than waiting for the complete response.
 
+<!-- novalidate -->
 ```ias
 agent "interactive-bot" {
   model "claude-sonnet-4-20250514"

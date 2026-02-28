@@ -8,6 +8,7 @@ This page explains the mental model behind AgentSpec. Understanding these concep
 
 A **package** is the unit of distribution in AgentSpec. Every `.ias` file begins with a package header that declares the package name, its semantic version, and the IntentLang version it targets.
 
+<!-- novalidate -->
 ```ias
 package "my-agent" version "1.0.0" lang "2.0"
 ```
@@ -26,6 +27,7 @@ A package contains one or more resource definitions. All resources within a pack
 
 The **agent** is the central resource type in IntentLang. An agent binds a language model to a system prompt and a set of skills, with configurable behavior for reasoning strategy, error handling, and multi-agent delegation.
 
+<!-- novalidate -->
 ```ias
 agent "assistant" {
   uses prompt "system"
@@ -57,6 +59,7 @@ The `strategy` attribute controls the agent's reasoning loop. AgentSpec supports
 
 A **prompt** contains the system instructions that shape an agent's behavior. Prompts are declared as standalone resources and referenced by agents via `uses prompt`, making them reusable across multiple agents.
 
+<!-- novalidate -->
 ```ias
 prompt "support" {
   content "You are a {{role}} for {{company}}.\nBe empathetic and solution-oriented."
@@ -77,6 +80,7 @@ Prompts support **template variables** -- `{{variable}}` placeholders that are r
 
 A **skill** defines a capability that an agent can invoke. Each skill has a description (used by the LLM to decide when to call it), typed input and output schemas, and a tool implementation that specifies how the skill executes.
 
+<!-- novalidate -->
 ```ias
 skill "web-search" {
   description "Search the web for information"
@@ -119,6 +123,7 @@ The tool variant is chosen based on how the underlying capability is implemented
 
 A **pipeline** defines a multi-step workflow that orchestrates agents in a deterministic execution order. Each step invokes an agent and can declare dependencies on other steps to control sequencing.
 
+<!-- novalidate -->
 ```ias
 pipeline "review" {
   step "analyze" {
@@ -150,6 +155,7 @@ A **deploy** block defines where and how an agent system runs. A single `.ias` f
 | `docker-compose` | Run as part of a multi-service Docker Compose stack. |
 | `kubernetes` | Deploy to a Kubernetes cluster with namespaces, replicas, and autoscaling. |
 
+<!-- novalidate -->
 ```ias
 deploy "dev" target "process" {
   default true
@@ -209,6 +215,7 @@ Idempotency means you can safely re-run `agentspec apply` in CI/CD pipelines, cr
 
 An **environment** block defines an overlay that overrides resource attributes for a specific deployment context. Environments let you maintain a single `.ias` source file while varying configuration across development, staging, and production.
 
+<!-- novalidate -->
 ```ias
 environment "dev" {
   agent "assistant" {
@@ -239,6 +246,7 @@ Overrides are applied on top of the base resource definitions. Attributes not me
 
 A **secret** block defines a reference to a sensitive value such as an API key or database credential. Secrets are never stored in the `.ias` source file -- they are resolved at runtime from an external source.
 
+<!-- novalidate -->
 ```ias
 secret "api-key" {
   env(API_KEY)
@@ -264,6 +272,7 @@ Secrets can be referenced by deploy blocks, server auth, and policy blocks, keep
 
 A **policy** block defines security and governance constraints that are enforced during validation and deployment. Policies let you prohibit certain configurations, mandate secrets, and explicitly permit approved resources.
 
+<!-- novalidate -->
 ```ias
 policy "production-safety" {
   deny model claude-haiku-latest
@@ -296,6 +305,7 @@ A **plugin** declares a dependency on a sandboxed WebAssembly (WASM) module that
 | `transform` | `agentspec plan` | Transform the intermediate representation before plan generation. |
 | `pre_deploy` | `agentspec apply` | Execute pre-flight checks before deployment. |
 
+<!-- novalidate -->
 ```ias
 plugin "security-scanner" version "2.1.0"
 ```

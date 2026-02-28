@@ -69,11 +69,11 @@ func TestDocExamples(t *testing.T) {
 // TestDocMarkdownCodeBlocks extracts and validates fenced .ias code blocks
 // from all Markdown files in the docs/ directory.
 //
-// Fence tag conventions:
-//   - ```ias           — complete, valid file; must parse and validate
-//   - ```ias fragment  — fragment without package header; wrapped with synthetic header
-//   - ```ias invalid   — intentionally invalid; must produce a parse or validation error
-//   - ```ias novalidate — pseudocode or conceptual; skipped entirely
+// Block type is determined by an HTML comment immediately before the fence:
+//   - ```ias                       — complete, valid file; must parse and validate
+//   - <!-- fragment -->\n```ias    — fragment without package header; wrapped with synthetic header
+//   - <!-- invalid -->\n```ias     — intentionally invalid; must produce a parse or validation error
+//   - <!-- novalidate -->\n```ias  — pseudocode or conceptual; skipped entirely
 func TestDocMarkdownCodeBlocks(t *testing.T) {
 	docsDir := filepath.Join(getRepoRoot(t), "docs")
 
@@ -139,6 +139,7 @@ func extractIASBlocks(t *testing.T, mdPath string) []iasBlock {
 	var currentTag string
 	var currentContent strings.Builder
 	var blockStartLine int
+	var prevComment string // tracks HTML comment on the line before a fence
 
 	for scanner.Scan() {
 		lineNum++
@@ -146,16 +147,27 @@ func extractIASBlocks(t *testing.T, mdPath string) []iasBlock {
 		trimmed := strings.TrimSpace(line)
 
 		if !inBlock {
-			if strings.HasPrefix(trimmed, "```ias") {
-				tag := strings.TrimPrefix(trimmed, "```")
-				tag = strings.TrimSpace(tag)
-				// Only match ias tags, not e.g. "iasm" or other
-				if tag == "ias" || tag == "ias fragment" || tag == "ias invalid" || tag == "ias novalidate" {
-					inBlock = true
-					currentTag = tag
-					currentContent.Reset()
-					blockStartLine = lineNum
+			// Detect HTML comment markers: <!-- novalidate -->, <!-- fragment -->, <!-- invalid -->
+			if strings.HasPrefix(trimmed, "<!--") && strings.HasSuffix(trimmed, "-->") {
+				inner := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(trimmed, "<!--"), "-->"))
+				if inner == "novalidate" || inner == "fragment" || inner == "invalid" {
+					prevComment = inner
+					continue
 				}
+			}
+
+			if trimmed == "```ias" {
+				inBlock = true
+				if prevComment != "" {
+					currentTag = "ias " + prevComment
+				} else {
+					currentTag = "ias"
+				}
+				currentContent.Reset()
+				blockStartLine = lineNum
+				prevComment = ""
+			} else {
+				prevComment = "" // reset if the line after the comment isn't a fence
 			}
 		} else {
 			if trimmed == "```" {

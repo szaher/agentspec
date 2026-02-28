@@ -9,6 +9,7 @@ to clients over stdio, SSE, or streamable HTTP.
 
 ## Syntax
 
+<!-- novalidate -->
 ```ias
 server "<name>" {
   transport "<transport-type>"
@@ -166,6 +167,7 @@ deploy "local" target "process" {
 
 A remote MCP server accessed over SSE with secret-based authentication.
 
+<!-- fragment -->
 ```ias
 secret "api-token" {
   env(MCP_API_TOKEN)
@@ -198,6 +200,7 @@ server "docs-server" {
 
 A production MCP server using the streamable-http transport.
 
+<!-- novalidate -->
 ```ias
 secret "service-key" {
   store(production/mcp/service-key)

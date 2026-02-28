@@ -8,6 +8,7 @@ exposed by those servers.
 
 ## Syntax
 
+<!-- novalidate -->
 ```ias
 client "<name>" {
   connects to server "<server-ref>"
@@ -96,6 +97,7 @@ over stdio.
 
 A client that aggregates skills from several servers.
 
+<!-- fragment -->
 ```ias
 server "db-server" {
   transport "stdio"
@@ -138,6 +140,7 @@ single client reference.
 
 Multiple agents can use separate clients that connect to the same server.
 
+<!-- fragment -->
 ```ias
 server "review-server" {
   transport "stdio"

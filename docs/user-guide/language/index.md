@@ -10,6 +10,7 @@ This reference covers the syntax, semantics, and available resource types of Int
 
 Every `.ias` file **must** begin with a package header. The header declares the package name, its semantic version, and the IntentLang version it targets.
 
+<!-- novalidate -->
 ```ias
 package "my-agent" version "1.0.0" lang "2.0"
 ```
@@ -96,6 +97,7 @@ IntentLang supports two comment styles. Comments are ignored by the parser.
 
 **Line comments** begin with `#` or `//` and extend to the end of the line:
 
+<!-- novalidate -->
 ```ias
 # This is a comment
 // This is also a comment
@@ -118,6 +120,7 @@ IntentLang has four primitive types used in attribute values and schema definiti
 
 String values are enclosed in double quotes. Strings support the following escape sequences:
 
+<!-- novalidate -->
 ```ias
 content "Line one\nLine two"
 content "She said \"hello\""
@@ -135,6 +138,7 @@ content "Path: C:\\Users\\agent"
 
 IntentLang supports integer and floating-point number literals. Numbers are unquoted.
 
+<!-- novalidate -->
 ```ias
 max_turns 10          # integer
 temperature 0.7       # float
@@ -146,6 +150,7 @@ token_budget 100000   # integer
 
 Boolean values are the unquoted keywords `true` and `false`.
 
+<!-- novalidate -->
 ```ias
 default true
 stream false
@@ -155,6 +160,7 @@ stream false
 
 Array literals are enclosed in square brackets with comma-separated elements. Elements can be strings, numbers, or booleans.
 
+<!-- novalidate -->
 ```ias
 depends_on ["step-1", "step-2"]
 args ["-v", "--output", "json"]
@@ -166,6 +172,7 @@ args ["-v", "--output", "json"]
 
 Resource names are always double-quoted strings. References to other resources use the same quoted name preceded by the resource type keyword.
 
+<!-- novalidate -->
 ```ias
 # Declaring a prompt named "system"
 prompt "system" {

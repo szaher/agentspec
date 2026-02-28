@@ -9,6 +9,7 @@ run in parallel by default.
 
 ## Syntax
 
+<!-- novalidate -->
 ```ias
 pipeline "<name>" {
   step "<step-name>" {
@@ -130,6 +131,7 @@ The execution order is always: extract, transform, load.
 
 Two independent analysis steps run concurrently before a final merge step.
 
+<!-- fragment -->
 ```ias
 pipeline "dual-analysis" {
   step "sentiment" {
@@ -160,6 +162,7 @@ parallel. `merge` waits for both to finish before it runs.
 A code review pipeline that fans out to multiple reviewers and fans in to a
 summarizer.
 
+<!-- fragment -->
 ```ias
 pipeline "code-review" {
   step "analyze" {

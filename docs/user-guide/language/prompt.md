@@ -6,6 +6,7 @@ The `prompt` block defines a reusable prompt template that agents reference via 
 
 ## Syntax
 
+<!-- novalidate -->
 ```ias
 prompt "<name>" {
   content "<prompt-text>"
@@ -34,6 +35,7 @@ Prompts can include `{{variable}}` placeholders that are resolved at runtime. Ea
 
 ### Variable Definition Syntax
 
+<!-- novalidate -->
 ```ias
 variables {
   <name> <type> [required] [default "<value>"]
@@ -72,6 +74,7 @@ The `content` attribute is a double-quoted string that forms the system prompt f
 
 Multi-line prompts are written as a single string with embedded `\n` characters:
 
+<!-- novalidate -->
 ```ias
 content "You are a customer support agent for Acme Corp.\nBe empathetic, concise, and solution-oriented.\nAlways greet the customer by name when available."
 ```

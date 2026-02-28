@@ -15,6 +15,7 @@ The `docker-compose` target deploys your agent as part of a multi-service Docker
 
 A Docker Compose deployment specifies the image, port, replicas, and health check:
 
+<!-- novalidate -->
 ```ias
 deploy "compose" target "docker-compose" {
   image "agentspec/my-agent:0.1.0"
@@ -67,6 +68,7 @@ When you run `agentspec apply` with a `docker-compose` target, AgentSpec:
 
 A single `.ias` file can define multiple agents, each with its own `docker-compose` deploy block. AgentSpec generates a single `docker-compose.yml` containing all services:
 
+<!-- novalidate -->
 ```ias
 deploy "frontend-compose" target "docker-compose" {
   image "agentspec/frontend-agent:0.1.0"
@@ -99,6 +101,7 @@ All services defined in `docker-compose` deploy blocks within the same package a
 
 For example, if agent A needs to call agent B:
 
+<!-- novalidate -->
 ```ias
 deploy "agent-a" target "docker-compose" {
   port 8080
@@ -120,6 +123,7 @@ Agent A can reach Agent B at `http://agent-b:8081` using the deploy block name a
 
 The `replicas` attribute controls how many instances of the service Docker Compose runs:
 
+<!-- novalidate -->
 ```ias
 deploy "compose" target "docker-compose" {
   image "agentspec/my-agent:0.1.0"
@@ -136,6 +140,7 @@ Docker Compose distributes incoming connections across replicas. This is useful 
 
 The `resources` block sets CPU and memory constraints per service replica:
 
+<!-- novalidate -->
 ```ias
 resources {
   cpu "500m"

@@ -33,6 +33,7 @@ In this example, "Analyze Code" and "Scan Security" run in parallel (no mutual d
 
 Pipelines are declared using the `pipeline` block with nested `step` blocks:
 
+<!-- novalidate -->
 ```ias
 pipeline "review" {
   step "analyze" {
@@ -201,6 +202,7 @@ flowchart LR
     A[Step 1] --> B[Step 2] --> C[Step 3] --> D[Step 4]
 ```
 
+<!-- novalidate -->
 ```ias
 pipeline "sequential" {
   step "step-1" { agent "agent-a" output "result-1" }
@@ -223,6 +225,7 @@ flowchart TD
     D --> E
 ```
 
+<!-- novalidate -->
 ```ias
 pipeline "fan-out-fan-in" {
   step "branch-1" { agent "agent-a" output "result-1" }
@@ -248,6 +251,7 @@ flowchart TD
     C --> D
 ```
 
+<!-- novalidate -->
 ```ias
 pipeline "diamond" {
   step "start" { agent "splitter" output "split-data" }

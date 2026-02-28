@@ -6,6 +6,7 @@ The `plugin` block declares a dependency on a sandboxed WebAssembly (WASM) modul
 
 ## Syntax
 
+<!-- novalidate -->
 ```ias
 plugin "<name>" version "<semver>"
 ```
@@ -92,6 +93,7 @@ deploy "local" target "process" {
 
 A package can declare multiple plugin dependencies:
 
+<!-- fragment -->
 ```ias
 plugin "security-scanner" version "2.1.0"
 plugin "cost-estimator" version "1.3.0"

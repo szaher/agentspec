@@ -34,6 +34,7 @@ Each iteration consumes one "turn" against the agent's `max_turns` budget.
 
 In IntentLang, you enable the ReAct pattern by setting `strategy "react"` on an agent:
 
+<!-- novalidate -->
 ```ias
 agent "my-agent" {
   strategy "react"
@@ -172,6 +173,7 @@ Consider a different pattern when:
 
 A minimal deployment configuration for a ReAct agent:
 
+<!-- novalidate -->
 ```ias
 deploy "production" target "kubernetes" {
   namespace "agents"

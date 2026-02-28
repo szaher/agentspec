@@ -8,6 +8,7 @@ Agent delegation allows one agent to route requests to other specialist agents b
 
 Delegation rules are declared inside the `agent` block using the `delegate` keyword:
 
+<!-- novalidate -->
 ```ias
 delegate to agent "<agent-name>" when "<condition>"
 ```
@@ -19,6 +20,7 @@ delegate to agent "<agent-name>" when "<condition>"
 
 An agent can have multiple `delegate` rules:
 
+<!-- novalidate -->
 ```ias
 agent "router" {
   uses prompt "triage"
@@ -179,6 +181,7 @@ Condition strings are natural-language descriptions that the routing agent's LLM
 
 ### Good Conditions
 
+<!-- novalidate -->
 ```ias
 delegate to agent "tech-agent" when "user reports a bug or needs help with software"
 delegate to agent "billing-agent" when "user asks about invoices, payments, or subscriptions"
@@ -187,6 +190,7 @@ delegate to agent "hr-agent" when "user has a question about company policies or
 
 ### Avoid Vague Conditions
 
+<!-- novalidate -->
 ```ias
 # Too vague -- these overlap significantly
 delegate to agent "agent-a" when "user needs help"
@@ -202,6 +206,7 @@ delegate to agent "agent-b" when "user has a question"
 
 An agent can delegate to any number of specialist agents. There is no hard limit on the number of `delegate` rules per agent.
 
+<!-- novalidate -->
 ```ias
 agent "project-manager" {
   uses prompt "manager"
@@ -242,6 +247,7 @@ IntentLang provides two mechanisms for multi-agent coordination: delegation and 
 - Every input must go through the same set of steps.
 - Steps have explicit data dependencies.
 
+<!-- novalidate -->
 ```ias
 # Delegation: route to one specialist
 agent "router" {
@@ -270,6 +276,7 @@ pipeline "review-workflow" {
 
 Delegate agents can have their own error handling configuration. If a delegate fails, its `on_error` strategy applies independently:
 
+<!-- novalidate -->
 ```ias
 agent "primary-handler" {
   uses prompt "primary"

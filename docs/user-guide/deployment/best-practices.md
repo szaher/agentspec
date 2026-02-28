@@ -10,6 +10,7 @@ Never store credentials, API keys, or sensitive values directly in `.ias` files.
 
 ### Use `env()` for Environment Variables
 
+<!-- novalidate -->
 ```ias
 secret "api-key" {
   env(ANTHROPIC_API_KEY)
@@ -18,6 +19,7 @@ secret "api-key" {
 
 ### Use `store()` for Secret Managers
 
+<!-- novalidate -->
 ```ias
 secret "db-password" {
   store(production/database/password)
@@ -26,6 +28,7 @@ secret "db-password" {
 
 ### Reference Secrets in Deploy Blocks
 
+<!-- novalidate -->
 ```ias
 deploy "production" target "kubernetes" {
   secrets {
@@ -54,6 +57,7 @@ Always configure a `health` block for production deployments. Health checks enab
 
 ### Recommended Configuration
 
+<!-- novalidate -->
 ```ias
 health {
   path "/healthz"
@@ -106,6 +110,7 @@ Right-sizing CPU and memory prevents both over-provisioning (wasting resources) 
 
 Add more instances of the same agent to handle increased load:
 
+<!-- novalidate -->
 ```ias
 deploy "production" target "kubernetes" {
   replicas 3
@@ -127,6 +132,7 @@ deploy "production" target "kubernetes" {
 
 Give each instance more CPU and memory:
 
+<!-- novalidate -->
 ```ias
 resources {
   cpu "2"
@@ -202,6 +208,7 @@ jobs:
 
 Configure logging through environment variables in the deploy block:
 
+<!-- novalidate -->
 ```ias
 deploy "production" target "kubernetes" {
   env {
@@ -232,6 +239,7 @@ deploy "production" target "kubernetes" {
 
 Use `environment` blocks to vary configuration across deployment stages without duplicating `.ias` files:
 
+<!-- novalidate -->
 ```ias
 environment "dev" {
   agent "assistant" {
@@ -298,6 +306,7 @@ agentspec apply my-agent.ias --target production
 
 If the rollback only requires a different container image, update the `image` attribute:
 
+<!-- novalidate -->
 ```ias
 deploy "production" target "kubernetes" {
   image "agentspec/assistant:0.9.0"  # Roll back to previous version
@@ -325,6 +334,7 @@ Kubernetes performs a rolling update to the previous image version with zero dow
 
 Use `policy` blocks to enforce security and governance constraints across your agent system:
 
+<!-- novalidate -->
 ```ias
 policy "production-safety" {
   deny model claude-haiku-latest

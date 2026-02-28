@@ -8,6 +8,7 @@ Error handling attributes control how an agent responds when it encounters failu
 
 Error handling is configured inside the `agent` block using the `on_error`, `max_retries`, and `fallback` attributes:
 
+<!-- novalidate -->
 ```ias
 agent "<name>" {
   on_error "<strategy>"
@@ -34,6 +35,7 @@ agent "<name>" {
 
 When `on_error` is set to `"retry"`, the agent re-attempts execution up to `max_retries` times after a failure. Each retry starts a fresh invocation with the same input.
 
+<!-- novalidate -->
 ```ias
 agent "resilient" {
   model "claude-sonnet-4-20250514"
@@ -56,6 +58,7 @@ agent "resilient" {
 
 When `on_error` is set to `"fail"` (or when `on_error` is not specified), the agent fails immediately upon encountering an error. No retries or fallbacks are attempted.
 
+<!-- novalidate -->
 ```ias
 agent "strict" {
   model "claude-sonnet-4-20250514"
@@ -76,6 +79,7 @@ agent "strict" {
 
 When `on_error` is set to `"fallback"`, the agent delegates to a different agent upon failure. The fallback agent receives the original input and handles the request independently.
 
+<!-- novalidate -->
 ```ias
 agent "primary" {
   model "claude-sonnet-4-20250514"
