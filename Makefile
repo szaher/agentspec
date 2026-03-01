@@ -2,9 +2,14 @@ BINARY := agentspec
 PKG    := ./cmd/agentspec
 MODULE := github.com/szaher/designs/agentz
 
-.PHONY: all build test lint fmt vet validate clean
+.PHONY: all build test lint fmt vet validate clean pre-commit fmt-examples
 
 all: lint test build
+
+## Pre-commit: run everything CI checks, fix what's fixable
+
+pre-commit: fmt fmt-examples vet lint test build validate
+	@echo "All checks passed. Ready to commit."
 
 ## Build
 
@@ -36,12 +41,17 @@ fmt-check:
 vet:
 	go vet ./...
 
-## Validate examples
+## Validate & format examples
 
 validate: build
 	@for f in examples/*/*.ias; do \
 		echo "Validating $$f..."; \
 		./$(BINARY) validate "$$f" || exit 1; \
+	done
+
+fmt-examples: build
+	@for f in examples/*/*.ias; do \
+		./$(BINARY) fmt "$$f"; \
 	done
 
 ## Clean
