@@ -10,7 +10,7 @@ import (
 )
 
 func isKubectlAvailable() bool {
-	cmd := exec.Command("kubectl", "version", "--client")
+	cmd := exec.CommandContext(context.Background(), "kubectl", "version", "--client")
 	return cmd.Run() == nil
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -48,7 +49,7 @@ func runPublish(sign bool) error {
 	}
 
 	// Check git status
-	statusCmd := exec.Command("git", "status", "--porcelain")
+	statusCmd := exec.CommandContext(context.Background(), "git", "status", "--porcelain")
 	statusOut, err := statusCmd.Output()
 	if err != nil {
 		return fmt.Errorf("git status: %w", err)
@@ -59,7 +60,7 @@ func runPublish(sign bool) error {
 
 	// Create version tag
 	tag := "v" + manifest.Version
-	tagCmd := exec.Command("git", "tag", "-a", tag, "-m", fmt.Sprintf("Release %s", manifest.FullName()))
+	tagCmd := exec.CommandContext(context.Background(), "git", "tag", "-a", tag, "-m", fmt.Sprintf("Release %s", manifest.FullName()))
 	if out, err := tagCmd.CombinedOutput(); err != nil {
 		// Tag might already exist
 		if strings.Contains(string(out), "already exists") {
@@ -69,7 +70,7 @@ func runPublish(sign bool) error {
 	}
 
 	// Push tag
-	pushCmd := exec.Command("git", "push", "origin", tag)
+	pushCmd := exec.CommandContext(context.Background(), "git", "push", "origin", tag)
 	if out, err := pushCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("git push tag: %s: %w", string(out), err)
 	}

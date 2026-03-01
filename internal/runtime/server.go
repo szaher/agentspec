@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/szaher/designs/agentz/internal/auth"
@@ -35,8 +34,11 @@ type Server struct {
 	noAuth      bool
 	corsOrigins []string
 	metrics     *telemetry.Metrics
-	rateLimiter *rateLimiter
+	rateLimiter *auth.RateLimiter
 	enableUI    bool
+
+	agentsByName    map[string]*AgentConfig
+	pipelinesByName map[string]*PipelineConfig
 }
 
 // ServerOption configures the Server.
@@ -60,7 +62,7 @@ func WithMetrics(m *telemetry.Metrics) ServerOption {
 // WithRateLimit sets the per-agent rate limit (requests per second and burst).
 func WithRateLimit(rate float64, burst int) ServerOption {
 	return func(s *Server) {
-		s.rateLimiter = newRateLimiter(rate, burst)
+		s.rateLimiter = auth.NewRateLimiter(auth.RateLimitConfig{RequestsPerSecond: rate, Burst: burst})
 	}
 }
 
@@ -92,6 +94,15 @@ func NewServer(config *RuntimeConfig, llmClient llm.Client, registry *tools.Regi
 	}
 	for _, opt := range opts {
 		opt(s)
+	}
+
+	s.agentsByName = make(map[string]*AgentConfig, len(config.Agents))
+	for i := range config.Agents {
+		s.agentsByName[config.Agents[i].Name] = &config.Agents[i]
+	}
+	s.pipelinesByName = make(map[string]*PipelineConfig, len(config.Pipelines))
+	for i := range config.Pipelines {
+		s.pipelinesByName[config.Pipelines[i].Name] = &config.Pipelines[i]
 	}
 
 	if s.metrics == nil {
@@ -670,7 +681,7 @@ func (si *serverSkillInvoker) InvokeSkill(ctx context.Context, skillName string,
 			toolInput["input"] = input
 		}
 		call := llm.ToolCall{
-			ID:    fmt.Sprintf("cf_%s_%d", skillName, time.Now().UnixNano()),
+			ID:    session.GenerateID("cf_"),
 			Name:  skillName,
 			Input: toolInput,
 		}
@@ -726,75 +737,11 @@ func (ad *serverAgentDelegator) DelegateToAgent(ctx context.Context, agentName s
 }
 
 func (s *Server) findPipeline(name string) *PipelineConfig {
-	for i := range s.config.Pipelines {
-		if s.config.Pipelines[i].Name == name {
-			return &s.config.Pipelines[i]
-		}
-	}
-	return nil
+	return s.pipelinesByName[name]
 }
 
 func (s *Server) findAgent(name string) *AgentConfig {
-	for i := range s.config.Agents {
-		if s.config.Agents[i].Name == name {
-			return &s.config.Agents[i]
-		}
-	}
-	return nil
-}
-
-// rateLimiter implements per-agent token bucket rate limiting.
-type rateLimiter struct {
-	mu      sync.Mutex
-	rate    float64 // tokens per second
-	burst   int
-	buckets map[string]*tokenBucket
-}
-
-type tokenBucket struct {
-	tokens     float64
-	lastRefill time.Time
-	rate       float64
-	burst      int
-}
-
-func newRateLimiter(rate float64, burst int) *rateLimiter {
-	return &rateLimiter{
-		rate:    rate,
-		burst:   burst,
-		buckets: make(map[string]*tokenBucket),
-	}
-}
-
-func (rl *rateLimiter) allow(agent string) bool {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
-	b, ok := rl.buckets[agent]
-	if !ok {
-		b = &tokenBucket{
-			tokens:     float64(rl.burst),
-			lastRefill: time.Now(),
-			rate:       rl.rate,
-			burst:      rl.burst,
-		}
-		rl.buckets[agent] = b
-	}
-
-	// Refill tokens based on elapsed time
-	now := time.Now()
-	elapsed := now.Sub(b.lastRefill).Seconds()
-	b.tokens += elapsed * b.rate
-	if b.tokens > float64(b.burst) {
-		b.tokens = float64(b.burst)
-	}
-	b.lastRefill = now
-
-	if b.tokens < 1 {
-		return false
-	}
-	b.tokens--
-	return true
+	return s.agentsByName[name]
 }
 
 func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
@@ -810,7 +757,7 @@ func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if !s.rateLimiter.allow(agentName) {
+		if !s.rateLimiter.Allow(agentName) {
 			writeError(w, http.StatusTooManyRequests, "rate_limited", "Per-agent rate limit exceeded")
 			return
 		}

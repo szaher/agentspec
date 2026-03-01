@@ -29,11 +29,12 @@ func CompareResults(current, previous *RunResult) string {
 
 	// Overall score change
 	diff := current.OverallScore - previous.OverallScore
-	if diff > 0 {
+	switch {
+	case diff > 0:
 		fmt.Fprintf(&b, "  Overall: %.2f → %.2f (+%.2f)\n", previous.OverallScore, current.OverallScore, diff)
-	} else if diff < 0 {
+	case diff < 0:
 		fmt.Fprintf(&b, "  Overall: %.2f → %.2f (%.2f)\n", previous.OverallScore, current.OverallScore, diff)
-	} else {
+	default:
 		fmt.Fprintf(&b, "  Overall: %.2f → %.2f (no change)\n", previous.OverallScore, current.OverallScore)
 	}
 

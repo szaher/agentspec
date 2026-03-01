@@ -258,8 +258,10 @@ MUST exercise:
 - Plugin load, hook execution, and lifecycle ordering.
 - Cross-platform determinism via golden fixtures.
 
-Unit tests are permitted only when they unblock integration test
-development.
+Unit tests are a complementary quality gate alongside integration
+tests. Security-critical packages (auth, secrets, policy, tools,
+session, state) MUST maintain at least 80% line coverage. Other
+internal packages SHOULD maintain at least 60% line coverage.
 
 ### Review Gates
 

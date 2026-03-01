@@ -34,7 +34,8 @@ func ComputePlan(desired []ir.Resource, current []state.Entry) *Plan {
 	// Check desired resources against current state
 	for _, r := range desired {
 		entry, exists := currentMap[r.FQN]
-		if !exists {
+		switch {
+		case !exists:
 			actions = append(actions, adapters.Action{
 				FQN:      r.FQN,
 				Type:     adapters.ActionCreate,
@@ -42,7 +43,7 @@ func ComputePlan(desired []ir.Resource, current []state.Entry) *Plan {
 				Reason:   "resource does not exist",
 			})
 			hasChanges = true
-		} else if entry.Hash != r.Hash {
+		case entry.Hash != r.Hash:
 			actions = append(actions, adapters.Action{
 				FQN:      r.FQN,
 				Type:     adapters.ActionUpdate,
@@ -50,7 +51,7 @@ func ComputePlan(desired []ir.Resource, current []state.Entry) *Plan {
 				Reason:   "resource hash changed",
 			})
 			hasChanges = true
-		} else if entry.Status == state.StatusFailed {
+		case entry.Status == state.StatusFailed:
 			// Retry failed resources
 			actions = append(actions, adapters.Action{
 				FQN:      r.FQN,
@@ -59,7 +60,7 @@ func ComputePlan(desired []ir.Resource, current []state.Entry) *Plan {
 				Reason:   "retrying previously failed resource",
 			})
 			hasChanges = true
-		} else {
+		default:
 			actions = append(actions, adapters.Action{
 				FQN:      r.FQN,
 				Type:     adapters.ActionNoop,

@@ -1,6 +1,7 @@
 package integration_tests
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -47,7 +48,12 @@ func TestMetricsEndpoint(t *testing.T) {
 
 	// Invoke the agent to generate metrics
 	body := `{"message":"test"}`
-	resp, err := http.Post(ts.URL+"/v1/agents/test-agent/invoke", "application/json", strings.NewReader(body))
+	invokeReq, err := http.NewRequestWithContext(context.Background(), "POST", ts.URL+"/v1/agents/test-agent/invoke", strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("creating invoke request: %v", err)
+	}
+	invokeReq.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(invokeReq)
 	if err != nil {
 		t.Fatalf("invoke: %v", err)
 	}
@@ -67,7 +73,11 @@ func TestMetricsEndpoint(t *testing.T) {
 	}
 
 	// Now scrape the metrics endpoint
-	metricsResp, err := http.Get(ts.URL + "/v1/metrics")
+	metricsReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/metrics", nil)
+	if err != nil {
+		t.Fatalf("creating metrics request: %v", err)
+	}
+	metricsResp, err := http.DefaultClient.Do(metricsReq)
 	if err != nil {
 		t.Fatalf("get metrics: %v", err)
 	}
@@ -161,7 +171,12 @@ func TestRateLimiting(t *testing.T) {
 
 	// First 2 requests should succeed (burst)
 	for i := 0; i < 2; i++ {
-		resp, err := http.Post(ts.URL+"/v1/agents/rate-agent/invoke", "application/json", strings.NewReader(body))
+		req, err := http.NewRequestWithContext(context.Background(), "POST", ts.URL+"/v1/agents/rate-agent/invoke", strings.NewReader(body))
+		if err != nil {
+			t.Fatalf("request %d: creating request: %v", i, err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			t.Fatalf("request %d: %v", i, err)
 		}
@@ -172,7 +187,12 @@ func TestRateLimiting(t *testing.T) {
 	}
 
 	// 3rd request should be rate limited (burst exhausted)
-	resp, err := http.Post(ts.URL+"/v1/agents/rate-agent/invoke", "application/json", strings.NewReader(body))
+	rateLimitReq, err := http.NewRequestWithContext(context.Background(), "POST", ts.URL+"/v1/agents/rate-agent/invoke", strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("creating rate-limited request: %v", err)
+	}
+	rateLimitReq.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(rateLimitReq)
 	if err != nil {
 		t.Fatalf("rate-limited request: %v", err)
 	}

@@ -65,13 +65,14 @@ func GenerateConfigRef(agents []AgentConfigRef, artifactName string) string {
 		b.WriteString("```bash\n")
 		for _, p := range agent.Params {
 			envVar := configEnvKey(agent.AgentName, p.Name)
-			if p.Secret {
+			switch {
+			case p.Secret:
 				fmt.Fprintf(&b, "export %s=<secret>  # %s (required: %v)\n", envVar, p.Description, p.Required)
-			} else if p.HasDefault {
+			case p.HasDefault:
 				fmt.Fprintf(&b, "# export %s=%s  # %s (optional, default shown)\n", envVar, p.Default, p.Description)
-			} else if p.Required {
+			case p.Required:
 				fmt.Fprintf(&b, "export %s=<value>  # %s\n", envVar, p.Description)
-			} else {
+			default:
 				fmt.Fprintf(&b, "# export %s=<value>  # %s (optional)\n", envVar, p.Description)
 			}
 		}

@@ -420,16 +420,17 @@ func extractUserCodeForTest(content, commentPrefix string) map[int]string {
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if trimmed == startMarker {
+		switch {
+		case trimmed == startMarker:
 			inUserCode = true
 			current.WriteString(line + "\n")
-		} else if trimmed == endMarker {
+		case trimmed == endMarker:
 			current.WriteString(line + "\n")
 			result[idx] = current.String()
 			current.Reset()
 			inUserCode = false
 			idx++
-		} else if inUserCode {
+		case inUserCode:
 			current.WriteString(line + "\n")
 		}
 	}

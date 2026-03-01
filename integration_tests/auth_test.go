@@ -1,6 +1,7 @@
 package integration_tests
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -36,7 +37,11 @@ func TestAuthRejectsWithoutKey(t *testing.T) {
 	ts := newAuthTestServer("my-secret-key")
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "/v1/agents")
+	req, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("request error: %v", err)
 	}
@@ -53,7 +58,7 @@ func TestAuthSucceedsWithValidKey(t *testing.T) {
 	defer ts.Close()
 
 	// Test X-API-Key header
-	req, _ := http.NewRequest("GET", ts.URL+"/v1/agents", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
 	req.Header.Set("X-API-Key", "my-secret-key")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -65,7 +70,7 @@ func TestAuthSucceedsWithValidKey(t *testing.T) {
 	}
 
 	// Test Bearer token
-	req2, _ := http.NewRequest("GET", ts.URL+"/v1/agents", nil)
+	req2, _ := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
 	req2.Header.Set("Authorization", "Bearer my-secret-key")
 	resp2, err := http.DefaultClient.Do(req2)
 	if err != nil {
@@ -82,7 +87,7 @@ func TestAuthRejectsInvalidKey(t *testing.T) {
 	ts := newAuthTestServer("my-secret-key")
 	defer ts.Close()
 
-	req, _ := http.NewRequest("GET", ts.URL+"/v1/agents", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
 	req.Header.Set("X-API-Key", "wrong-key")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -101,7 +106,11 @@ func TestNoAuthWithoutFlagRejects(t *testing.T) {
 	ts := newAuthTestServer("")
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "/v1/agents")
+	req, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("request error: %v", err)
 	}
@@ -127,7 +136,11 @@ func TestNoAuthWithFlagAllows(t *testing.T) {
 	ts := httptest.NewServer(server.Handler())
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "/v1/agents")
+	req, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("request error: %v", err)
 	}
@@ -182,7 +195,11 @@ func TestHealthzAlwaysAccessible(t *testing.T) {
 	defer ts.Close()
 
 	// /healthz without any auth should work
-	resp, err := http.Get(ts.URL + "/healthz")
+	req, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/healthz", nil)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("request error: %v", err)
 	}

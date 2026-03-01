@@ -6,9 +6,54 @@ linters:
     - staticcheck
     - unused
     - ineffassign
+    - gosec
+    - bodyclose
+    - noctx
+    - gocritic
+    - unconvert
+    - misspell
   settings:
     errcheck:
       check-type-assertions: true
+    gosec:
+      excludes:
+        # G204: Subprocess execution with variable — intentional for tool/adapter execution
+        - G204
+        # G301: Directory permissions 0750 — 0755 is standard for non-sensitive dirs
+        - G301
+        # G302: File permissions 0600 — 0644 is standard for lock files
+        - G302
+        # G306: WriteFile permissions 0600 — 0644 is standard for non-sensitive files
+        - G306
+        # G115: Integer overflow conversion — intentional narrowing in controlled contexts
+        - G115
+        # G602: Slice bounds — false positives where bounds are checked
+        - G602
+  exclusions:
+    rules:
+      # G304: File inclusion via variable — intentional in compiler/import paths
+      - linters: [gosec]
+        text: "G304"
+      # G703: Path traversal — intentional file path operations in state backend
+      - linters: [gosec]
+        text: "G703"
+      # G704: SSRF — we have SafeTransport for SSRF protection where needed
+      - linters: [gosec]
+        text: "G704"
+      # G706: Log injection — slog handles sanitization
+      - linters: [gosec]
+        text: "G706"
+      # G117: Exported field matching secret pattern — false positive on config structs
+      - linters: [gosec]
+        text: "G117"
+      # G104: Unhandled errors in test files — acceptable in test helpers
+      - linters: [gosec]
+        path: _test\.go
+        text: "G104"
+      # Ignore errcheck in test files for response writers and encoders
+      - linters: [errcheck]
+        path: _test\.go
+        text: "Error return value of .*(Write|Encode|Close)"
 formatters:
   enable:
     - gofmt
