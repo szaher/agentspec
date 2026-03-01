@@ -96,15 +96,17 @@ func (p *Parser) parsePackage() *ast.Package {
 	pkg.Name = p.expectString("package name")
 
 	// Parse optional package attributes
+loop:
 	for !p.isAtEnd() && !p.check(TokenNewline) && !p.isAtEnd() {
-		if p.check(TokenVersion) {
+		switch {
+		case p.check(TokenVersion):
 			p.advance()
 			pkg.Version = p.expectString("version")
-		} else if p.check(TokenLang) {
+		case p.check(TokenLang):
 			p.advance()
 			pkg.LangVersion = p.expectString("lang version")
-		} else {
-			break
+		default:
+			break loop
 		}
 	}
 
@@ -278,7 +280,8 @@ func (p *Parser) parseAgent() *ast.Agent {
 		switch {
 		case p.check(TokenUses):
 			p.advance()
-			if p.check(TokenPrompt) {
+			switch {
+			case p.check(TokenPrompt):
 				p.advance()
 				ref := &ast.Ref{
 					Kind:     "prompt",
@@ -287,7 +290,7 @@ func (p *Parser) parseAgent() *ast.Agent {
 				}
 				ref.EndPos = p.currentPos()
 				agent.Prompt = ref
-			} else if p.check(TokenSkill) {
+			case p.check(TokenSkill):
 				p.advance()
 				ref := &ast.Ref{
 					Kind:     "skill",
@@ -296,7 +299,7 @@ func (p *Parser) parseAgent() *ast.Agent {
 				}
 				ref.EndPos = p.currentPos()
 				agent.Skills = append(agent.Skills, ref)
-			} else {
+			default:
 				p.addError("expected 'prompt' or 'skill' after 'uses'", "")
 			}
 		case p.check(TokenModel):
@@ -424,13 +427,14 @@ func (p *Parser) parseBinding() *ast.Binding {
 		switch {
 		case p.check(TokenDefault):
 			p.advance()
-			if p.check(TokenTrue) {
+			switch {
+			case p.check(TokenTrue):
 				p.advance()
 				binding.Default = true
-			} else if p.check(TokenFalse) {
+			case p.check(TokenFalse):
 				p.advance()
 				binding.Default = false
-			} else {
+			default:
 				binding.Default = true
 			}
 		case p.check(TokenAdapter):
@@ -440,16 +444,8 @@ func (p *Parser) parseBinding() *ast.Binding {
 			// Config key-value pair
 			key := p.current().Literal
 			p.advance()
-			if p.check(TokenString) {
-				binding.Config[key] = p.current().Literal
-				p.advance()
-			} else if p.check(TokenNumber) {
-				binding.Config[key] = p.current().Literal
-				p.advance()
-			} else {
-				binding.Config[key] = p.current().Literal
-				p.advance()
-			}
+			binding.Config[key] = p.current().Literal
+			p.advance()
 		}
 		p.skipNewlines()
 	}
@@ -1348,15 +1344,17 @@ func (p *Parser) parseVariablesBlock() []*ast.Variable {
 		p.advance()
 
 		// Optional: required and default
+	varLoop:
 		for !p.check(TokenRBrace) && !p.isAtEnd() && !p.check(TokenNewline) {
-			if p.current().Literal == "required" {
+			switch {
+			case p.current().Literal == "required":
 				p.advance()
 				v.Required = true
-			} else if p.current().Literal == "default" || p.check(TokenDefault) {
+			case p.current().Literal == "default" || p.check(TokenDefault):
 				p.advance()
 				v.Default = p.expectString("default value")
-			} else {
-				break
+			default:
+				break varLoop
 			}
 		}
 
@@ -1426,15 +1424,17 @@ func (p *Parser) parseTypeDef() *ast.TypeDef {
 			p.advance()
 
 			// Optional: required, default
+		fieldLoop:
 			for !p.check(TokenRBrace) && !p.isAtEnd() && !p.check(TokenNewline) {
-				if p.current().Literal == "required" {
+				switch {
+				case p.current().Literal == "required":
 					p.advance()
 					field.Required = true
-				} else if p.current().Literal == "default" || p.check(TokenDefault) {
+				case p.current().Literal == "default" || p.check(TokenDefault):
 					p.advance()
 					field.Default = p.expectString("default value")
-				} else {
-					break
+				default:
+					break fieldLoop
 				}
 			}
 
@@ -1564,15 +1564,16 @@ func (p *Parser) parseConfigBlock() []*ast.ConfigParam {
 			case p.check(TokenDefault):
 				p.advance()
 				param.HasDefault = true
-				if p.check(TokenString) {
+				switch {
+				case p.check(TokenString):
 					param.Default = p.advance().Literal
-				} else if p.check(TokenNumber) {
+				case p.check(TokenNumber):
 					param.Default = p.advance().Literal
-				} else if p.check(TokenTrue) {
+				case p.check(TokenTrue):
 					param.Default = p.advance().Literal
-				} else if p.check(TokenFalse) {
+				case p.check(TokenFalse):
 					param.Default = p.advance().Literal
-				} else {
+				default:
 					param.Default = p.expectStringOrIdent("default value")
 				}
 			default:

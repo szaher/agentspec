@@ -2,11 +2,11 @@ package telemetry
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"io"
 	"log/slog"
 	"os"
+
+	"github.com/szaher/designs/agentz/internal/session"
 )
 
 type contextKey string
@@ -28,9 +28,7 @@ func NewLogger(w io.Writer, level slog.Level) *slog.Logger {
 // If id is empty, a new UUID is generated.
 func WithCorrelationID(ctx context.Context, id string) context.Context {
 	if id == "" {
-		b := make([]byte, 16)
-		_, _ = rand.Read(b)
-		id = hex.EncodeToString(b)
+		id = session.GenerateID("cor_")
 	}
 	return context.WithValue(ctx, correlationIDKey, id)
 }

@@ -260,7 +260,9 @@ func TestExamplesValidate(t *testing.T) {
 				// Validate
 				structErrs := validate.ValidateStructural(ast)
 				semErrs := validate.ValidateSemantic(ast)
-				allErrs := append(structErrs, semErrs...)
+				allErrs := make([]*validate.ValidationError, 0, len(structErrs)+len(semErrs))
+				allErrs = append(allErrs, structErrs...)
+				allErrs = append(allErrs, semErrs...)
 				if len(allErrs) > 0 {
 					for _, e := range allErrs {
 						t.Errorf("validation error: %s", e.Error())

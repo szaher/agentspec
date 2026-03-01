@@ -11,7 +11,7 @@ import (
 )
 
 func isDockerAvailable() bool {
-	cmd := exec.Command("docker", "info")
+	cmd := exec.CommandContext(context.Background(), "docker", "info")
 	return cmd.Run() == nil
 }
 
@@ -91,7 +91,7 @@ func TestDockerAdapterApply(t *testing.T) {
 
 func checkFileExists(t *testing.T, path string) {
 	t.Helper()
-	cmd := exec.Command("test", "-f", path)
+	cmd := exec.CommandContext(context.Background(), "test", "-f", path)
 	if err := cmd.Run(); err != nil {
 		t.Errorf("expected file %s to exist", path)
 	}

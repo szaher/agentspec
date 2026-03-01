@@ -1,6 +1,7 @@
 package integration_tests
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -95,7 +96,11 @@ func TestFrontendMountedOnServer(t *testing.T) {
 	defer ts.Close()
 
 	// Fetch index.html from root
-	resp, err := http.Get(ts.URL + "/")
+	rootReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/", nil)
+	if err != nil {
+		t.Fatalf("creating GET / request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(rootReq)
 	if err != nil {
 		t.Fatalf("GET / error: %v", err)
 	}
@@ -106,7 +111,11 @@ func TestFrontendMountedOnServer(t *testing.T) {
 	}
 
 	// Fetch agents API (should also work without auth since no key set)
-	resp2, err := http.Get(ts.URL + "/v1/agents")
+	agentsReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
+	if err != nil {
+		t.Fatalf("creating GET /v1/agents request: %v", err)
+	}
+	resp2, err := http.DefaultClient.Do(agentsReq)
 	if err != nil {
 		t.Fatalf("GET /v1/agents error: %v", err)
 	}
@@ -144,7 +153,11 @@ func TestFrontendDisabledByDefault(t *testing.T) {
 	ts := httptest.NewServer(server.Handler())
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "/")
+	disabledReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/", nil)
+	if err != nil {
+		t.Fatalf("creating GET / request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(disabledReq)
 	if err != nil {
 		t.Fatalf("GET / error: %v", err)
 	}
@@ -177,7 +190,11 @@ func TestFrontendStaticAssetsSkipAuth(t *testing.T) {
 	defer ts.Close()
 
 	// Static assets should be accessible without auth
-	resp, err := http.Get(ts.URL + "/")
+	staticReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/", nil)
+	if err != nil {
+		t.Fatalf("creating GET / request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(staticReq)
 	if err != nil {
 		t.Fatalf("GET / error: %v", err)
 	}
@@ -187,7 +204,11 @@ func TestFrontendStaticAssetsSkipAuth(t *testing.T) {
 	}
 
 	// API endpoints should require auth
-	resp2, err := http.Get(ts.URL + "/v1/agents")
+	noAuthReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
+	if err != nil {
+		t.Fatalf("creating GET /v1/agents request: %v", err)
+	}
+	resp2, err := http.DefaultClient.Do(noAuthReq)
 	if err != nil {
 		t.Fatalf("GET /v1/agents error: %v", err)
 	}
@@ -197,7 +218,7 @@ func TestFrontendStaticAssetsSkipAuth(t *testing.T) {
 	}
 
 	// API endpoints should work with auth
-	req, _ := http.NewRequest("GET", ts.URL+"/v1/agents", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
 	req.Header.Set("X-API-Key", "secret-key")
 	resp3, err := http.DefaultClient.Do(req)
 	if err != nil {

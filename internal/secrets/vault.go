@@ -58,9 +58,9 @@ func (v *VaultResolver) Resolve(ctx context.Context, ref string) (string, error)
 
 	inner := ref[6 : len(ref)-1] // strip vault( and )
 	path, key := inner, "value"
-	if idx := strings.Index(inner, "#"); idx >= 0 {
-		path = inner[:idx]
-		key = inner[idx+1:]
+	if before, after, ok := strings.Cut(inner, "#"); ok {
+		path = before
+		key = after
 	}
 
 	cacheKey := path + "#" + key

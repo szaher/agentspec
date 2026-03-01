@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -100,7 +101,7 @@ func CompileStandalone(config *runtime.RuntimeConfig, opts CompileOptions) (*Sta
 		"./cmd/_build",
 	}
 
-	cmd := exec.Command("go", buildArgs...)
+	cmd := exec.CommandContext(context.Background(), "go", buildArgs...)
 	cmd.Dir = root
 	cmd.Env = buildEnv(opts.Platform)
 

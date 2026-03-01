@@ -503,7 +503,8 @@ func formatDeployTarget(sb *strings.Builder, d *ast.DeployTarget) {
 }
 
 func formatTypeDef(sb *strings.Builder, t *ast.TypeDef) {
-	if len(t.EnumVals) > 0 {
+	switch {
+	case len(t.EnumVals) > 0:
 		fmt.Fprintf(sb, "type %q enum [", t.Name)
 		for i, v := range t.EnumVals {
 			if i > 0 {
@@ -512,9 +513,9 @@ func formatTypeDef(sb *strings.Builder, t *ast.TypeDef) {
 			fmt.Fprintf(sb, "%q", v)
 		}
 		sb.WriteString("]\n")
-	} else if t.ListOf != "" {
+	case t.ListOf != "":
 		fmt.Fprintf(sb, "type %q list %s\n", t.Name, t.ListOf)
-	} else {
+	default:
 		fmt.Fprintf(sb, "type %q {\n", t.Name)
 		for _, f := range t.Fields {
 			fmt.Fprintf(sb, "  %s %s", f.Name, f.Type)

@@ -3,6 +3,8 @@ package telemetry
 import (
 	"context"
 	"time"
+
+	"github.com/szaher/designs/agentz/internal/session"
 )
 
 // Span represents a single trace span for an operation.
@@ -101,14 +103,7 @@ func ToolCallTags(tool, status string) map[string]string {
 }
 
 func generateID() string {
-	// Use correlation ID if available, otherwise generate a simple ID
-	// In production, use a proper trace ID generator (e.g., W3C trace context)
-	id := make([]byte, 8)
-	for i := range id {
-		id[i] = "0123456789abcdef"[time.Now().UnixNano()%16]
-		time.Sleep(time.Nanosecond)
-	}
-	return string(id)
+	return session.GenerateID("tr_")
 }
 
 func intToStr(n int) string {

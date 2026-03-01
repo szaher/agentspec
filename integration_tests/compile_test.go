@@ -1,6 +1,7 @@
 package integration_tests
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -276,7 +277,11 @@ func TestCompiledAgentHealthz(t *testing.T) {
 	ts := httptest.NewServer(srv.Handler())
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "/healthz")
+	req, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/healthz", nil)
+	if err != nil {
+		t.Fatalf("creating healthz request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("healthz request failed: %v", err)
 	}
@@ -397,7 +402,11 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	defer ts.Close()
 
 	// Verify healthz
-	resp, err := http.Get(ts.URL + "/healthz")
+	healthReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/healthz", nil)
+	if err != nil {
+		t.Fatalf("creating healthz request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(healthReq)
 	if err != nil {
 		t.Fatalf("healthz: %v", err)
 	}
@@ -407,7 +416,11 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	}
 
 	// Verify agents API
-	resp, err = http.Get(ts.URL + "/v1/agents")
+	agentsReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
+	if err != nil {
+		t.Fatalf("creating agents request: %v", err)
+	}
+	resp, err = http.DefaultClient.Do(agentsReq)
 	if err != nil {
 		t.Fatalf("agents: %v", err)
 	}
@@ -426,7 +439,11 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	}
 
 	// Verify frontend is served
-	resp, err = http.Get(ts.URL + "/")
+	frontendReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/", nil)
+	if err != nil {
+		t.Fatalf("creating frontend request: %v", err)
+	}
+	resp, err = http.DefaultClient.Do(frontendReq)
 	if err != nil {
 		t.Fatalf("frontend: %v", err)
 	}
@@ -436,7 +453,11 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	}
 
 	// Verify metrics endpoint
-	resp, err = http.Get(ts.URL + "/v1/metrics")
+	metricsReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/metrics", nil)
+	if err != nil {
+		t.Fatalf("creating metrics request: %v", err)
+	}
+	resp, err = http.DefaultClient.Do(metricsReq)
 	if err != nil {
 		t.Fatalf("metrics: %v", err)
 	}

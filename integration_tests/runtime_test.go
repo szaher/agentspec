@@ -2,6 +2,7 @@ package integration_tests
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -57,7 +58,11 @@ func TestRuntimeHealthEndpoint(t *testing.T) {
 	ts := newTestServer(t, mock)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "/healthz")
+	req, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/healthz", nil)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("health check failed: %v", err)
 	}
@@ -85,7 +90,11 @@ func TestRuntimeListAgents(t *testing.T) {
 	ts := newTestServer(t, mock)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "/v1/agents")
+	req, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("list agents failed: %v", err)
 	}
@@ -126,7 +135,12 @@ func TestRuntimeInvokeAgent(t *testing.T) {
 	reqBody, _ := json.Marshal(map[string]string{
 		"message": "Help me with Go",
 	})
-	resp, err := http.Post(ts.URL+"/v1/agents/helper/invoke", "application/json", bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", ts.URL+"/v1/agents/helper/invoke", bytes.NewReader(reqBody))
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("invoke failed: %v", err)
 	}
@@ -160,7 +174,12 @@ func TestRuntimeInvokeAgentNotFound(t *testing.T) {
 	reqBody, _ := json.Marshal(map[string]string{
 		"message": "hello",
 	})
-	resp, err := http.Post(ts.URL+"/v1/agents/nonexistent/invoke", "application/json", bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", ts.URL+"/v1/agents/nonexistent/invoke", bytes.NewReader(reqBody))
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("invoke failed: %v", err)
 	}
@@ -180,7 +199,12 @@ func TestRuntimeSessionLifecycle(t *testing.T) {
 	defer ts.Close()
 
 	// Create session
-	resp, err := http.Post(ts.URL+"/v1/agents/helper/sessions", "application/json", bytes.NewReader([]byte("{}")))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", ts.URL+"/v1/agents/helper/sessions", bytes.NewReader([]byte("{}")))
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("create session: %v", err)
 	}
@@ -202,11 +226,15 @@ func TestRuntimeSessionLifecycle(t *testing.T) {
 
 	// Send message to session
 	msgBody, _ := json.Marshal(map[string]string{"message": "Hello"})
-	resp2, err := http.Post(
+	req2, err := http.NewRequestWithContext(context.Background(), "POST",
 		fmt.Sprintf("%s/v1/agents/helper/sessions/%s", ts.URL, sessionID),
-		"application/json",
 		bytes.NewReader(msgBody),
 	)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	req2.Header.Set("Content-Type", "application/json")
+	resp2, err := http.DefaultClient.Do(req2)
 	if err != nil {
 		t.Fatalf("session message: %v", err)
 	}
@@ -228,8 +256,8 @@ func TestRuntimeSessionLifecycle(t *testing.T) {
 	}
 
 	// Delete session
-	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/v1/agents/helper/sessions/%s", ts.URL, sessionID), nil)
-	resp3, err := http.DefaultClient.Do(req)
+	req3, _ := http.NewRequestWithContext(context.Background(), "DELETE", fmt.Sprintf("%s/v1/agents/helper/sessions/%s", ts.URL, sessionID), nil)
+	resp3, err := http.DefaultClient.Do(req3)
 	if err != nil {
 		t.Fatalf("delete session: %v", err)
 	}
@@ -261,30 +289,54 @@ func TestRuntimeAPIKeyAuth(t *testing.T) {
 	defer ts.Close()
 
 	// Health check should NOT require auth
-	resp, _ := http.Get(ts.URL + "/healthz")
+	healthReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/healthz", nil)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(healthReq)
+	if err != nil {
+		t.Fatalf("health check request failed: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("health check should not require auth, got %d", resp.StatusCode)
 	}
 
 	// List agents without key should fail
-	resp, _ = http.Get(ts.URL + "/v1/agents")
-	if resp.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("expected 401 without API key, got %d", resp.StatusCode)
+	noKeyReq, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	resp2, err := http.DefaultClient.Do(noKeyReq)
+	if err != nil {
+		t.Fatalf("list agents request failed: %v", err)
+	}
+	defer func() { _ = resp2.Body.Close() }()
+	if resp2.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 without API key, got %d", resp2.StatusCode)
 	}
 
 	// List agents with key should succeed
-	req, _ := http.NewRequest("GET", ts.URL+"/v1/agents", nil)
-	req.Header.Set("X-API-Key", "test-key")
-	resp, _ = http.DefaultClient.Do(req)
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200 with API key, got %d", resp.StatusCode)
+	keyReq, _ := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
+	keyReq.Header.Set("X-API-Key", "test-key")
+	resp3, err := http.DefaultClient.Do(keyReq)
+	if err != nil {
+		t.Fatalf("list agents with key failed: %v", err)
+	}
+	defer func() { _ = resp3.Body.Close() }()
+	if resp3.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 with API key, got %d", resp3.StatusCode)
 	}
 
 	// List agents with Bearer token should also work
-	req2, _ := http.NewRequest("GET", ts.URL+"/v1/agents", nil)
-	req2.Header.Set("Authorization", "Bearer test-key")
-	resp2, _ := http.DefaultClient.Do(req2)
-	if resp2.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200 with Bearer token, got %d", resp2.StatusCode)
+	bearerReq, _ := http.NewRequestWithContext(context.Background(), "GET", ts.URL+"/v1/agents", nil)
+	bearerReq.Header.Set("Authorization", "Bearer test-key")
+	resp4, err := http.DefaultClient.Do(bearerReq)
+	if err != nil {
+		t.Fatalf("list agents with bearer failed: %v", err)
+	}
+	defer func() { _ = resp4.Body.Close() }()
+	if resp4.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 with Bearer token, got %d", resp4.StatusCode)
 	}
 }

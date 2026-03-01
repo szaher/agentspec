@@ -85,11 +85,12 @@ func New(config *RuntimeConfig, opts Options) (*Runtime, error) {
 
 	// Create server
 	var serverOpts []ServerOption
-	if opts.APIKey != "" {
+	switch {
+	case opts.APIKey != "":
 		serverOpts = append(serverOpts, WithAPIKey(opts.APIKey))
-	} else if opts.NoAuth {
+	case opts.NoAuth:
 		logger.Warn("server starting WITHOUT authentication (--no-auth flag provided)")
-	} else {
+	default:
 		logger.Warn("no API key configured: all API requests will be rejected. Use --no-auth to explicitly allow unauthenticated access, or set AGENTSPEC_API_KEY")
 	}
 	serverOpts = append(serverOpts, WithLogger(logger))

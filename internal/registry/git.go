@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -59,7 +60,7 @@ func (r *GitResolver) Resolve(source, version string) (*ResolvedPackage, error) 
 		tag = "v" + tag
 	}
 
-	cmd := exec.Command("git", "clone", "--depth", "1", "--branch", tag, repoURL, cachePath)
+	cmd := exec.CommandContext(context.Background(), "git", "clone", "--depth", "1", "--branch", tag, repoURL, cachePath)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("git clone %s@%s: %s: %w", source, tag, string(out), err)
 	}
@@ -89,7 +90,7 @@ func (r *GitResolver) Resolve(source, version string) (*ResolvedPackage, error) 
 func (r *GitResolver) ListVersions(source string) ([]string, error) {
 	repoURL := "https://" + source + ".git"
 
-	cmd := exec.Command("git", "ls-remote", "--tags", "--refs", repoURL)
+	cmd := exec.CommandContext(context.Background(), "git", "ls-remote", "--tags", "--refs", repoURL)
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("git ls-remote %s: %w", source, err)
