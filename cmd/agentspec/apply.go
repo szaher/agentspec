@@ -10,6 +10,7 @@ import (
 	"github.com/szaher/designs/agentz/internal/apply"
 	"github.com/szaher/designs/agentz/internal/events"
 	"github.com/szaher/designs/agentz/internal/plan"
+	"github.com/szaher/designs/agentz/internal/policy"
 	"github.com/szaher/designs/agentz/internal/state"
 
 	// Register adapters
@@ -26,6 +27,7 @@ func newApplyCmd() *cobra.Command {
 		env         string
 		autoApprove bool
 		planFile    string
+		policyMode  string
 	)
 
 	cmd := &cobra.Command{
@@ -64,6 +66,24 @@ func newApplyCmd() *cobra.Command {
 			current, err := backend.Load()
 			if err != nil {
 				return fmt.Errorf("loading state: %w", err)
+			}
+
+			// Evaluate policy rules
+			if len(doc.Policies) > 0 {
+				mode := policy.ModeEnforce
+				if policyMode == "warn" {
+					mode = policy.ModeWarn
+				}
+
+				engine := policy.NewDefaultEngine()
+				violations := engine.Evaluate(doc.Policies, doc.Resources)
+				if len(violations) > 0 {
+					output := policy.FormatViolations(violations, mode)
+					if mode == policy.ModeEnforce {
+						return fmt.Errorf("policy violations found:%s", output)
+					}
+					fmt.Fprintf(os.Stderr, "Policy warnings:%s\n", output)
+				}
 			}
 
 			p := plan.ComputePlan(doc.Resources, current)
@@ -116,6 +136,7 @@ func newApplyCmd() *cobra.Command {
 	cmd.Flags().StringVar(&env, "env", "", "Environment name")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompt")
 	cmd.Flags().StringVar(&planFile, "plan-file", "", "Use a saved plan file")
+	cmd.Flags().StringVar(&policyMode, "policy", "enforce", "Policy evaluation mode: enforce (block on violations) or warn (report and proceed)")
 
 	_ = env      // will be used in Phase 6
 	_ = planFile // will be used for plan-file support

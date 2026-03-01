@@ -44,7 +44,7 @@ func newTestServer(t *testing.T, mockClient *llm.MockClient) *httptest.Server {
 	sessionMgr := session.NewManager(sessionStore, memoryStore)
 	strategy := &loop.ReActStrategy{}
 
-	server := runtime.NewServer(config, mockClient, registry, sessionMgr, strategy)
+	server := runtime.NewServer(config, mockClient, registry, sessionMgr, strategy, runtime.WithNoAuth(true))
 
 	return httptest.NewServer(server.Handler())
 }

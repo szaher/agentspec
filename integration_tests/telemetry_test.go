@@ -39,7 +39,8 @@ func TestMetricsEndpoint(t *testing.T) {
 	strategy := &loop.ReActStrategy{}
 
 	srv := runtime.NewServer(config, mockClient, registry, mgr, strategy,
-		runtime.WithMetrics(metrics))
+		runtime.WithMetrics(metrics),
+		runtime.WithNoAuth(true))
 
 	ts := httptest.NewServer(srv.Handler())
 	defer ts.Close()
@@ -150,7 +151,8 @@ func TestRateLimiting(t *testing.T) {
 
 	// Set rate limit to 2 requests per second, burst of 2
 	srv := runtime.NewServer(config, mockClient, registry, mgr, strategy,
-		runtime.WithRateLimit(2, 2))
+		runtime.WithRateLimit(2, 2),
+		runtime.WithNoAuth(true))
 
 	ts := httptest.NewServer(srv.Handler())
 	defer ts.Close()

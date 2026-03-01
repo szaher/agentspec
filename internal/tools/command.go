@@ -11,10 +11,11 @@ import (
 
 // CommandConfig configures a command tool executor.
 type CommandConfig struct {
-	Binary  string            `json:"binary"`
-	Args    []string          `json:"args,omitempty"`
-	Timeout time.Duration     `json:"timeout,omitempty"`
-	Env     map[string]string `json:"env,omitempty"`
+	Binary    string            `json:"binary"`
+	Args      []string          `json:"args,omitempty"`
+	Timeout   time.Duration     `json:"timeout,omitempty"`
+	Env       map[string]string `json:"env,omitempty"`
+	Allowlist []string          `json:"allowlist,omitempty"`
 }
 
 // CommandExecutor executes tools as subprocesses.
@@ -29,7 +30,14 @@ func NewCommandExecutor(config CommandConfig, secrets map[string]string) *Comman
 }
 
 // Execute runs the configured command with input passed via stdin as JSON.
+// Validates the binary against the allowlist before execution.
+// Uses a minimal safe environment (PATH, HOME, secrets only).
 func (e *CommandExecutor) Execute(ctx context.Context, input map[string]interface{}) (string, error) {
+	// Validate binary against allowlist
+	if err := ValidateBinary(e.config.Binary, e.config.Allowlist); err != nil {
+		return "", fmt.Errorf("command tool: %w", err)
+	}
+
 	if e.config.Timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, e.config.Timeout)
@@ -38,11 +46,10 @@ func (e *CommandExecutor) Execute(ctx context.Context, input map[string]interfac
 
 	cmd := exec.CommandContext(ctx, e.config.Binary, e.config.Args...)
 
-	// Set environment
+	// Use safe environment — do NOT inherit host env
+	cmd.Env = SafeEnv(e.secrets)
+	// Add tool-specific env vars
 	for k, v := range e.config.Env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
-	}
-	for k, v := range e.secrets {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 

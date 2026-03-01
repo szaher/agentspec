@@ -2,17 +2,14 @@ package "respond-skills" version "1.0.0" lang "3.0"
 
 skill "format_response" {
   description "Format a response for the user"
-
   input {
     content string required
   }
-
   output {
     formatted string required
   }
-
   tool command {
     binary "echo"
-    args "Formatted: {{content}}"
+    args ["Formatted: {{content}}"]
   }
 }

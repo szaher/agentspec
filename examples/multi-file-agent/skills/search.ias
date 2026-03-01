@@ -2,17 +2,14 @@ package "search-skills" version "1.0.0" lang "3.0"
 
 skill "web_search" {
   description "Search the web for information"
-
   input {
     query string required
   }
-
   output {
     results string required
   }
-
   tool command {
     binary "echo"
-    args "Search results for: {{query}}"
+    args ["Search results for: {{query}}"]
   }
 }

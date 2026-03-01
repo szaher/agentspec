@@ -3,9 +3,11 @@
 package plugins
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/tetratelabs/wazero"
@@ -47,16 +49,26 @@ func (h *Host) LoadPlugin(ctx context.Context, path string) (*LoadedPlugin, erro
 		return nil, fmt.Errorf("compiling plugin %s: %w", path, err)
 	}
 
-	// Instantiate to get manifest
+	// Instantiate to get manifest — capture stdout/stderr to buffers
+	// instead of leaking plugin output to the host process
+	var pluginStdout, pluginStderr bytes.Buffer
 	config := wazero.NewModuleConfig().
-		WithStdout(os.Stdout).
-		WithStderr(os.Stderr)
+		WithStdout(&pluginStdout).
+		WithStderr(&pluginStderr)
 
 	mod, err := h.runtime.InstantiateModule(ctx, compiled, config)
 	if err != nil {
 		return nil, fmt.Errorf("instantiating plugin %s: %w", path, err)
 	}
 	defer func() { _ = mod.Close(ctx) }()
+
+	// Log any plugin output at debug level
+	if pluginStdout.Len() > 0 {
+		slog.Debug("plugin stdout during load", "plugin", path, "output", pluginStdout.String())
+	}
+	if pluginStderr.Len() > 0 {
+		slog.Warn("plugin stderr during load", "plugin", path, "output", pluginStderr.String())
+	}
 
 	// Call manifest export
 	manifestFn := mod.ExportedFunction("manifest")

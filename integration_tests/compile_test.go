@@ -272,7 +272,7 @@ func TestCompiledAgentHealthz(t *testing.T) {
 	sessionMgr := session.NewManager(sessionStore, memoryStore)
 	strategy := &loop.ReActStrategy{}
 
-	srv := runtime.NewServer(config, mockClient, registry, sessionMgr, strategy)
+	srv := runtime.NewServer(config, mockClient, registry, sessionMgr, strategy, runtime.WithNoAuth(true))
 	ts := httptest.NewServer(srv.Handler())
 	defer ts.Close()
 
@@ -390,6 +390,7 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	srv := runtime.NewServer(config, nil, registry, sessionMgr, strategy,
 		runtime.WithUI(true),
 		runtime.WithMetrics(metrics),
+		runtime.WithNoAuth(true),
 	)
 
 	ts := httptest.NewServer(srv.Handler())

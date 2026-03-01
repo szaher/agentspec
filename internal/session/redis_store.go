@@ -62,7 +62,7 @@ func (s *RedisStore) messagesKey(id string) string {
 // Create creates a new session.
 func (s *RedisStore) Create(ctx context.Context, agentName string, metadata map[string]string) (*Session, error) {
 	sess := &Session{
-		ID:         generateSessionID(),
+		ID:         generateSecureID(),
 		AgentName:  agentName,
 		CreatedAt:  time.Now(),
 		LastActive: time.Now(),
@@ -176,8 +176,4 @@ func (s *RedisStore) LoadMessages(ctx context.Context, sessionID string) ([]llm.
 	}
 
 	return messages, nil
-}
-
-func generateSessionID() string {
-	return fmt.Sprintf("sess_%d", time.Now().UnixNano())
 }

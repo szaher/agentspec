@@ -10,7 +10,7 @@ import (
 // RedactFilter wraps a slog handler to scrub resolved secret values from log output.
 type RedactFilter struct {
 	inner   slog.Handler
-	mu      sync.RWMutex
+	mu      *sync.RWMutex
 	secrets map[string]bool
 }
 
@@ -18,6 +18,7 @@ type RedactFilter struct {
 func NewRedactFilter(inner slog.Handler) *RedactFilter {
 	return &RedactFilter{
 		inner:   inner,
+		mu:      &sync.RWMutex{},
 		secrets: make(map[string]bool),
 	}
 }
@@ -69,17 +70,21 @@ func (f *RedactFilter) Handle(ctx context.Context, record slog.Record) error {
 }
 
 // WithAttrs delegates to the inner handler.
+// Shares the parent's mutex and secrets map so AddSecret is race-free.
 func (f *RedactFilter) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &RedactFilter{
 		inner:   f.inner.WithAttrs(attrs),
+		mu:      f.mu,
 		secrets: f.secrets,
 	}
 }
 
 // WithGroup delegates to the inner handler.
+// Shares the parent's mutex and secrets map so AddSecret is race-free.
 func (f *RedactFilter) WithGroup(name string) slog.Handler {
 	return &RedactFilter{
 		inner:   f.inner.WithGroup(name),
+		mu:      f.mu,
 		secrets: f.secrets,
 	}
 }

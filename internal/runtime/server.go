@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/szaher/designs/agentz/internal/auth"
 	"github.com/szaher/designs/agentz/internal/controlflow"
 	"github.com/szaher/designs/agentz/internal/frontend"
 	"github.com/szaher/designs/agentz/internal/llm"
@@ -31,6 +32,8 @@ type Server struct {
 	strategy    loop.Strategy
 	startTime   time.Time
 	apiKey      string
+	noAuth      bool
+	corsOrigins []string
 	metrics     *telemetry.Metrics
 	rateLimiter *rateLimiter
 	enableUI    bool
@@ -61,6 +64,16 @@ func WithRateLimit(rate float64, burst int) ServerOption {
 	}
 }
 
+// WithNoAuth explicitly allows unauthenticated access.
+func WithNoAuth(noAuth bool) ServerOption {
+	return func(s *Server) { s.noAuth = noAuth }
+}
+
+// WithCORSOrigins sets the allowed CORS origins.
+func WithCORSOrigins(origins []string) ServerOption {
+	return func(s *Server) { s.corsOrigins = origins }
+}
+
 // WithUI enables the built-in web frontend.
 func WithUI(enable bool) ServerOption {
 	return func(s *Server) { s.enableUI = enable }
@@ -88,12 +101,12 @@ func NewServer(config *RuntimeConfig, llmClient llm.Client, registry *tools.Regi
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
 	mux.HandleFunc("GET /v1/agents", s.handleListAgents)
-	mux.HandleFunc("POST /v1/agents/{name}/invoke", s.rateLimitMiddleware(s.handleInvoke))
-	mux.HandleFunc("POST /v1/agents/{name}/stream", s.rateLimitMiddleware(s.handleStream))
-	mux.HandleFunc("POST /v1/agents/{name}/sessions", s.handleCreateSession)
-	mux.HandleFunc("POST /v1/agents/{name}/sessions/{id}", s.handleSessionMessage)
+	mux.HandleFunc("POST /v1/agents/{name}/invoke", limitBody(s.rateLimitMiddleware(s.handleInvoke)))
+	mux.HandleFunc("POST /v1/agents/{name}/stream", limitBody(s.rateLimitMiddleware(s.handleStream)))
+	mux.HandleFunc("POST /v1/agents/{name}/sessions", limitBody(s.handleCreateSession))
+	mux.HandleFunc("POST /v1/agents/{name}/sessions/{id}", limitBody(s.handleSessionMessage))
 	mux.HandleFunc("DELETE /v1/agents/{name}/sessions/{id}", s.handleDeleteSession)
-	mux.HandleFunc("POST /v1/pipelines/{name}/run", s.handlePipelineRun)
+	mux.HandleFunc("POST /v1/pipelines/{name}/run", limitBody(s.handlePipelineRun))
 	mux.Handle("GET /v1/metrics", s.metrics.Handler())
 
 	// Mount built-in frontend when enabled
@@ -107,14 +120,42 @@ func NewServer(config *RuntimeConfig, llmClient llm.Client, registry *tools.Regi
 
 // Handler returns the HTTP handler for use with httptest or custom servers.
 func (s *Server) Handler() http.Handler {
-	return s.authMiddleware(s.mux)
+	return s.corsMiddleware(s.authMiddleware(s.mux))
 }
 
-// ListenAndServe starts the HTTP server.
+func (s *Server) corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" && len(s.corsOrigins) > 0 {
+			for _, allowed := range s.corsOrigins {
+				if allowed == origin {
+					w.Header().Set("Access-Control-Allow-Origin", origin)
+					w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+					w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key")
+					w.Header().Set("Access-Control-Max-Age", "86400")
+					break
+				}
+			}
+		}
+
+		// Handle preflight
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// ListenAndServe starts the HTTP server with production-ready timeouts.
 func (s *Server) ListenAndServe(addr string) error {
 	s.server = &http.Server{
-		Addr:    addr,
-		Handler: s.authMiddleware(s.mux),
+		Addr:              addr,
+		Handler:           s.corsMiddleware(s.authMiddleware(s.mux)),
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 	s.logger.Info("runtime server starting", "addr", addr, "agents", len(s.config.Agents))
 	return s.server.ListenAndServe()
@@ -143,19 +184,24 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		}
 
 		if s.apiKey == "" {
-			next.ServeHTTP(w, r)
+			if s.noAuth {
+				// Explicitly opted in to no-auth mode
+				next.ServeHTTP(w, r)
+				return
+			}
+			writeError(w, http.StatusUnauthorized, "unauthorized", "No API key configured. Use --no-auth to allow unauthenticated access.")
 			return
 		}
 
 		key := r.Header.Get("X-API-Key")
 		if key == "" {
-			auth := r.Header.Get("Authorization")
-			if strings.HasPrefix(auth, "Bearer ") {
-				key = auth[7:]
+			authHeader := r.Header.Get("Authorization")
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				key = authHeader[7:]
 			}
 		}
 
-		if key != s.apiKey {
+		if !auth.ValidateKey(key, s.apiKey) {
 			writeError(w, http.StatusUnauthorized, "unauthorized", "Missing or invalid API key")
 			return
 		}
@@ -262,7 +308,10 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 			{Role: llm.RoleUser, Content: req.Message},
 			{Role: llm.RoleAssistant, Content: resp.Output},
 		}
-		_ = s.sessions.SaveMessages(r.Context(), req.SessionID, msgs)
+		if err := s.sessions.SaveMessages(r.Context(), req.SessionID, msgs); err != nil {
+			slog.Error("failed to save session messages", "session_id", req.SessionID, "error", err)
+			w.Header().Set("Warning", `199 - "session save failed"`)
+		}
 	}
 
 	toolCalls := make([]map[string]interface{}, len(resp.ToolCalls))
@@ -432,7 +481,10 @@ func (s *Server) handleSessionMessage(w http.ResponseWriter, r *http.Request) {
 		{Role: llm.RoleUser, Content: req.Message},
 		{Role: llm.RoleAssistant, Content: resp.Output},
 	}
-	_ = s.sessions.SaveMessages(r.Context(), sessionID, msgs)
+	if err := s.sessions.SaveMessages(r.Context(), sessionID, msgs); err != nil {
+		slog.Error("failed to save session messages", "session_id", sessionID, "error", err)
+		w.Header().Set("Warning", `199 - "session save failed"`)
+	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"output":      resp.Output,
@@ -763,6 +815,18 @@ func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		next(w, r)
+	}
+}
+
+const maxRequestBodySize = 10 * 1024 * 1024 // 10MB
+
+// limitBody wraps an http.HandlerFunc to limit the request body size.
+func limitBody(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Body != nil {
+			r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
+		}
 		next(w, r)
 	}
 }
