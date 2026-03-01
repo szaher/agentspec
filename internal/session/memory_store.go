@@ -28,7 +28,7 @@ func (s *MemoryStore) Create(_ context.Context, agentName string, metadata map[s
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	id := generateID()
+	id := generateSecureID()
 	now := time.Now()
 	sess := &Session{
 		ID:         id,
@@ -98,7 +98,3 @@ func (s *MemoryStore) Touch(_ context.Context, id string) error {
 	return nil
 }
 
-// generateID creates a simple unique session ID.
-func generateID() string {
-	return fmt.Sprintf("sess_%d", time.Now().UnixNano())
-}

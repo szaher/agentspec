@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"github.com/szaher/designs/agentz/internal/sandbox"
 )
 
 // InlineConfig configures an inline code executor.
@@ -24,15 +26,60 @@ type InlineConfig struct {
 type InlineExecutor struct {
 	config  InlineConfig
 	secrets map[string]string
+	sandbox sandbox.Sandbox
 }
 
 // NewInlineExecutor creates an inline code executor.
-func NewInlineExecutor(config InlineConfig, secrets map[string]string) *InlineExecutor {
-	return &InlineExecutor{config: config, secrets: secrets}
+// If sb is non-nil and available, inline tools run in the sandbox.
+func NewInlineExecutor(config InlineConfig, secrets map[string]string, sb ...sandbox.Sandbox) *InlineExecutor {
+	e := &InlineExecutor{config: config, secrets: secrets}
+	if len(sb) > 0 && sb[0] != nil {
+		e.sandbox = sb[0]
+	}
+	return e
 }
 
 // Execute writes the code to a temp file and runs it as a subprocess.
+// If a sandbox is configured and available, execution is sandboxed.
+// Stdout/stderr are captured to buffers (never passed to host stdout/stderr).
 func (e *InlineExecutor) Execute(ctx context.Context, input map[string]interface{}) (string, error) {
+	// Build safe environment
+	safeEnv := SafeEnv(e.secrets)
+	envMap := make(map[string]string)
+	for _, kv := range safeEnv {
+		for i := 0; i < len(kv); i++ {
+			if kv[i] == '=' {
+				envMap[kv[:i]] = kv[i+1:]
+				break
+			}
+		}
+	}
+	// Add tool-specific env vars
+	for k, v := range e.config.Env {
+		envMap[k] = v
+	}
+
+	// If sandbox is configured and available, use it
+	if e.sandbox != nil && e.sandbox.Available() {
+		timeoutSec := int(e.config.Timeout.Seconds())
+		if timeoutSec <= 0 {
+			timeoutSec = 30
+		}
+		sc := sandbox.ExecConfig{
+			Language:   e.config.Language,
+			Script:     e.config.Code,
+			Env:        envMap,
+			MemoryMB:   e.config.MemoryLimit,
+			TimeoutSec: timeoutSec,
+		}
+		stdout, stderr, err := e.sandbox.Execute(ctx, sc)
+		if err != nil {
+			return "", fmt.Errorf("inline tool (%s): %w: %s", e.config.Language, err, stderr)
+		}
+		return stdout, nil
+	}
+
+	// Fallback: direct execution without sandbox
 	timeout := e.config.Timeout
 	if timeout <= 0 {
 		timeout = 30 * time.Second
@@ -62,11 +109,9 @@ func (e *InlineExecutor) Execute(ctx context.Context, input map[string]interface
 	cmd := exec.CommandContext(ctx, interpreter, scriptPath)
 	cmd.Dir = tmpDir
 
-	// Build environment
+	// Use safe environment — do NOT inherit host env
+	cmd.Env = SafeEnv(e.secrets)
 	for k, v := range e.config.Env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
-	}
-	for k, v := range e.secrets {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 
@@ -77,6 +122,7 @@ func (e *InlineExecutor) Execute(ctx context.Context, input map[string]interface
 	}
 	cmd.Stdin = bytes.NewReader(inputData)
 
+	// Capture stdout/stderr to buffers — never pass to host
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

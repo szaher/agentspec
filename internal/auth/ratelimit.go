@@ -52,6 +52,9 @@ type RateLimiter struct {
 	mu      sync.Mutex
 	config  RateLimitConfig
 	buckets map[string]*bucket
+
+	authMu       sync.Mutex
+	authFailures map[string]*authBucket
 }
 
 type bucket struct {
@@ -59,11 +62,26 @@ type bucket struct {
 	lastRefill time.Time
 }
 
+// authBucket tracks failed authentication attempts per IP.
+type authBucket struct {
+	failures    int
+	windowStart time.Time
+	blockedUntil time.Time
+}
+
+const (
+	authMaxFailures   = 10
+	authWindowDur     = 1 * time.Minute
+	authBlockDur      = 5 * time.Minute
+	authEvictInterval = 10 * time.Minute
+)
+
 // NewRateLimiter creates a rate limiter with the given configuration.
 func NewRateLimiter(config RateLimitConfig) *RateLimiter {
 	return &RateLimiter{
-		config:  config,
-		buckets: make(map[string]*bucket),
+		config:       config,
+		buckets:      make(map[string]*bucket),
+		authFailures: make(map[string]*authBucket),
 	}
 }
 
@@ -95,6 +113,100 @@ func (rl *RateLimiter) Allow(key string) bool {
 	}
 	b.tokens--
 	return true
+}
+
+// IsAuthBlocked checks if an IP is blocked due to too many auth failures.
+func (rl *RateLimiter) IsAuthBlocked(ip string) bool {
+	rl.authMu.Lock()
+	defer rl.authMu.Unlock()
+
+	b, ok := rl.authFailures[ip]
+	if !ok {
+		return false
+	}
+
+	now := time.Now()
+	if now.Before(b.blockedUntil) {
+		return true
+	}
+
+	// Block expired — reset
+	if !b.blockedUntil.IsZero() {
+		delete(rl.authFailures, ip)
+		return false
+	}
+
+	return false
+}
+
+// AuthBlockRetryAfter returns the number of seconds until the block expires.
+func (rl *RateLimiter) AuthBlockRetryAfter(ip string) int {
+	rl.authMu.Lock()
+	defer rl.authMu.Unlock()
+
+	b, ok := rl.authFailures[ip]
+	if !ok {
+		return 0
+	}
+	remaining := time.Until(b.blockedUntil).Seconds()
+	if remaining <= 0 {
+		return 0
+	}
+	return int(remaining) + 1
+}
+
+// AuthFailure records a failed authentication attempt from an IP.
+// Returns true if the IP is now blocked.
+func (rl *RateLimiter) AuthFailure(ip string) bool {
+	rl.authMu.Lock()
+	defer rl.authMu.Unlock()
+
+	now := time.Now()
+	b, ok := rl.authFailures[ip]
+	if !ok {
+		b = &authBucket{
+			failures:    0,
+			windowStart: now,
+		}
+		rl.authFailures[ip] = b
+	}
+
+	// Reset window if expired
+	if now.Sub(b.windowStart) > authWindowDur {
+		b.failures = 0
+		b.windowStart = now
+	}
+
+	b.failures++
+
+	if b.failures >= authMaxFailures {
+		b.blockedUntil = now.Add(authBlockDur)
+		return true
+	}
+
+	// Evict stale entries periodically
+	if len(rl.authFailures) > 1000 {
+		rl.evictStaleAuthEntries(now)
+	}
+
+	return false
+}
+
+// AuthSuccess clears auth failure tracking for an IP.
+func (rl *RateLimiter) AuthSuccess(ip string) {
+	rl.authMu.Lock()
+	defer rl.authMu.Unlock()
+	delete(rl.authFailures, ip)
+}
+
+func (rl *RateLimiter) evictStaleAuthEntries(now time.Time) {
+	for ip, b := range rl.authFailures {
+		if !b.blockedUntil.IsZero() && now.After(b.blockedUntil) {
+			delete(rl.authFailures, ip)
+		} else if now.Sub(b.windowStart) > authEvictInterval {
+			delete(rl.authFailures, ip)
+		}
+	}
 }
 
 // Middleware returns HTTP middleware that applies rate limiting.

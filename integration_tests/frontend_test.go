@@ -88,6 +88,7 @@ func TestFrontendMountedOnServer(t *testing.T) {
 	server := runtime.NewServer(config, nil, registry, sessionMgr, strategy,
 		runtime.WithUI(true),
 		runtime.WithMetrics(metrics),
+		runtime.WithNoAuth(true),
 	)
 
 	ts := httptest.NewServer(server.Handler())
@@ -138,7 +139,7 @@ func TestFrontendDisabledByDefault(t *testing.T) {
 	strategy := &loop.ReActStrategy{}
 
 	// No WithUI option — frontend should not be mounted
-	server := runtime.NewServer(config, nil, registry, sessionMgr, strategy)
+	server := runtime.NewServer(config, nil, registry, sessionMgr, strategy, runtime.WithNoAuth(true))
 
 	ts := httptest.NewServer(server.Handler())
 	defer ts.Close()

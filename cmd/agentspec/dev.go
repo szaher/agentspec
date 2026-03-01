@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 func newDevCmd() *cobra.Command {
 	var port int
 	var enableUI bool
+	var noAuth bool
+	var corsOrigins string
 
 	cmd := &cobra.Command{
 		Use:   "dev [file.ias]",
@@ -35,17 +38,19 @@ func newDevCmd() *cobra.Command {
 			ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
 
-			return runDevLoop(ctx, files, port, enableUI, logger)
+			return runDevLoop(ctx, files, port, enableUI, noAuth, corsOrigins, logger)
 		},
 	}
 
 	cmd.Flags().IntVar(&port, "port", 8080, "HTTP server port")
 	cmd.Flags().BoolVar(&enableUI, "ui", true, "Enable built-in web frontend")
+	cmd.Flags().BoolVar(&noAuth, "no-auth", false, "Explicitly allow unauthenticated access (WARNING: insecure)")
+	cmd.Flags().StringVar(&corsOrigins, "cors-origins", "", "Comma-separated list of allowed CORS origins")
 
 	return cmd
 }
 
-func runDevLoop(ctx context.Context, files []string, port int, enableUI bool, logger *slog.Logger) error {
+func runDevLoop(ctx context.Context, files []string, port int, enableUI bool, noAuth bool, corsOriginsStr string, logger *slog.Logger) error {
 	var rt *runtime.Runtime
 
 	startRuntime := func() error {
@@ -66,10 +71,25 @@ func runDevLoop(ctx context.Context, files []string, port int, enableUI bool, lo
 			return fmt.Errorf("config error: %w", err)
 		}
 
+		// Build CORS origins — auto-add localhost in dev mode
+		var corsOrigins []string
+		if corsOriginsStr != "" {
+			for _, o := range strings.Split(corsOriginsStr, ",") {
+				corsOrigins = append(corsOrigins, strings.TrimSpace(o))
+			}
+		}
+		// Dev mode: auto-allow localhost origins for built-in UI
+		corsOrigins = append(corsOrigins,
+			fmt.Sprintf("http://localhost:%d", port),
+			fmt.Sprintf("http://127.0.0.1:%d", port),
+		)
+
 		rt, err = runtime.New(config, runtime.Options{
-			Port:     port,
-			Logger:   logger,
-			EnableUI: enableUI,
+			Port:        port,
+			Logger:      logger,
+			EnableUI:    enableUI,
+			NoAuth:      noAuth,
+			CORSOrigins: corsOrigins,
 		})
 		if err != nil {
 			return fmt.Errorf("runtime error: %w", err)

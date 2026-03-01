@@ -8,8 +8,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"text/template"
 )
+
+const defaultMaxResponseSize int64 = 10 * 1024 * 1024 // 10MB
 
 // HTTPConfig configures an HTTP tool executor.
 type HTTPConfig struct {
@@ -21,15 +22,19 @@ type HTTPConfig struct {
 
 // HTTPExecutor executes tools via HTTP requests.
 type HTTPExecutor struct {
-	config HTTPConfig
-	client *http.Client
+	config       HTTPConfig
+	client       *http.Client
+	maxRespSize  int64
 }
 
-// NewHTTPExecutor creates an HTTP tool executor.
+// NewHTTPExecutor creates an HTTP tool executor with SSRF protection.
 func NewHTTPExecutor(config HTTPConfig) *HTTPExecutor {
 	return &HTTPExecutor{
 		config: config,
-		client: http.DefaultClient,
+		client: &http.Client{
+			Transport: NewSafeTransport(),
+		},
+		maxRespSize: defaultMaxResponseSize,
 	}
 }
 
@@ -44,15 +49,9 @@ func (e *HTTPExecutor) Execute(ctx context.Context, input map[string]interface{}
 
 	var body io.Reader
 	if e.config.BodyTemplate != "" {
-		tmpl, err := template.New("body").Parse(e.config.BodyTemplate)
-		if err != nil {
-			return "", fmt.Errorf("http tool: invalid body template: %w", err)
-		}
-		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, input); err != nil {
-			return "", fmt.Errorf("http tool: template execution failed: %w", err)
-		}
-		body = &buf
+		// Use safe body serialization — no Go template execution
+		rendered := SafeBodyString([]byte(e.config.BodyTemplate), "text/plain")
+		body = strings.NewReader(rendered)
 	} else if method == "POST" || method == "PUT" || method == "PATCH" {
 		data, err := json.Marshal(input)
 		if err != nil {
@@ -79,7 +78,7 @@ func (e *HTTPExecutor) Execute(ctx context.Context, input map[string]interface{}
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, truncated, err := ReadBody(resp.Body, e.maxRespSize)
 	if err != nil {
 		return "", fmt.Errorf("http tool: read response: %w", err)
 	}
@@ -88,5 +87,45 @@ func (e *HTTPExecutor) Execute(ctx context.Context, input map[string]interface{}
 		return "", fmt.Errorf("http tool: status %d: %s", resp.StatusCode, string(respBody))
 	}
 
-	return string(respBody), nil
+	result := SafeBodyString(respBody, resp.Header.Get("Content-Type"))
+	if truncated {
+		result += "\n[response body truncated at 10MB limit]"
+	}
+
+	return result, nil
+}
+
+// ReadBody reads the response body with a size limit.
+// Returns (data, truncated, error).
+func ReadBody(body io.Reader, limit int64) ([]byte, bool, error) {
+	if limit <= 0 {
+		limit = defaultMaxResponseSize
+	}
+	lr := io.LimitReader(body, limit+1) // read one extra byte to detect truncation
+	data, err := io.ReadAll(lr)
+	if err != nil {
+		return nil, false, err
+	}
+	if int64(len(data)) > limit {
+		return data[:limit], true, nil
+	}
+	return data, false, nil
+}
+
+// SafeBodyString converts an HTTP response body to a safe string representation.
+// Sanitizes {{ and }} sequences to prevent template injection.
+func SafeBodyString(body []byte, contentType string) string {
+	s := string(body)
+
+	// Sanitize Go template delimiters to prevent injection
+	s = strings.ReplaceAll(s, "{{", "{ {")
+	s = strings.ReplaceAll(s, "}}", "} }")
+
+	// For HTML content, escape HTML entities
+	if strings.Contains(contentType, "text/html") {
+		s = strings.ReplaceAll(s, "<", "&lt;")
+		s = strings.ReplaceAll(s, ">", "&gt;")
+	}
+
+	return s
 }

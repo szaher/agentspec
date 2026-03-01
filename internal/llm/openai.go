@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -233,7 +234,10 @@ func (c *OpenAIClient) ChatStream(ctx context.Context, req ChatRequest) (<-chan 
 					}
 					if !found && tc.ID != "" {
 						input := make(map[string]interface{})
-						_ = json.Unmarshal([]byte(tc.Function.Arguments), &input)
+						if err := json.Unmarshal([]byte(tc.Function.Arguments), &input); err != nil {
+							slog.Warn("openai: failed to unmarshal streaming tool arguments", "tool", tc.Function.Name, "id", tc.ID, "error", err)
+							input = map[string]interface{}{"_error": fmt.Sprintf("failed to parse tool arguments: %v", err)}
+						}
 						toolCalls = append(toolCalls, ToolCall{
 							ID:    tc.ID,
 							Name:  tc.Function.Name,
@@ -287,7 +291,11 @@ func (c *OpenAIClient) buildRequest(req ChatRequest, stream bool) oaiRequest {
 			msg.Role = "assistant"
 			msg.Content = m.Content
 			for _, tc := range m.ToolCalls {
-				args, _ := json.Marshal(tc.Input)
+				args, err := json.Marshal(tc.Input)
+				if err != nil {
+					slog.Warn("openai: failed to marshal tool call input", "tool", tc.Name, "id", tc.ID, "error", err)
+					args = []byte("{}")
+				}
 				msg.ToolCalls = append(msg.ToolCalls, oaiToolCall{
 					ID:   tc.ID,
 					Type: "function",
@@ -385,7 +393,10 @@ func (c *OpenAIClient) parseResponse(resp *oaiResponse) *ChatResponse {
 
 	for _, tc := range choice.Message.ToolCalls {
 		input := make(map[string]interface{})
-		_ = json.Unmarshal([]byte(tc.Function.Arguments), &input)
+		if err := json.Unmarshal([]byte(tc.Function.Arguments), &input); err != nil {
+			slog.Warn("openai: failed to unmarshal tool arguments", "tool", tc.Function.Name, "id", tc.ID, "error", err)
+			input = map[string]interface{}{"_error": fmt.Sprintf("failed to parse tool arguments: %v", err)}
+		}
 		result.ToolCalls = append(result.ToolCalls, ToolCall{
 			ID:    tc.ID,
 			Name:  tc.Function.Name,

@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/szaher/designs/agentz/internal/auth"
 	"github.com/szaher/designs/agentz/internal/loop"
 	"github.com/szaher/designs/agentz/internal/runtime"
 	"github.com/szaher/designs/agentz/internal/session"
@@ -94,9 +95,36 @@ func TestAuthRejectsInvalidKey(t *testing.T) {
 	}
 }
 
-// TestNoAuthBypassesAuth verifies that when no API key is configured, all requests succeed.
-func TestNoAuthBypassesAuth(t *testing.T) {
-	ts := newAuthTestServer("") // No API key = auth disabled
+// TestNoAuthWithoutFlagRejects verifies that no API key WITHOUT --no-auth rejects all requests.
+func TestNoAuthWithoutFlagRejects(t *testing.T) {
+	// No API key, no --no-auth flag = reject all
+	ts := newAuthTestServer("")
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/v1/agents")
+	if err != nil {
+		t.Fatalf("request error: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("expected 401 with no auth and no --no-auth flag, got %d", resp.StatusCode)
+	}
+}
+
+// TestNoAuthWithFlagAllows verifies that --no-auth flag allows unauthenticated access.
+func TestNoAuthWithFlagAllows(t *testing.T) {
+	config := &runtime.RuntimeConfig{
+		Agents: []runtime.AgentConfig{
+			{Name: "test-agent", FQN: "test/test-agent", Model: "test-model", System: "test"},
+		},
+	}
+	registry := tools.NewRegistry()
+	sessionMgr := session.NewManager(session.NewMemoryStore(0), nil)
+	strategy := &loop.ReActStrategy{}
+
+	server := runtime.NewServer(config, nil, registry, sessionMgr, strategy, runtime.WithNoAuth(true))
+	ts := httptest.NewServer(server.Handler())
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL + "/v1/agents")
@@ -106,7 +134,45 @@ func TestNoAuthBypassesAuth(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected 200 with no auth configured, got %d", resp.StatusCode)
+		t.Errorf("expected 200 with --no-auth, got %d", resp.StatusCode)
+	}
+}
+
+// TestAuthRateLimiting verifies brute-force protection blocks IPs after 10 failures.
+func TestAuthRateLimiting(t *testing.T) {
+	rl := auth.NewRateLimiter(auth.DefaultRateLimitConfig())
+
+	// Simulate 10 failures
+	for i := 0; i < 10; i++ {
+		blocked := rl.AuthFailure("192.168.1.100")
+		if i < 9 && blocked {
+			t.Errorf("should not be blocked after %d failures", i+1)
+		}
+		if i == 9 && !blocked {
+			t.Error("should be blocked after 10 failures")
+		}
+	}
+
+	// Should be blocked
+	if !rl.IsAuthBlocked("192.168.1.100") {
+		t.Error("IP should be blocked")
+	}
+
+	// Correct key should still be blocked
+	if !rl.IsAuthBlocked("192.168.1.100") {
+		t.Error("IP should still be blocked even with correct key")
+	}
+
+	// Different IP should not be blocked
+	if rl.IsAuthBlocked("192.168.1.200") {
+		t.Error("different IP should not be blocked")
+	}
+
+	// Success clears tracking for unblocked IPs
+	rl.AuthFailure("10.0.0.1")
+	rl.AuthSuccess("10.0.0.1")
+	if rl.IsAuthBlocked("10.0.0.1") {
+		t.Error("IP should not be blocked after success")
 	}
 }
 

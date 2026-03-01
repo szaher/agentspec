@@ -19,8 +19,15 @@ type SSEWriter struct {
 	flusher http.Flusher
 }
 
+// CORSConfig holds CORS origin allowlist configuration.
+type CORSConfig struct {
+	AllowedOrigins []string
+}
+
 // NewSSEWriter creates a new SSE writer, setting appropriate headers.
-func NewSSEWriter(w http.ResponseWriter) (*SSEWriter, error) {
+// If corsConfig is provided, the Access-Control-Allow-Origin header is set
+// to the matching origin (not wildcard).
+func NewSSEWriter(w http.ResponseWriter, r *http.Request, corsConfig ...*CORSConfig) (*SSEWriter, error) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		return nil, fmt.Errorf("streaming not supported")
@@ -29,7 +36,19 @@ func NewSSEWriter(w http.ResponseWriter) (*SSEWriter, error) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	// Set CORS origin based on config — never default to wildcard
+	if len(corsConfig) > 0 && corsConfig[0] != nil {
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			for _, allowed := range corsConfig[0].AllowedOrigins {
+				if allowed == origin {
+					w.Header().Set("Access-Control-Allow-Origin", origin)
+					break
+				}
+			}
+		}
+	}
 
 	return &SSEWriter{w: w, flusher: flusher}, nil
 }

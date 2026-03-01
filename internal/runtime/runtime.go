@@ -28,11 +28,13 @@ type Runtime struct {
 
 // Options configures the runtime.
 type Options struct {
-	Port      int
-	APIKey    string
-	Logger    *slog.Logger
-	LLMClient llm.Client
-	EnableUI  bool
+	Port        int
+	APIKey      string
+	NoAuth      bool
+	CORSOrigins []string
+	Logger      *slog.Logger
+	LLMClient   llm.Client
+	EnableUI    bool
 }
 
 // New creates a new runtime from the given config.
@@ -85,8 +87,16 @@ func New(config *RuntimeConfig, opts Options) (*Runtime, error) {
 	var serverOpts []ServerOption
 	if opts.APIKey != "" {
 		serverOpts = append(serverOpts, WithAPIKey(opts.APIKey))
+	} else if opts.NoAuth {
+		logger.Warn("server starting WITHOUT authentication (--no-auth flag provided)")
+	} else {
+		logger.Warn("no API key configured: all API requests will be rejected. Use --no-auth to explicitly allow unauthenticated access, or set AGENTSPEC_API_KEY")
 	}
 	serverOpts = append(serverOpts, WithLogger(logger))
+	serverOpts = append(serverOpts, WithNoAuth(opts.NoAuth))
+	if len(opts.CORSOrigins) > 0 {
+		serverOpts = append(serverOpts, WithCORSOrigins(opts.CORSOrigins))
+	}
 	if opts.EnableUI {
 		serverOpts = append(serverOpts, WithUI(true))
 	}

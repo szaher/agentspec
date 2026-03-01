@@ -85,6 +85,12 @@ func (e *Executor) Execute(ctx context.Context, name string, dag *DAG, triggerIn
 			stepOutputs[stepName] = sr.Output
 		} else {
 			// Multiple steps, run concurrently
+			// Snapshot outputs for input resolution — dependencies are from prior layers only
+			outputSnapshot := make(map[string]string, len(stepOutputs))
+			for k, v := range stepOutputs {
+				outputSnapshot[k] = v
+			}
+
 			var mu sync.Mutex
 			var wg sync.WaitGroup
 			failed := false
@@ -94,7 +100,7 @@ func (e *Executor) Execute(ctx context.Context, name string, dag *DAG, triggerIn
 				go func(sn string) {
 					defer wg.Done()
 					step := dag.Steps[sn]
-					sr := e.executeStep(ctx, step, stepOutputs)
+					sr := e.executeStep(ctx, step, outputSnapshot)
 
 					mu.Lock()
 					result.Steps[sn] = sr

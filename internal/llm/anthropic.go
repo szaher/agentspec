@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	anthropic "github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -137,7 +138,11 @@ func (c *AnthropicClient) buildParams(req ChatRequest) anthropic.MessageNewParam
 	if len(req.Tools) > 0 {
 		tools := make([]anthropic.ToolUnionParam, len(req.Tools))
 		for i, t := range req.Tools {
-			schemaBytes, _ := json.Marshal(t.InputSchema)
+			schemaBytes, err := json.Marshal(t.InputSchema)
+			if err != nil {
+				slog.Warn("anthropic: failed to marshal tool input schema", "tool", t.Name, "error", err)
+				continue
+			}
 			tools[i] = anthropic.ToolUnionParam{
 				OfTool: &anthropic.ToolParam{
 					Name:        t.Name,
@@ -171,12 +176,20 @@ func (c *AnthropicClient) parseResponse(msg *anthropic.Message) *ChatResponse {
 			resp.Content += block.Text
 		case "tool_use":
 			input := make(map[string]interface{})
-			_ = json.Unmarshal(block.Input, &input)
-			resp.ToolCalls = append(resp.ToolCalls, ToolCall{
-				ID:    block.ID,
-				Name:  block.Name,
-				Input: input,
-			})
+			if err := json.Unmarshal(block.Input, &input); err != nil {
+				slog.Warn("anthropic: failed to unmarshal tool input", "tool", block.Name, "id", block.ID, "error", err)
+				resp.ToolCalls = append(resp.ToolCalls, ToolCall{
+					ID:    block.ID,
+					Name:  block.Name,
+					Input: map[string]interface{}{"_error": fmt.Sprintf("failed to parse tool input: %v", err)},
+				})
+			} else {
+				resp.ToolCalls = append(resp.ToolCalls, ToolCall{
+					ID:    block.ID,
+					Name:  block.Name,
+					Input: input,
+				})
+			}
 		}
 	}
 
