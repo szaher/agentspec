@@ -4,6 +4,7 @@ package apply
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/szaher/designs/agentz/internal/adapters"
@@ -20,8 +21,15 @@ type Result struct {
 	Results []adapters.Result
 }
 
+// Locker is an optional interface for backends that support locking.
+type Locker interface {
+	LockWithContext(ctx context.Context) error
+	Unlock() error
+}
+
 // Apply executes a plan using the given adapter, emitting events and
 // recording state. Uses mark-and-continue for partial failure handling.
+// If the backend implements Locker, Lock/Unlock are called around state operations.
 func Apply(
 	ctx context.Context,
 	adapter adapters.Adapter,
@@ -30,6 +38,14 @@ func Apply(
 	emitter events.Emitter,
 	correlationID string,
 ) (*Result, error) {
+	// Acquire lock if backend supports it
+	if locker, ok := backend.(Locker); ok {
+		if err := locker.LockWithContext(ctx); err != nil {
+			return nil, fmt.Errorf("acquire state lock: %w", err)
+		}
+		defer func() { _ = locker.Unlock() }()
+	}
+
 	emitter.Emit(events.New(events.ApplyStarted, correlationID).
 		WithData("adapter", adapter.Name()).
 		WithData("action_count", len(actions)))

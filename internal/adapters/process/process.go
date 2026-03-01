@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strconv"
@@ -140,7 +141,10 @@ func (a *Adapter) Apply(ctx context.Context, actions []adapters.Action) ([]adapt
 			Adapter:     "process",
 			Error:       strconv.Itoa(cmd.Process.Pid),
 		})
-		_ = a.stateBackend.Save(entries)
+		if err := a.stateBackend.Save(entries); err != nil {
+			slog.Error("failed to save state after apply", "error", err)
+			return results, fmt.Errorf("save state: %w", err)
+		}
 	}
 
 	return results, nil
@@ -235,7 +239,10 @@ func (a *Adapter) Destroy(ctx context.Context) ([]adapters.Result, error) {
 		results = append(results, result)
 	}
 
-	_ = a.stateBackend.Save(remaining)
+	if err := a.stateBackend.Save(remaining); err != nil {
+		slog.Error("failed to save state after destroy", "error", err)
+		return results, fmt.Errorf("save state: %w", err)
+	}
 	return results, nil
 }
 

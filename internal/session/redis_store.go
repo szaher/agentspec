@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/szaher/designs/agentz/internal/llm"
@@ -16,6 +17,11 @@ type RedisClient interface {
 	Set(ctx context.Context, key string, value string, ttl time.Duration) error
 	Del(ctx context.Context, keys ...string) error
 	Keys(ctx context.Context, pattern string) ([]string, error)
+	// List operations for atomic message storage
+	RPush(ctx context.Context, key string, values ...string) error
+	LRange(ctx context.Context, key string, start, stop int64) ([]string, error)
+	Expire(ctx context.Context, key string, ttl time.Duration) error
+	Type(ctx context.Context, key string) (string, error)
 }
 
 // RedisStore implements the session Store interface backed by Redis.
@@ -149,31 +155,116 @@ func (s *RedisStore) Touch(ctx context.Context, id string) error {
 	return s.client.Set(ctx, s.sessionKey(id), string(data), s.ttl)
 }
 
-// SaveMessages saves conversation messages for a session.
+// SaveMessages appends conversation messages atomically using RPUSH.
 func (s *RedisStore) SaveMessages(ctx context.Context, sessionID string, messages []llm.Message) error {
-	// Load existing messages
-	existing, _ := s.LoadMessages(ctx, sessionID)
-	all := append(existing, messages...)
-
-	data, err := json.Marshal(all)
-	if err != nil {
-		return fmt.Errorf("marshal messages: %w", err)
+	if len(messages) == 0 {
+		return nil
 	}
 
-	return s.client.Set(ctx, s.messagesKey(sessionID), string(data), s.ttl)
+	key := s.messagesKey(sessionID)
+
+	// Marshal each message individually for RPUSH
+	values := make([]string, 0, len(messages))
+	for _, msg := range messages {
+		data, err := json.Marshal(msg)
+		if err != nil {
+			slog.Warn("failed to marshal message, skipping", "session_id", sessionID, "error", err)
+			continue
+		}
+		values = append(values, string(data))
+	}
+
+	if len(values) == 0 {
+		return nil
+	}
+
+	// Atomic append via RPUSH
+	if err := s.client.RPush(ctx, key, values...); err != nil {
+		return fmt.Errorf("rpush messages: %w", err)
+	}
+
+	// Refresh TTL
+	if err := s.client.Expire(ctx, key, s.ttl); err != nil {
+		return fmt.Errorf("expire messages key: %w", err)
+	}
+
+	return nil
 }
 
-// LoadMessages loads conversation messages for a session.
+// LoadMessages retrieves conversation messages using LRANGE.
+// Transparently migrates existing string-based sessions to list format.
 func (s *RedisStore) LoadMessages(ctx context.Context, sessionID string) ([]llm.Message, error) {
-	data, err := s.client.Get(ctx, s.messagesKey(sessionID))
+	key := s.messagesKey(sessionID)
+
+	// Check key type for migration from string to list
+	keyType, err := s.client.Type(ctx, key)
 	if err != nil {
-		return nil, nil // No messages yet
+		return nil, fmt.Errorf("check key type: %w", err)
+	}
+
+	// Migrate string-based sessions to list format
+	if keyType == "string" {
+		return s.migrateStringToList(ctx, sessionID, key)
+	}
+
+	// Key doesn't exist yet
+	if keyType == "none" {
+		return nil, nil
+	}
+
+	// Load from list
+	elements, err := s.client.LRange(ctx, key, 0, -1)
+	if err != nil {
+		return nil, fmt.Errorf("lrange messages: %w", err)
+	}
+
+	messages := make([]llm.Message, 0, len(elements))
+	for _, elem := range elements {
+		var msg llm.Message
+		if err := json.Unmarshal([]byte(elem), &msg); err != nil {
+			slog.Warn("failed to unmarshal message, skipping", "session_id", sessionID, "error", err)
+			continue
+		}
+		messages = append(messages, msg)
+	}
+
+	return messages, nil
+}
+
+// migrateStringToList migrates a string-based session key to list format.
+func (s *RedisStore) migrateStringToList(ctx context.Context, sessionID, key string) ([]llm.Message, error) {
+	// Read the string value
+	data, err := s.client.Get(ctx, key)
+	if err != nil {
+		return nil, nil // Key gone, treat as empty
 	}
 
 	var messages []llm.Message
 	if err := json.Unmarshal([]byte(data), &messages); err != nil {
-		return nil, fmt.Errorf("unmarshal messages: %w", err)
+		slog.Warn("failed to unmarshal legacy string messages during migration", "session_id", sessionID, "error", err)
+		return nil, nil
 	}
 
+	// Delete the string key
+	if err := s.client.Del(ctx, key); err != nil {
+		return messages, nil // Return messages even if delete fails
+	}
+
+	// RPUSH each message to the new list key
+	for _, msg := range messages {
+		msgData, err := json.Marshal(msg)
+		if err != nil {
+			continue
+		}
+		if err := s.client.RPush(ctx, key, string(msgData)); err != nil {
+			slog.Warn("failed to push message during migration", "session_id", sessionID, "error", err)
+			break
+		}
+	}
+
+	// Set TTL on new list key
+	_ = s.client.Expire(ctx, key, s.ttl)
+
+	slog.Info("migrated session messages to list format", "session_id", sessionID, "message_count", len(messages))
 	return messages, nil
 }

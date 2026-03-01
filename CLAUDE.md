@@ -11,6 +11,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-23
 - N/A (static site, no database) (005-docs-site)
 - Go 1.25+ + wazero v1.11.0 (WASM sandbox), cobra v1.10.2 (CLI), anthropic-sdk-go, go-mcp-sdk (007-security-hardening)
 - Local JSON state file (`.agentspec.state.json`), in-memory session store, Redis session store (007-security-hardening)
+- Go 1.25+ (existing) + `syscall` (flock, existing), `go-redis` (existing), `crypto/rand` (existing) (008-state-data-integrity)
+- Local JSON state file (`.agentspec.state.json`), Redis (session messages) (008-state-data-integrity)
 
 ## Project Structure
 
@@ -45,9 +47,9 @@ Go 1.25+: Follow standard conventions
 - Go module path: `github.com/szaher/designs/agentz` (unchanged)
 
 ## Recent Changes
+- 008-state-data-integrity: Added Go 1.25+ (existing) + `syscall` (flock, existing), `go-redis` (existing), `crypto/rand` (existing)
 - 007-security-hardening: Added Go 1.25+ + wazero v1.11.0 (WASM sandbox), cobra v1.10.2 (CLI), anthropic-sdk-go, go-mcp-sdk
 - 006-agent-compile-deploy: Added Go 1.25+ (compiler, runtime embedding), expr-lang/expr (expression eval), go:embed (frontend + config bundling), Vanilla JS + SSE (built-in frontend)
-- 005-docs-site: Added Python 3.9+ (MkDocs), Go 1.25+ (example validation), Markdown (content)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

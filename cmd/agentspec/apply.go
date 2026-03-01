@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/szaher/designs/agentz/internal/adapters"
@@ -28,6 +29,7 @@ func newApplyCmd() *cobra.Command {
 		autoApprove bool
 		planFile    string
 		policyMode  string
+		lockTimeout time.Duration
 	)
 
 	cmd := &cobra.Command{
@@ -62,7 +64,9 @@ func newApplyCmd() *cobra.Command {
 			}
 			adapter := factory()
 
-			backend := state.NewLocalBackend(stateFile)
+			backend := state.NewLocalBackend(stateFile).WithLockConfig(state.LockConfig{
+				LockTimeout: lockTimeout,
+			})
 			current, err := backend.Load()
 			if err != nil {
 				return fmt.Errorf("loading state: %w", err)
@@ -108,9 +112,12 @@ func newApplyCmd() *cobra.Command {
 				cid = "apply-" + fmt.Sprintf("%d", os.Getpid())
 			}
 
+			applyCtx, cancel := context.WithTimeout(cmd.Context(), lockTimeout+5*time.Minute)
+			defer cancel()
+
 			emitter := &events.CollectorEmitter{}
 			result, err := apply.Apply(
-				context.Background(),
+				applyCtx,
 				adapter,
 				p.Actions,
 				backend,
@@ -137,6 +144,7 @@ func newApplyCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompt")
 	cmd.Flags().StringVar(&planFile, "plan-file", "", "Use a saved plan file")
 	cmd.Flags().StringVar(&policyMode, "policy", "enforce", "Policy evaluation mode: enforce (block on violations) or warn (report and proceed)")
+	cmd.Flags().DurationVar(&lockTimeout, "lock-timeout", 30*time.Second, "Timeout for acquiring state file lock")
 
 	_ = env      // will be used in Phase 6
 	_ = planFile // will be used for plan-file support
