@@ -27,14 +27,14 @@ func NewPool() *Pool {
 func (p *Pool) Connect(ctx context.Context, config ServerConfig) (*Client, error) {
 	// Fast path: check if already connected
 	if c, ok := p.clients.Load(config.Name); ok {
-		return c.(*Client), nil
+		return c.(*Client), nil //nolint:errcheck // sync.Map only stores *Client values
 	}
 
 	// Use singleflight to deduplicate concurrent connection attempts
 	result, err, _ := p.group.Do(config.Name, func() (interface{}, error) {
 		// Double-check after acquiring singleflight
 		if c, ok := p.clients.Load(config.Name); ok {
-			return c.(*Client), nil
+			return c.(*Client), nil //nolint:errcheck // sync.Map only stores *Client values
 		}
 
 		client := NewClient(config)
@@ -49,7 +49,7 @@ func (p *Pool) Connect(ctx context.Context, config ServerConfig) (*Client, error
 	if err != nil {
 		return nil, err
 	}
-	return result.(*Client), nil
+	return result.(*Client), nil //nolint:errcheck // singleflight returns *Client
 }
 
 // Get returns an existing client by server name, or an error if not connected.
@@ -58,14 +58,15 @@ func (p *Pool) Get(name string) (*Client, error) {
 	if !ok {
 		return nil, fmt.Errorf("mcp server %q not connected", name)
 	}
-	return c.(*Client), nil
+	return c.(*Client), nil //nolint:errcheck // sync.Map only stores *Client values
 }
 
 // All returns all connected clients.
 func (p *Pool) All() []*Client {
 	var clients []*Client
 	p.clients.Range(func(_, value interface{}) bool {
-		clients = append(clients, value.(*Client))
+		cl, _ := value.(*Client)
+		clients = append(clients, cl)
 		return true
 	})
 	return clients
@@ -78,8 +79,8 @@ func (p *Pool) Close() error {
 
 	var firstErr error
 	p.clients.Range(func(key, value interface{}) bool {
-		name := key.(string)
-		c := value.(*Client)
+		name, _ := key.(string)
+		c, _ := value.(*Client)
 		if err := c.Close(); err != nil && firstErr == nil {
 			firstErr = fmt.Errorf("close %s: %w", name, err)
 		}

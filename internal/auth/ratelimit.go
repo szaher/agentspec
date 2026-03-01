@@ -64,8 +64,8 @@ type bucket struct {
 
 // authBucket tracks failed authentication attempts per IP.
 type authBucket struct {
-	failures    int
-	windowStart time.Time
+	failures     int
+	windowStart  time.Time
 	blockedUntil time.Time
 }
 

@@ -177,4 +177,3 @@ func (s *RedisStore) LoadMessages(ctx context.Context, sessionID string) ([]llm.
 
 	return messages, nil
 }
-

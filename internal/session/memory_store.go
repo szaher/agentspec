@@ -97,4 +97,3 @@ func (s *MemoryStore) Touch(_ context.Context, id string) error {
 	sess.LastActive = time.Now()
 	return nil
 }
-

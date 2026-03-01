@@ -31,12 +31,12 @@ type Server struct {
 	sessions    *session.Manager
 	strategy    loop.Strategy
 	startTime   time.Time
-	apiKey       string
-	noAuth       bool
-	corsOrigins  []string
-	metrics      *telemetry.Metrics
-	rateLimiter  *rateLimiter
-	enableUI     bool
+	apiKey      string
+	noAuth      bool
+	corsOrigins []string
+	metrics     *telemetry.Metrics
+	rateLimiter *rateLimiter
+	enableUI    bool
 }
 
 // ServerOption configures the Server.

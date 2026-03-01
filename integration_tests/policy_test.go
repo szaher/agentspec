@@ -12,7 +12,7 @@ func TestPolicyPinnedImports(t *testing.T) {
 
 	t.Run("unpinned import rejected", func(t *testing.T) {
 		policies := []ir.Policy{{
-			Name: "security",
+			Name:  "security",
 			Rules: []ir.Rule{{Action: "require", Resource: "*", Subject: "pinned imports"}},
 		}}
 		resources := []ir.Resource{{
@@ -31,7 +31,7 @@ func TestPolicyPinnedImports(t *testing.T) {
 
 	t.Run("pinned import accepted", func(t *testing.T) {
 		policies := []ir.Policy{{
-			Name: "security",
+			Name:  "security",
 			Rules: []ir.Rule{{Action: "require", Resource: "*", Subject: "pinned imports"}},
 		}}
 		resources := []ir.Resource{{
@@ -47,7 +47,7 @@ func TestPolicyPinnedImports(t *testing.T) {
 
 	t.Run("@latest is not pinned", func(t *testing.T) {
 		policies := []ir.Policy{{
-			Name: "security",
+			Name:  "security",
 			Rules: []ir.Rule{{Action: "require", Resource: "*", Subject: "pinned imports"}},
 		}}
 		resources := []ir.Resource{{
@@ -67,7 +67,7 @@ func TestPolicyDenyCommand(t *testing.T) {
 
 	t.Run("denied command blocked", func(t *testing.T) {
 		policies := []ir.Policy{{
-			Name: "security",
+			Name:  "security",
 			Rules: []ir.Rule{{Action: "deny", Resource: "*", Subject: "command rm"}},
 		}}
 		resources := []ir.Resource{{
@@ -83,7 +83,7 @@ func TestPolicyDenyCommand(t *testing.T) {
 
 	t.Run("allowed command passes", func(t *testing.T) {
 		policies := []ir.Policy{{
-			Name: "security",
+			Name:  "security",
 			Rules: []ir.Rule{{Action: "deny", Resource: "*", Subject: "command rm"}},
 		}}
 		resources := []ir.Resource{{
@@ -103,7 +103,7 @@ func TestPolicyRequireSecret(t *testing.T) {
 
 	t.Run("missing secret rejected", func(t *testing.T) {
 		policies := []ir.Policy{{
-			Name: "security",
+			Name:  "security",
 			Rules: []ir.Rule{{Action: "require", Resource: "*", Subject: "secret api-key"}},
 		}}
 		resources := []ir.Resource{{
@@ -118,7 +118,7 @@ func TestPolicyRequireSecret(t *testing.T) {
 
 	t.Run("present secret accepted", func(t *testing.T) {
 		policies := []ir.Policy{{
-			Name: "security",
+			Name:  "security",
 			Rules: []ir.Rule{{Action: "require", Resource: "*", Subject: "secret api-key"}},
 		}}
 		resources := []ir.Resource{{
@@ -140,7 +140,7 @@ func TestPolicySignedPackages(t *testing.T) {
 
 	// Signed packages is a stub that warns but passes
 	policies := []ir.Policy{{
-		Name: "security",
+		Name:  "security",
 		Rules: []ir.Rule{{Action: "require", Resource: "*", Subject: "signed packages"}},
 	}}
 	resources := []ir.Resource{{

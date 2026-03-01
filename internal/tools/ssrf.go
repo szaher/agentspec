@@ -17,11 +17,11 @@ func IsPrivateIP(ip net.IP) bool {
 		{mustParseCIDR("10.0.0.0/8")},
 		{mustParseCIDR("172.16.0.0/12")},
 		{mustParseCIDR("192.168.0.0/16")},
-		{mustParseCIDR("169.254.0.0/16")},  // link-local
-		{mustParseCIDR("127.0.0.0/8")},      // loopback
-		{mustParseCIDR("::1/128")},           // IPv6 loopback
-		{mustParseCIDR("fc00::/7")},          // IPv6 unique local
-		{mustParseCIDR("fe80::/10")},         // IPv6 link-local
+		{mustParseCIDR("169.254.0.0/16")}, // link-local
+		{mustParseCIDR("127.0.0.0/8")},    // loopback
+		{mustParseCIDR("::1/128")},        // IPv6 loopback
+		{mustParseCIDR("fc00::/7")},       // IPv6 unique local
+		{mustParseCIDR("fe80::/10")},      // IPv6 link-local
 	}
 
 	for _, r := range privateRanges {

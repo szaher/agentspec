@@ -230,11 +230,11 @@ func FormatViolations(violations []Violation, mode EvalMode) string {
 	}
 
 	for _, key := range order {
-		sb.WriteString(fmt.Sprintf("\n%s [%s]:\n", prefix, key))
+		fmt.Fprintf(&sb, "\n%s [%s]:\n", prefix, key)
 		for _, v := range grouped[key] {
-			sb.WriteString(fmt.Sprintf("  [%s] %s\n", v.Rule.Action, v.Message))
+			fmt.Fprintf(&sb, "  [%s] %s\n", v.Rule.Action, v.Message)
 			if v.Details != "" {
-				sb.WriteString(fmt.Sprintf("    %s\n", v.Details))
+				fmt.Fprintf(&sb, "    %s\n", v.Details)
 			}
 		}
 	}

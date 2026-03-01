@@ -116,7 +116,7 @@ func (p *ProcessSandbox) buildWrapperScript(interpreter, scriptPath string, conf
 	// Memory limit via ulimit (in KB)
 	if config.MemoryMB > 0 {
 		memKB := config.MemoryMB * 1024
-		script.WriteString(fmt.Sprintf("ulimit -v %d 2>/dev/null || true\n", memKB))
+		fmt.Fprintf(&script, "ulimit -v %d 2>/dev/null || true\n", memKB)
 	}
 
 	// File size limit (16MB)
@@ -126,10 +126,10 @@ func (p *ProcessSandbox) buildWrapperScript(interpreter, scriptPath string, conf
 	script.WriteString("ulimit -u 64 2>/dev/null || true\n")
 
 	// Restrict working directory
-	script.WriteString(fmt.Sprintf("cd %s\n", strconv.Quote(filepath.Dir(scriptPath))))
+	fmt.Fprintf(&script, "cd %s\n", strconv.Quote(filepath.Dir(scriptPath)))
 
 	// Execute the script
-	script.WriteString(fmt.Sprintf("exec %s %s\n", interpreter, strconv.Quote(scriptPath)))
+	fmt.Fprintf(&script, "exec %s %s\n", interpreter, strconv.Quote(scriptPath))
 
 	return script.String()
 }

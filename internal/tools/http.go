@@ -22,9 +22,9 @@ type HTTPConfig struct {
 
 // HTTPExecutor executes tools via HTTP requests.
 type HTTPExecutor struct {
-	config       HTTPConfig
-	client       *http.Client
-	maxRespSize  int64
+	config      HTTPConfig
+	client      *http.Client
+	maxRespSize int64
 }
 
 // NewHTTPExecutor creates an HTTP tool executor with SSRF protection.
