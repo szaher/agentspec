@@ -57,3 +57,6 @@ venv/
 # MkDocs build output
 site/
 .cache/
+
+# Prompt docs
+local-prompts
