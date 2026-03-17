@@ -46,7 +46,8 @@ func TestTLSServerStartup(t *testing.T) {
 		runtime.WithNoAuth(true))
 
 	// Find a free port
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	lc := net.ListenConfig{}
+	listener, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("find free port: %v", err)
 	}
@@ -66,7 +67,8 @@ func TestTLSServerStartup(t *testing.T) {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true, //nolint:gosec // test only
 	}
-	conn, err := tls.Dial("tcp", addr, tlsConfig)
+	dialer := tls.Dialer{Config: tlsConfig}
+	conn, err := dialer.DialContext(t.Context(), "tcp", addr)
 	if err != nil {
 		t.Fatalf("TLS dial failed: %v", err)
 	}

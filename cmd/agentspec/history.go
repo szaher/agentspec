@@ -33,9 +33,13 @@ func newHistoryCmd() *cobra.Command {
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "VERSION\tTIMESTAMP\tSUMMARY")
+			if _, err := fmt.Fprintln(w, "VERSION\tTIMESTAMP\tSUMMARY"); err != nil {
+				return err
+			}
 			for _, v := range versions {
-				fmt.Fprintf(w, "%d\t%s\t%s\n", v.Version, v.Timestamp, v.Summary)
+				if _, err := fmt.Fprintf(w, "%d\t%s\t%s\n", v.Version, v.Timestamp, v.Summary); err != nil {
+					return err
+				}
 			}
 			return w.Flush()
 		},

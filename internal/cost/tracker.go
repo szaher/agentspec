@@ -84,7 +84,7 @@ func (ct *CostTracker) CheckBudget(agent string) error {
 
 		if b.Paused || b.UsedDollars >= b.LimitDollars {
 			ct.budgets[agent][i].Paused = true
-			return fmt.Errorf("Agent '%s' %s budget of $%.2f exceeded (used: $%.2f). Resets at %s",
+			return fmt.Errorf("agent '%s' %s budget of $%.2f exceeded (used: $%.2f), resets at %s",
 				agent, b.Period, b.LimitDollars, b.UsedDollars, b.ResetAt)
 		}
 	}
