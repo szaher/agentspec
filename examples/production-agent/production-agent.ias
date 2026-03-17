@@ -1,8 +1,5 @@
 package "production-agent" version "1.0.0" lang "3.0"
 
-// Production-ready agent with multi-user auth, guardrails, cost tracking,
-// and multi-model fallback.
-
 prompt "assistant-system" {
   content "You are a helpful production assistant."
 }
@@ -21,7 +18,6 @@ guardrail "content-filter" {
 guardrail "profanity-filter" {
   mode "warn"
   keywords ["badword"]
-  patterns []
   fallback "Content flagged for review."
 }
 
@@ -38,17 +34,17 @@ user "developer" {
 }
 
 agent "assistant" {
-  models ["claude-sonnet-4-20250514", "claude-haiku-4-5-20251001"]
   uses prompt "assistant-system"
-  budget daily 10.00
-  budget monthly 200.00
+  models ["claude-sonnet-4-20250514", "claude-haiku-4-5-20251001"]
+  budget daily 10
+  budget monthly 200
   uses guardrail "content-filter"
   uses guardrail "profanity-filter"
 }
 
 agent "code-reviewer" {
-  model "claude-sonnet-4-20250514"
   uses prompt "reviewer-system"
-  budget daily 5.00
+  model "claude-sonnet-4-20250514"
+  budget daily 5
   uses guardrail "content-filter"
 }
