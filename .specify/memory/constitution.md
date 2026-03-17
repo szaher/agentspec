@@ -1,26 +1,14 @@
 <!--
 Sync Impact Report
 ===================
-Version change: N/A (template placeholders) → 1.0.0
-Bump rationale: MAJOR — initial ratification of project constitution.
+Version change: 1.0.0 → 1.1.0
+Bump rationale: MINOR — added Pre-Commit Validation subsection.
 
-Modified principles: N/A (all new)
+Modified principles: N/A
 
 Added sections:
-  - Mission
-  - Non-Goals
-  - Core Principles (12): Determinism, Idempotency, Portability,
-    Separation of Concerns, Reproducibility, Safe Defaults,
-    Minimal Surface Area, English-Friendly Syntax,
-    Canonical Formatting, Strict Validation,
-    Explicit References, No Hidden Behavior
-  - Contracts & Standards: Desired-State Engine, Adapter Contract,
-    Plugin/Extension Contract, SDK Contract
-  - Development Workflow: Spec-First Workflow, Required Artifacts,
-    Testing Strategy, Review Gates
-  - Operational Requirements: Security & Supply-Chain, Observability
-  - Governance: Amendment Process, Versioning Policy,
-    Definition of Done (MVP)
+  - Development Workflow > Pre-Commit Validation: lint, format,
+    build, and test MUST pass before every commit.
 
 Removed sections: N/A
 
@@ -263,6 +251,19 @@ tests. Security-critical packages (auth, secrets, policy, tools,
 session, state) MUST maintain at least 80% line coverage. Other
 internal packages SHOULD maintain at least 60% line coverage.
 
+### Pre-Commit Validation
+
+Before every commit, the following checks MUST pass:
+
+1. **Lint**: `golangci-lint run ./...` MUST report zero errors.
+2. **Format**: `gofmt -l .` MUST produce no output (all files
+   formatted).
+3. **Build**: `go build ./...` MUST succeed with zero errors.
+4. **Test**: `go test ./... -count=1` MUST pass with zero failures.
+
+A commit MUST NOT be created if any of these checks fail. Fix all
+issues before committing.
+
 ### Review Gates
 
 A change MUST NOT be merged unless:
@@ -331,4 +332,4 @@ The MVP is complete when all of the following are satisfied:
 - SDKs in Python, TypeScript, and Go compile and execute a
   minimal example.
 
-**Version**: 1.0.0 | **Ratified**: 2026-02-22 | **Last Amended**: 2026-02-22
+**Version**: 1.1.0 | **Ratified**: 2026-02-22 | **Last Amended**: 2026-03-17

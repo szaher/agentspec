@@ -44,6 +44,15 @@ examples/          # IntentLang (.ias) example files
 - `./agentspec eval <file.ias> --live` — evaluate agent with real LLM
 - `./agentspec compile <file.ias> --target crewai` — compile to framework target
 
+## Pre-Commit Checks (REQUIRED)
+
+Before every commit, ALL of these must pass:
+1. `gofmt -l .` — must produce no output (all files formatted)
+2. `go build ./...` — must succeed with zero errors
+3. `go test ./... -count=1` — must pass with zero failures
+
+Do NOT create a commit if any check fails. Fix issues first.
+
 ## Code Style
 
 Go 1.25+: Follow standard conventions
