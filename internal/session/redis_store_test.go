@@ -290,6 +290,7 @@ func TestRedisStore_Get(t *testing.T) {
 	_, err = store.Get(ctx, "sess_nonexistent")
 	if err == nil {
 		t.Fatal("Get with unknown ID should return an error")
+		return
 	}
 	if !strings.Contains(err.Error(), "not found") {
 		t.Errorf("error %q does not contain \"not found\"", err.Error())
@@ -313,6 +314,7 @@ func TestRedisStore_Delete(t *testing.T) {
 	_, err = store.Get(ctx, sess.ID)
 	if err == nil {
 		t.Fatal("Get after Delete should return an error")
+		return
 	}
 }
 
@@ -390,6 +392,7 @@ func TestRedisStore_Touch(t *testing.T) {
 	err = store.Touch(ctx, "sess_unknown")
 	if err == nil {
 		t.Fatal("Touch with unknown ID should return an error")
+		return
 	}
 }
 

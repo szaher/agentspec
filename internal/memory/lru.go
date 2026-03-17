@@ -35,7 +35,7 @@ func (l *LRU) Evict() string {
 	if back == nil {
 		return ""
 	}
-	sessionID := back.Value.(string)
+	sessionID, _ := back.Value.(string)
 	l.order.Remove(back)
 	delete(l.elements, sessionID)
 	return sessionID

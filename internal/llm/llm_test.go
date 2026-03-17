@@ -124,6 +124,7 @@ func TestNewTokenTracker(t *testing.T) {
 	tracker := NewTokenTracker(1000)
 	if tracker == nil {
 		t.Fatal("expected non-nil TokenTracker")
+		return
 	}
 	if tracker.budget != 1000 {
 		t.Errorf("expected budget=1000, got %d", tracker.budget)
@@ -297,6 +298,7 @@ func TestMockClientChatError(t *testing.T) {
 	_, err := mock.Chat(ctx, ChatRequest{Model: "test"})
 	if err == nil {
 		t.Fatal("expected error from mock, got nil")
+		return
 	}
 	if err.Error() != "api error" {
 		t.Errorf("expected 'api error', got %q", err.Error())
@@ -310,6 +312,7 @@ func TestMockClientNoResponses(t *testing.T) {
 	_, err := mock.Chat(ctx, ChatRequest{Model: "test"})
 	if err == nil {
 		t.Fatal("expected error when no responses configured, got nil")
+		return
 	}
 }
 
@@ -639,6 +642,7 @@ func TestOpenAIClientChatAPIError(t *testing.T) {
 	_, err := client.Chat(ctx, ChatRequest{Model: "gpt-4", Messages: []Message{{Role: RoleUser, Content: "hi"}}})
 	if err == nil {
 		t.Fatal("expected error for 401 response, got nil")
+		return
 	}
 	if !strings.Contains(err.Error(), "authentication_error") {
 		t.Errorf("expected error to contain 'authentication_error', got %q", err.Error())
@@ -658,6 +662,7 @@ func TestOpenAIClientChatHTTPError(t *testing.T) {
 	_, err := client.Chat(ctx, ChatRequest{Model: "gpt-4", Messages: []Message{{Role: RoleUser, Content: "hi"}}})
 	if err == nil {
 		t.Fatal("expected error for 500 response, got nil")
+		return
 	}
 	if !strings.Contains(err.Error(), "500") {
 		t.Errorf("expected error to contain '500', got %q", err.Error())
@@ -824,6 +829,7 @@ func TestOpenAIClientChatStream(t *testing.T) {
 	}
 	if doneEvent == nil {
 		t.Fatal("expected a done event")
+		return
 	}
 	if doneEvent.Response == nil {
 		t.Fatal("expected done event to have a Response")
@@ -839,6 +845,7 @@ func TestNewOpenAIClient(t *testing.T) {
 	client := NewOpenAIClient("sk-test")
 	if client == nil {
 		t.Fatal("expected non-nil OpenAIClient")
+		return
 	}
 	if client.baseURL != "https://api.openai.com/v1" {
 		t.Errorf("expected default base URL, got %q", client.baseURL)
@@ -921,6 +928,7 @@ func TestNewClientForModel(t *testing.T) {
 		client, modelName := NewClientForModel("ollama/llama3")
 		if client == nil {
 			t.Fatal("expected non-nil client")
+			return
 		}
 		if modelName != "llama3" {
 			t.Errorf("expected model='llama3', got %q", modelName)
@@ -936,6 +944,7 @@ func TestNewClientForModel(t *testing.T) {
 		client, modelName := NewClientForModel("openai/gpt-4")
 		if client == nil {
 			t.Fatal("expected non-nil client")
+			return
 		}
 		if modelName != "gpt-4" {
 			t.Errorf("expected model='gpt-4', got %q", modelName)
@@ -948,6 +957,7 @@ func TestNewClientForModel(t *testing.T) {
 		client, _ := NewClientForModel("openai/gpt-4")
 		if client == nil {
 			t.Fatal("expected non-nil client")
+			return
 		}
 		oaiClient, ok := client.(*OpenAIClient)
 		if !ok {
@@ -965,6 +975,7 @@ func TestNewClientForModel(t *testing.T) {
 		client, modelName := NewClientForModel("anthropic/claude-3")
 		if client == nil {
 			t.Fatal("expected non-nil client")
+			return
 		}
 		if modelName != "claude-3" {
 			t.Errorf("expected model='claude-3', got %q", modelName)
@@ -1019,6 +1030,7 @@ func TestMockClientChatStreamError(t *testing.T) {
 	_, err := mock.ChatStream(context.Background(), ChatRequest{Model: "test"})
 	if err == nil {
 		t.Fatal("expected error from ChatStream, got nil")
+		return
 	}
 	if err.Error() != "stream error" {
 		t.Errorf("expected 'stream error', got %q", err.Error())

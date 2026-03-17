@@ -122,6 +122,7 @@ func TestProcessSandboxAvailability(t *testing.T) {
 		})
 		if err == nil {
 			t.Fatal("expected timeout error")
+			return
 		}
 		// Accept: ErrResourceLimit, context deadline, killed by signal, or exit status from timeout
 		t.Logf("timeout error (expected): %v", err)

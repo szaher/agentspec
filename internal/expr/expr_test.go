@@ -19,6 +19,7 @@ func TestCompile_ValidExpression(t *testing.T) {
 	}
 	if compiled == nil {
 		t.Fatal("compiled should not be nil")
+		return
 	}
 	if compiled.Source != "x + y" {
 		t.Errorf("source: got %q, want %q", compiled.Source, "x + y")
@@ -29,6 +30,7 @@ func TestCompile_EmptyExpression(t *testing.T) {
 	_, err := Compile("", nil)
 	if err == nil {
 		t.Fatal("expected error for empty expression")
+		return
 	}
 }
 
@@ -37,6 +39,7 @@ func TestCompile_InvalidSyntax(t *testing.T) {
 	_, err := Compile("x ++ +", env)
 	if err == nil {
 		t.Fatal("expected error for invalid syntax")
+		return
 	}
 }
 
@@ -51,6 +54,7 @@ func TestCompileUnchecked_ValidExpression(t *testing.T) {
 	}
 	if compiled == nil {
 		t.Fatal("compiled should not be nil")
+		return
 	}
 	if compiled.Source != "1 + 2" {
 		t.Errorf("source: got %q, want %q", compiled.Source, "1 + 2")
@@ -61,6 +65,7 @@ func TestCompileUnchecked_EmptyExpression(t *testing.T) {
 	_, err := CompileUnchecked("")
 	if err == nil {
 		t.Fatal("expected error for empty expression")
+		return
 	}
 }
 
@@ -68,6 +73,7 @@ func TestCompileUnchecked_InvalidSyntax(t *testing.T) {
 	_, err := CompileUnchecked(")(")
 	if err == nil {
 		t.Fatal("expected error for invalid syntax")
+		return
 	}
 }
 
@@ -173,6 +179,7 @@ func TestEval_NilCompiled(t *testing.T) {
 	_, err := Eval(nil, ctx)
 	if err == nil {
 		t.Fatal("expected error for nil compiled expression")
+		return
 	}
 }
 
@@ -231,6 +238,7 @@ func TestEvalBool_NonBoolResult(t *testing.T) {
 	_, err = EvalBool(compiled, ctx)
 	if err == nil {
 		t.Fatal("expected error for non-boolean result")
+		return
 	}
 }
 
@@ -305,6 +313,7 @@ func TestEvalWithEnv_UndefinedVariable(t *testing.T) {
 	_, err := EvalWithEnv("nonexistent_var + 1", env)
 	if err == nil {
 		t.Fatal("expected error for undefined variable")
+		return
 	}
 }
 

@@ -81,6 +81,7 @@ agent "test-agent" {
 	}
 	if agentRes == nil {
 		t.Fatal("agent resource not found in IR")
+		return
 	}
 
 	// Verify config params in IR
@@ -159,6 +160,7 @@ func TestConfigResolver(t *testing.T) {
 	_, err = resolver.Resolve("test-agent", params)
 	if err == nil {
 		t.Fatal("expected error for missing required param")
+		return
 	}
 	if !strings.Contains(err.Error(), "api_key") {
 		t.Errorf("error should mention missing param name, got: %v", err)

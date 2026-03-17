@@ -1,7 +1,7 @@
 package telemetry
 
 import (
-	"math/rand"
+	"crypto/rand"
 	"net/http"
 	"time"
 
@@ -18,9 +18,7 @@ func CorrelationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get(correlationHeader)
 		if id == "" {
-			// Create a new entropy source per request (cheap and thread-safe).
-			entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
-			id = ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
+			id = ulid.MustNew(ulid.Timestamp(time.Now()), rand.Reader).String()
 		}
 
 		ctx := WithCorrelationID(r.Context(), id)

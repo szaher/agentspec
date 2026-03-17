@@ -102,6 +102,7 @@ func TestManagerLoadMessagesInvalidSession(t *testing.T) {
 	_, err := mgr.LoadMessages(ctx, "sess_does_not_exist")
 	if err == nil {
 		t.Fatal("LoadMessages with non-existent session ID should return an error")
+		return
 	}
 }
 
@@ -132,6 +133,7 @@ func TestManagerClose(t *testing.T) {
 	_, err = mgr.Get(ctx, sess.ID)
 	if err == nil {
 		t.Fatal("Get after Close should return an error")
+		return
 	}
 
 	// Messages should be cleared.
@@ -201,6 +203,7 @@ func TestManagerSaveMessages_TouchError(t *testing.T) {
 	err = mgr.SaveMessages(ctx, sess.ID, msgs)
 	if err == nil {
 		t.Fatal("SaveMessages should return an error when Touch fails")
+		return
 	}
 	if !strings.Contains(err.Error(), "touch session") {
 		t.Errorf("error %q does not contain \"touch session\"", err.Error())
@@ -241,6 +244,7 @@ func TestManagerClose_ClearError(t *testing.T) {
 	err = mgr.Close(ctx, sess.ID)
 	if err == nil {
 		t.Fatal("Close should return an error when Clear fails")
+		return
 	}
 	if !strings.Contains(err.Error(), "clear memory") {
 		t.Errorf("error %q does not contain \"clear memory\"", err.Error())

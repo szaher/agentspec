@@ -105,6 +105,7 @@ func TestStateGetEntry(t *testing.T) {
 	}
 	if entry == nil {
 		t.Fatal("expected entry, got nil")
+		return
 	}
 	if entry.Hash != "abc123" {
 		t.Errorf("expected hash 'abc123', got %q", entry.Hash)

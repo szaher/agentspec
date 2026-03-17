@@ -114,7 +114,7 @@ func (m *mockRedisClient) Expire(_ context.Context, key string, ttl time.Duratio
 }
 
 func (m *mockRedisClient) Scan(_ context.Context, cursor uint64, pattern string, count int64) ([]string, uint64, error) {
-	keys, err := m.Keys(nil, pattern)
+	keys, err := m.Keys(context.Background(), pattern)
 	return keys, 0, err
 }
 

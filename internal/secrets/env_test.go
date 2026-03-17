@@ -23,6 +23,7 @@ func TestEnvResolver_Resolve_ValidRefEnvNotSet(t *testing.T) {
 	_, err := r.Resolve(context.Background(), "env(AGENTSPEC_TEST_UNSET_VAR)")
 	if err == nil {
 		t.Fatal("expected error for unset env var, got nil")
+		return
 	}
 	if want := `environment variable "AGENTSPEC_TEST_UNSET_VAR" not set`; err.Error() != want {
 		t.Errorf("error = %q, want %q", err.Error(), want)
@@ -34,6 +35,7 @@ func TestEnvResolver_Resolve_MalformedRefWrongPrefix(t *testing.T) {
 	_, err := r.Resolve(context.Background(), "notenv(VAR)")
 	if err == nil {
 		t.Fatal("expected error for malformed ref, got nil")
+		return
 	}
 	if want := "unsupported secret reference format"; !contains(err.Error(), want) {
 		t.Errorf("error = %q, want it to contain %q", err.Error(), want)
@@ -45,6 +47,7 @@ func TestEnvResolver_Resolve_MalformedRefUnclosed(t *testing.T) {
 	_, err := r.Resolve(context.Background(), "env(")
 	if err == nil {
 		t.Fatal("expected error for unclosed ref, got nil")
+		return
 	}
 	if want := "unsupported secret reference format"; !contains(err.Error(), want) {
 		t.Errorf("error = %q, want it to contain %q", err.Error(), want)

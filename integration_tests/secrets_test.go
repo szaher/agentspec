@@ -28,6 +28,7 @@ func TestEnvResolverMissing(t *testing.T) {
 	_, err := resolver.Resolve(context.Background(), "env(NONEXISTENT_VAR_XYZ)")
 	if err == nil {
 		t.Fatal("expected error for missing env var")
+		return
 	}
 	if !strings.Contains(err.Error(), "not set") {
 		t.Errorf("expected 'not set' in error, got %v", err)
@@ -39,6 +40,7 @@ func TestEnvResolverBadFormat(t *testing.T) {
 	_, err := resolver.Resolve(context.Background(), "vault(secret/key)")
 	if err == nil {
 		t.Fatal("expected error for unsupported format")
+		return
 	}
 	if !strings.Contains(err.Error(), "unsupported") {
 		t.Errorf("expected 'unsupported' in error, got %v", err)

@@ -100,6 +100,7 @@ func TestVaultResolver_Resolve_MalformedRef(t *testing.T) {
 	_, err := v.Resolve(context.Background(), "notavault(path)")
 	if err == nil {
 		t.Fatal("expected error for malformed ref, got nil")
+		return
 	}
 	if want := "invalid vault ref format"; !contains(err.Error(), want) {
 		t.Errorf("error = %q, want it to contain %q", err.Error(), want)
@@ -163,6 +164,7 @@ func TestVaultResolver_Resolve_VaultReturns404(t *testing.T) {
 	_, err := v.Resolve(context.Background(), "vault(nonexistent/path#key)")
 	if err == nil {
 		t.Fatal("expected error for 404 response, got nil")
+		return
 	}
 	if want := "vault error (status 404)"; !contains(err.Error(), want) {
 		t.Errorf("error = %q, want it to contain %q", err.Error(), want)

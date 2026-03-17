@@ -9,6 +9,7 @@ func TestValidateBinary_EmptyAllowlist(t *testing.T) {
 	err := ValidateBinary("echo", nil)
 	if err == nil {
 		t.Fatal("expected error for nil allowlist, got nil")
+		return
 	}
 
 	var noAllowlist *ErrNoAllowlist
@@ -20,6 +21,7 @@ func TestValidateBinary_EmptyAllowlist(t *testing.T) {
 	err = ValidateBinary("echo", []string{})
 	if err == nil {
 		t.Fatal("expected error for empty allowlist, got nil")
+		return
 	}
 	if !errors.As(err, &noAllowlist) {
 		t.Fatalf("expected *ErrNoAllowlist for empty slice, got %T: %v", err, err)
@@ -62,6 +64,7 @@ func TestValidateBinary_BinaryNotInAllowlist(t *testing.T) {
 			err := ValidateBinary(tc.binary, tc.allowlist)
 			if err == nil {
 				t.Fatal("expected error for binary not in allowlist, got nil")
+				return
 			}
 
 			var notAllowed *ErrBinaryNotAllowed
@@ -77,6 +80,7 @@ func TestValidateBinary_BinaryInAllowlistButNotFound(t *testing.T) {
 	err := ValidateBinary(fakeBinary, []string{fakeBinary, "echo"})
 	if err == nil {
 		t.Fatal("expected error for binary not found on system, got nil")
+		return
 	}
 
 	var notFound *ErrBinaryNotFound

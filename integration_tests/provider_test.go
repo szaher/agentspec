@@ -60,6 +60,7 @@ func TestNewClientForModel(t *testing.T) {
 			client, resolvedModel := llm.NewClientForModel(tt.model)
 			if client == nil {
 				t.Fatal("NewClientForModel returned nil client")
+				return
 			}
 			if resolvedModel != tt.wantModel {
 				t.Errorf("NewClientForModel(%q) model = %q, want %q", tt.model, resolvedModel, tt.wantModel)
@@ -125,9 +126,11 @@ func TestOllamaExampleParses(t *testing.T) {
 
 	if coder == nil {
 		t.Fatal("coder agent not found")
+		return
 	}
 	if reviewer == nil {
 		t.Fatal("reviewer agent not found")
+		return
 	}
 
 	if coder.Model != "ollama/llama3.1" {

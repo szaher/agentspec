@@ -285,6 +285,7 @@ func TestApplyEnvironment_MissingEnvReturnsError(t *testing.T) {
 	_, err := ApplyEnvironment(doc, "nonexistent")
 	if err == nil {
 		t.Fatal("expected error for missing environment")
+		return
 	}
 }
 
@@ -321,6 +322,7 @@ func TestApplyEnvironment_OverrideTargetNotFound(t *testing.T) {
 	_, err := ApplyEnvironment(doc, "staging")
 	if err == nil {
 		t.Fatal("expected error when override target not found")
+		return
 	}
 }
 
@@ -360,6 +362,7 @@ func TestLower_MissingPackage(t *testing.T) {
 	_, err := Lower(f)
 	if err == nil {
 		t.Fatal("expected error for missing package declaration")
+		return
 	}
 }
 
@@ -621,6 +624,7 @@ func TestLower_MCPServerAndClient(t *testing.T) {
 
 	if server == nil {
 		t.Fatal("MCPServer resource not found")
+		return
 	}
 	if server.Attributes["transport"] != "stdio" {
 		t.Errorf("transport: got %v", server.Attributes["transport"])
@@ -638,6 +642,7 @@ func TestLower_MCPServerAndClient(t *testing.T) {
 
 	if client == nil {
 		t.Fatal("MCPClient resource not found")
+		return
 	}
 	if client.FQN != "testpkg/MCPClient/myclient" {
 		t.Errorf("client FQN: got %q", client.FQN)
@@ -697,6 +702,7 @@ func TestLower_TypeDef(t *testing.T) {
 	}
 	if enumType == nil {
 		t.Fatal("Status type not found")
+		return
 	}
 	enumVals, ok := enumType.Attributes["enum"].([]interface{})
 	if !ok {

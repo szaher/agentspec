@@ -42,6 +42,7 @@ func TestToolRegistryUnknownTool(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected error for unknown tool")
+		return
 	}
 }
 
@@ -111,6 +112,7 @@ func TestHTTPToolExecutor(t *testing.T) {
 	// Expected: SSRF blocks localhost — this confirms SSRF protection works
 	if err == nil {
 		t.Fatal("expected SSRF error for localhost test server")
+		return
 	}
 	if !strings.Contains(err.Error(), "SSRF") {
 		t.Errorf("expected SSRF error, got: %v", err)
@@ -139,6 +141,7 @@ func TestCommandToolAllowlist(t *testing.T) {
 		err := tools.ValidateBinary("echo", nil)
 		if err == nil {
 			t.Fatal("expected error with no allowlist")
+			return
 		}
 		if _, ok := err.(*tools.ErrNoAllowlist); !ok {
 			t.Errorf("expected ErrNoAllowlist, got %T: %v", err, err)
@@ -149,6 +152,7 @@ func TestCommandToolAllowlist(t *testing.T) {
 		err := tools.ValidateBinary("echo", []string{})
 		if err == nil {
 			t.Fatal("expected error with empty allowlist")
+			return
 		}
 	})
 
@@ -156,6 +160,7 @@ func TestCommandToolAllowlist(t *testing.T) {
 		err := tools.ValidateBinary("rm", []string{"echo", "ls"})
 		if err == nil {
 			t.Fatal("expected error for unlisted binary")
+			return
 		}
 		if _, ok := err.(*tools.ErrBinaryNotAllowed); !ok {
 			t.Errorf("expected ErrBinaryNotAllowed, got %T: %v", err, err)
@@ -173,6 +178,7 @@ func TestCommandToolAllowlist(t *testing.T) {
 		err := tools.ValidateBinary("nonexistent-binary-xyz", []string{"nonexistent-binary-xyz"})
 		if err == nil {
 			t.Fatal("expected error for nonexistent binary")
+			return
 		}
 		if _, ok := err.(*tools.ErrBinaryNotFound); !ok {
 			t.Errorf("expected ErrBinaryNotFound, got %T: %v", err, err)
@@ -189,6 +195,7 @@ func TestSSRFProtection(t *testing.T) {
 			parsed := net.ParseIP(ip)
 			if parsed == nil {
 				t.Fatalf("failed to parse IP %q", ip)
+				return
 			}
 			if !tools.IsPrivateIP(parsed) {
 				t.Errorf("expected %s to be detected as private", ip)
@@ -204,6 +211,7 @@ func TestSSRFProtection(t *testing.T) {
 			parsed := net.ParseIP(ip)
 			if parsed == nil {
 				t.Fatalf("failed to parse IP %q", ip)
+				return
 			}
 			if tools.IsPrivateIP(parsed) {
 				t.Errorf("expected %s to be detected as public", ip)

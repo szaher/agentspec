@@ -27,6 +27,7 @@ func TestIsPrivateIP_RFC1918(t *testing.T) {
 			ip := net.ParseIP(tc.ip)
 			if ip == nil {
 				t.Fatalf("failed to parse IP %q", tc.ip)
+				return
 			}
 			got := IsPrivateIP(ip)
 			if got != tc.want {
@@ -52,6 +53,7 @@ func TestIsPrivateIP_Loopback(t *testing.T) {
 			ip := net.ParseIP(tc.ip)
 			if ip == nil {
 				t.Fatalf("failed to parse IP %q", tc.ip)
+				return
 			}
 			got := IsPrivateIP(ip)
 			if got != tc.want {
@@ -77,6 +79,7 @@ func TestIsPrivateIP_LinkLocal(t *testing.T) {
 			ip := net.ParseIP(tc.ip)
 			if ip == nil {
 				t.Fatalf("failed to parse IP %q", tc.ip)
+				return
 			}
 			got := IsPrivateIP(ip)
 			if got != tc.want {
@@ -90,6 +93,7 @@ func TestIsPrivateIP_IPv6UniqueLocal(t *testing.T) {
 	ip := net.ParseIP("fc00::1")
 	if ip == nil {
 		t.Fatal("failed to parse IP fc00::1")
+		return
 	}
 	if !IsPrivateIP(ip) {
 		t.Fatal("IsPrivateIP(fc00::1) = false, want true")
@@ -113,6 +117,7 @@ func TestIsPrivateIP_PublicAddresses(t *testing.T) {
 			ip := net.ParseIP(tc.ip)
 			if ip == nil {
 				t.Fatalf("failed to parse IP %q", tc.ip)
+				return
 			}
 			got := IsPrivateIP(ip)
 			if got != tc.want {
@@ -127,6 +132,7 @@ func TestNewSafeTransport(t *testing.T) {
 
 	if transport == nil {
 		t.Fatal("NewSafeTransport() returned nil")
+		return
 	}
 
 	if transport.DialContext == nil {
@@ -162,6 +168,7 @@ func TestIsPrivateIP_AllRangesTableDriven(t *testing.T) {
 			ip := net.ParseIP(tc.ip)
 			if ip == nil {
 				t.Fatalf("failed to parse IP %q", tc.ip)
+				return
 			}
 			got := IsPrivateIP(ip)
 			if got != tc.want {

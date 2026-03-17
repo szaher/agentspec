@@ -139,6 +139,7 @@ func TestBuildDAG(t *testing.T) {
 			if tc.wantErr != "" {
 				if err == nil {
 					t.Fatalf("expected error containing %q, got nil", tc.wantErr)
+					return
 				}
 				if !strings.Contains(err.Error(), tc.wantErr) {
 					t.Fatalf("error %q does not contain %q", err.Error(), tc.wantErr)

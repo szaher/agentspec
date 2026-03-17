@@ -126,6 +126,7 @@ func TestKubernetesAdapterValidate(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected error for no agents")
+		return
 	}
 
 	err = a.Validate(context.Background(), []ir.Resource{

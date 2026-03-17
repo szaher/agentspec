@@ -58,6 +58,7 @@ func TestNewSlidingWindow(t *testing.T) {
 		sw := NewSlidingWindow(10)
 		if sw == nil {
 			t.Fatal("expected non-nil SlidingWindow")
+			return
 		}
 		if sw.maxMessages != 10 {
 			t.Errorf("expected maxMessages=10, got %d", sw.maxMessages)
@@ -272,6 +273,7 @@ func TestNewSummary(t *testing.T) {
 		s := NewSummary(10, mock, "test-model")
 		if s == nil {
 			t.Fatal("expected non-nil Summary")
+			return
 		}
 		if s.threshold != 10 {
 			t.Errorf("expected threshold=10, got %d", s.threshold)

@@ -348,6 +348,7 @@ agent "router" {
 
 	if onInput == nil {
 		t.Fatal("on_input not found in lowered IR")
+		return
 	}
 
 	// Execute the control flow

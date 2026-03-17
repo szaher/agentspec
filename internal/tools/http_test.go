@@ -239,6 +239,7 @@ func TestHTTPExecutor_ErrorStatusCode(t *testing.T) {
 			_, err := executor.Execute(context.Background(), nil)
 			if err == nil {
 				t.Fatalf("expected error for status %d, got nil", tc.statusCode)
+				return
 			}
 			if !strings.Contains(err.Error(), "error details") {
 				t.Fatalf("expected error to contain response body, got: %v", err)

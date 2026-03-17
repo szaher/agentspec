@@ -273,6 +273,7 @@ func TestResolverWithPackageResolver(t *testing.T) {
 	// The resolver should be able to accept the package resolver
 	if resolver == nil {
 		t.Fatal("expected resolver to be created")
+		return
 	}
 }
 

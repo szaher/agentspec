@@ -271,6 +271,7 @@ agent "a" {
 	_, err := resolver.ResolveAll(f)
 	if err == nil {
 		t.Fatal("expected error for missing import file")
+		return
 	}
 }
 

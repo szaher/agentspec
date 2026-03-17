@@ -167,6 +167,7 @@ func TestStateBothCorruptedError(t *testing.T) {
 	_, err := backend.Load()
 	if err == nil {
 		t.Fatal("expected error when both state and backup are corrupted")
+		return
 	}
 	var corruptErr *state.ErrStateCorrupted
 	if !errors.As(err, &corruptErr) {
@@ -506,6 +507,7 @@ func TestStateCacheWarmVsCold(t *testing.T) {
 		}
 		if entry == nil {
 			t.Fatalf("Get(%q) returned nil, want entry", fqn)
+			return
 		}
 		if entry.FQN != fqn {
 			t.Errorf("Get(%q) returned FQN %q", fqn, entry.FQN)
