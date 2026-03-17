@@ -133,6 +133,35 @@ func (m *mockRedisClient) Expire(ctx context.Context, key string, ttl time.Durat
 	return nil
 }
 
+func (m *mockRedisClient) Scan(ctx context.Context, cursor uint64, pattern string, count int64) ([]string, uint64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	prefix := strings.TrimSuffix(pattern, "*")
+
+	var result []string
+	seen := make(map[string]struct{})
+
+	for k := range m.data {
+		if strings.HasPrefix(k, prefix) {
+			if _, ok := seen[k]; !ok {
+				result = append(result, k)
+				seen[k] = struct{}{}
+			}
+		}
+	}
+	for k := range m.lists {
+		if strings.HasPrefix(k, prefix) {
+			if _, ok := seen[k]; !ok {
+				result = append(result, k)
+				seen[k] = struct{}{}
+			}
+		}
+	}
+
+	return result, 0, nil
+}
+
 func (m *mockRedisClient) Type(ctx context.Context, key string) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -261,6 +290,7 @@ func TestRedisStore_Get(t *testing.T) {
 	_, err = store.Get(ctx, "sess_nonexistent")
 	if err == nil {
 		t.Fatal("Get with unknown ID should return an error")
+		return
 	}
 	if !strings.Contains(err.Error(), "not found") {
 		t.Errorf("error %q does not contain \"not found\"", err.Error())
@@ -284,6 +314,7 @@ func TestRedisStore_Delete(t *testing.T) {
 	_, err = store.Get(ctx, sess.ID)
 	if err == nil {
 		t.Fatal("Get after Delete should return an error")
+		return
 	}
 }
 
@@ -361,6 +392,7 @@ func TestRedisStore_Touch(t *testing.T) {
 	err = store.Touch(ctx, "sess_unknown")
 	if err == nil {
 		t.Fatal("Touch with unknown ID should return an error")
+		return
 	}
 }
 

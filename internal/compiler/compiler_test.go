@@ -895,6 +895,7 @@ func TestCompile_NoInputFiles(t *testing.T) {
 	_, err := Compile(nil, CompileOptions{})
 	if err == nil {
 		t.Fatal("expected error for no input files")
+		return
 	}
 	if !strings.Contains(err.Error(), "no input files") {
 		t.Errorf("error %q should contain 'no input files'", err.Error())
@@ -907,6 +908,7 @@ func TestCompile_UnsupportedPlatform(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected error for unsupported platform")
+		return
 	}
 	if !strings.Contains(err.Error(), "unsupported platform") {
 		t.Errorf("error %q should contain 'unsupported platform'", err.Error())

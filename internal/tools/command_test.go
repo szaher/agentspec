@@ -33,6 +33,7 @@ func TestCommandExecutor_CommandFailure(t *testing.T) {
 	_, err := executor.Execute(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error for non-zero exit, got nil")
+		return
 	}
 }
 
@@ -45,6 +46,7 @@ func TestCommandExecutor_BinaryNotInAllowlist(t *testing.T) {
 	_, err := executor.Execute(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error for binary not in allowlist, got nil")
+		return
 	}
 	if !strings.Contains(err.Error(), "not in allowlist") {
 		t.Fatalf("expected error containing 'not in allowlist', got: %v", err)
@@ -62,6 +64,7 @@ func TestCommandExecutor_Timeout(t *testing.T) {
 	_, err := executor.Execute(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected timeout error, got nil")
+		return
 	}
 	// The error should indicate the context deadline was exceeded or signal killed
 	errStr := err.Error()
@@ -121,6 +124,7 @@ func TestCommandExecutor_EmptyAllowlist(t *testing.T) {
 	_, err := executor.Execute(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error for empty allowlist, got nil")
+		return
 	}
 	if !strings.Contains(err.Error(), "no allowlist configured") {
 		t.Fatalf("expected error about no allowlist configured, got: %v", err)

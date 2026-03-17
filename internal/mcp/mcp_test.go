@@ -11,6 +11,7 @@ func TestNewPool(t *testing.T) {
 	pool := NewPool()
 	if pool == nil {
 		t.Fatal("expected non-nil Pool")
+		return
 	}
 }
 
@@ -28,6 +29,7 @@ func TestPoolGetNonExistent(t *testing.T) {
 	_, err := pool.Get("nonexistent-server")
 	if err == nil {
 		t.Fatal("expected error when getting non-existent server, got nil")
+		return
 	}
 
 	expectedMsg := `mcp server "nonexistent-server" not connected`
@@ -107,6 +109,7 @@ func TestNewDiscovery(t *testing.T) {
 
 	if discovery == nil {
 		t.Fatal("expected non-nil Discovery")
+		return
 	}
 	if discovery.pool != pool {
 		t.Error("expected Discovery to reference the provided pool")
@@ -187,6 +190,7 @@ func TestNewClient(t *testing.T) {
 	client := NewClient(config)
 	if client == nil {
 		t.Fatal("expected non-nil Client")
+		return
 	}
 	if client.config.Name != "test-server" {
 		t.Errorf("expected config.Name='test-server', got %q", client.config.Name)
@@ -304,6 +308,7 @@ func TestPoolGetAfterClose(t *testing.T) {
 	_, err := pool.Get("s1")
 	if err == nil {
 		t.Fatal("expected error getting client after Close, got nil")
+		return
 	}
 }
 
@@ -330,6 +335,7 @@ func TestClientListToolsNotConnected(t *testing.T) {
 	_, err := client.ListTools(context.Background())
 	if err == nil {
 		t.Fatal("expected error for ListTools without connection, got nil")
+		return
 	}
 	if err.Error() != "mcp client not connected" {
 		t.Errorf("expected 'mcp client not connected', got %q", err.Error())
@@ -342,6 +348,7 @@ func TestClientCallToolNotConnected(t *testing.T) {
 	_, err := client.CallTool(context.Background(), "some_tool", nil)
 	if err == nil {
 		t.Fatal("expected error for CallTool without connection, got nil")
+		return
 	}
 	if err.Error() != "mcp client not connected" {
 		t.Errorf("expected 'mcp client not connected', got %q", err.Error())
@@ -381,6 +388,7 @@ func TestPoolConnectUnsupportedTransport(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected error for unsupported transport, got nil")
+		return
 	}
 }
 
@@ -396,5 +404,6 @@ func TestPoolConnectInvalidCommand(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected error for invalid command, got nil")
+		return
 	}
 }

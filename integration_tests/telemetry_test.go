@@ -3,12 +3,16 @@ package integration_tests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/szaher/designs/agentz/internal/auth"
+	"github.com/szaher/designs/agentz/internal/eviction"
 	"github.com/szaher/designs/agentz/internal/llm"
 	"github.com/szaher/designs/agentz/internal/loop"
 	"github.com/szaher/designs/agentz/internal/memory"
@@ -36,7 +40,7 @@ func TestMetricsEndpoint(t *testing.T) {
 	)
 
 	registry := tools.NewRegistry()
-	mgr := session.NewManager(session.NewMemoryStore(0), memory.NewSlidingWindow(50))
+	mgr := session.NewManager(session.NewMemoryStore(0, 0), memory.NewSlidingWindow(50))
 	strategy := &loop.ReActStrategy{}
 
 	srv := runtime.NewServer(config, mockClient, registry, mgr, strategy,
@@ -156,7 +160,7 @@ func TestRateLimiting(t *testing.T) {
 	mockClient := llm.NewMockClient(responses...)
 
 	registry := tools.NewRegistry()
-	mgr := session.NewManager(session.NewMemoryStore(0), memory.NewSlidingWindow(50))
+	mgr := session.NewManager(session.NewMemoryStore(0, 0), memory.NewSlidingWindow(50))
 	strategy := &loop.ReActStrategy{}
 
 	// Set rate limit to 2 requests per second, burst of 2
@@ -199,5 +203,74 @@ func TestRateLimiting(t *testing.T) {
 	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusTooManyRequests {
 		t.Errorf("expected 429 rate limited, got %d", resp.StatusCode)
+	}
+}
+
+func TestRateLimiterEviction(t *testing.T) {
+	// T013A: Verify that rate limiter evicts stale buckets after TTL expires.
+	//
+	// Strategy: create a RateLimiter with a very short TTL and eviction interval,
+	// populate it with many unique clients, wait for the TTL + eviction interval
+	// to pass, then verify the buckets have been reclaimed by confirming that
+	// Allow() for the same keys creates fresh buckets with a full burst allowance.
+
+	const (
+		numClients = 60
+		burst      = 3
+	)
+
+	policy := eviction.Policy{
+		MaxEntries:       100,
+		TTL:              100 * time.Millisecond,
+		EvictionInterval: 50 * time.Millisecond,
+	}
+
+	rl := auth.NewRateLimiter(auth.RateLimitConfig{
+		RequestsPerSecond: 1,
+		Burst:             burst,
+	}, policy)
+
+	// Start the background eviction goroutine.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	rl.Start(ctx)
+
+	// Phase 1: Exhaust the burst for many unique clients.
+	for i := 0; i < numClients; i++ {
+		key := fmt.Sprintf("client-%d", i)
+		for j := 0; j < burst; j++ {
+			if !rl.Allow(key) {
+				t.Fatalf("phase 1: expected Allow(%q) attempt %d to succeed", key, j)
+			}
+		}
+		// One more call should be denied — burst is exhausted.
+		if rl.Allow(key) {
+			t.Fatalf("phase 1: expected Allow(%q) to be denied after exhausting burst", key)
+		}
+	}
+
+	// Phase 2: Wait long enough for TTL to expire and eviction to run.
+	// TTL is 100ms and eviction runs every 50ms, so 250ms gives ample margin.
+	time.Sleep(250 * time.Millisecond)
+
+	// Phase 3: Verify that buckets have been evicted.
+	// If eviction worked, calling Allow() for the same keys should create brand-new
+	// buckets with a full burst, so all calls should succeed.
+	for i := 0; i < numClients; i++ {
+		key := fmt.Sprintf("client-%d", i)
+		if !rl.Allow(key) {
+			t.Errorf("phase 3: expected Allow(%q) to succeed after eviction (bucket should be fresh)", key)
+		}
+	}
+
+	// Phase 4: Double-check that the fresh buckets have full burst available.
+	// We already consumed 1 token per key above, so (burst - 1) more should succeed.
+	for i := 0; i < numClients; i++ {
+		key := fmt.Sprintf("client-%d", i)
+		for j := 1; j < burst; j++ {
+			if !rl.Allow(key) {
+				t.Errorf("phase 4: expected Allow(%q) attempt %d to succeed (fresh burst)", key, j)
+			}
+		}
 	}
 }

@@ -24,6 +24,7 @@ func TestParseValidateFormatRoundTrip(t *testing.T) {
 	}
 	if f == nil {
 		t.Fatal("parsed file is nil")
+		return
 	}
 	if f.Package == nil {
 		t.Fatal("parsed package is nil")
@@ -574,6 +575,7 @@ func TestV2Pipeline(t *testing.T) {
 
 	if pipeline == nil {
 		t.Fatal("expected a pipeline statement")
+		return
 	}
 	if pipeline.Name != "data-report" {
 		t.Errorf("expected pipeline name 'data-report', got %q", pipeline.Name)

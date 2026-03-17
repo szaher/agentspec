@@ -1,0 +1,46 @@
+// Package session — RedisClient interface contract for 010-memory-performance.
+//
+// This contract documents the EXTENDED RedisClient interface required to support
+// SCAN-based iteration (FR-005) and List-based message storage (FR-006).
+//
+// Existing methods are preserved. Three new methods are added.
+package session
+
+import (
+	"context"
+	"time"
+)
+
+// RedisClient defines the Redis operations required by RedisStore.
+// Implementations must be safe for concurrent use.
+type RedisClient interface {
+	// --- Existing methods (unchanged) ---
+
+	// Get retrieves the value for a key. Returns empty string and no error if key does not exist.
+	Get(ctx context.Context, key string) (string, error)
+
+	// Set stores a key-value pair with an optional TTL. Zero TTL means no expiration.
+	Set(ctx context.Context, key string, value string, ttl time.Duration) error
+
+	// Del deletes one or more keys.
+	Del(ctx context.Context, keys ...string) error
+
+	// Keys returns all keys matching a pattern. DEPRECATED for listing — use Scan instead.
+	// Retained for backward compatibility; implementations may delegate to Scan internally.
+	Keys(ctx context.Context, pattern string) ([]string, error)
+
+	// --- New methods (FR-005, FR-006) ---
+
+	// Scan iterates keys matching a pattern using cursor-based iteration.
+	// Returns matching keys, the next cursor (0 when iteration is complete), and any error.
+	// count is a hint to Redis for how many keys to return per iteration (not a hard limit).
+	Scan(ctx context.Context, cursor uint64, pattern string, count int64) (keys []string, nextCursor uint64, err error)
+
+	// RPush appends one or more values to the end of a Redis List.
+	// Creates the list if it does not exist. Used for O(1) message append.
+	RPush(ctx context.Context, key string, values ...string) error
+
+	// LRange returns elements from a Redis List between start and stop (inclusive, 0-indexed).
+	// Use start=0, stop=-1 to retrieve all elements.
+	LRange(ctx context.Context, key string, start, stop int64) ([]string, error)
+}

@@ -11,7 +11,7 @@ import (
 )
 
 func TestSessionIDSecurity(t *testing.T) {
-	store := session.NewMemoryStore(0)
+	store := session.NewMemoryStore(0, 0)
 
 	t.Run("cryptographic randomness prefix", func(t *testing.T) {
 		sess, err := store.Create(context.Background(), "test-agent", nil)
@@ -122,6 +122,7 @@ func TestProcessSandboxAvailability(t *testing.T) {
 		})
 		if err == nil {
 			t.Fatal("expected timeout error")
+			return
 		}
 		// Accept: ErrResourceLimit, context deadline, killed by signal, or exit status from timeout
 		t.Logf("timeout error (expected): %v", err)

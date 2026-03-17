@@ -129,6 +129,63 @@ curl http://localhost:8080/v1/metrics
 
 ---
 
+## Structured Log Metrics
+
+The memory and performance subsystems emit structured log entries that provide operational visibility without requiring a metrics pipeline. These entries are written as JSON-structured log lines via the runtime's `slog` logger and can be ingested by any log aggregation tool (e.g., Loki, Elasticsearch, CloudWatch Logs).
+
+| Component | Log Message | Fields | Description |
+|-----------|------------|--------|-------------|
+| Rate limiter | `rate limiter eviction` | `evicted`, `remaining` | Emitted each eviction cycle. Shows how many stale client buckets were removed and how many remain. |
+| Session store | `session cleanup` | `evicted`, `active` | Emitted each background cleanup cycle. Shows expired sessions removed and active sessions remaining. |
+| Conversation memory | `memory session eviction` | `evicted`, `remaining`, `max` | Emitted when LRU eviction occurs in sliding window or summary memory stores. |
+| State cache | `state cache` | `hits`, `misses` | Emitted periodically (every 100th `Get()` call) with cumulative cache hit/miss counts. |
+| Redis session list | `redis session list` | `count` | Emitted after listing sessions via Redis SCAN. |
+
+**Example log output**
+
+```json
+{"time":"2026-03-04T12:00:01Z","level":"INFO","msg":"rate limiter eviction","evicted":3,"remaining":42}
+{"time":"2026-03-04T12:00:01Z","level":"INFO","msg":"session cleanup","evicted":7,"active":128}
+{"time":"2026-03-04T12:00:02Z","level":"INFO","msg":"memory session eviction","evicted":2,"remaining":98,"max":100}
+{"time":"2026-03-04T12:00:05Z","level":"INFO","msg":"state cache","hits":4837,"misses":163}
+{"time":"2026-03-04T12:00:06Z","level":"INFO","msg":"redis session list","count":54}
+```
+
+### Correlation IDs
+
+Every HTTP request processed by the AgentSpec runtime receives a ULID correlation ID -- a time-sortable, 128-bit unique identifier. This enables end-to-end request tracing across logs, metrics, and downstream services.
+
+- If the client sends an `X-Correlation-ID` request header, that value is used as the correlation ID for the request.
+- If no `X-Correlation-ID` header is present, the runtime generates a new ULID automatically.
+- The correlation ID is always returned in the `X-Correlation-ID` response header, regardless of whether it was client-supplied or server-generated.
+- All log entries emitted during the lifetime of that request include a `correlation_id` field, making it straightforward to filter and trace a single request across the entire log stream.
+
+**Example log entry with correlation ID**
+
+```json
+{
+  "time": "2026-03-04T12:00:01Z",
+  "level": "INFO",
+  "msg": "rate limiter eviction",
+  "correlation_id": "01JQXG5K8R3MZPN0VWTYBC4DEF",
+  "evicted": 3,
+  "remaining": 42
+}
+```
+
+!!! tip "Filtering by Correlation ID"
+    To trace a single request through your logs, filter on the `correlation_id` field:
+
+    ```bash
+    # Using jq
+    cat logs.json | jq 'select(.correlation_id == "01JQXG5K8R3MZPN0VWTYBC4DEF")'
+
+    # Using grep (quick filter)
+    grep '01JQXG5K8R3MZPN0VWTYBC4DEF' logs.json
+    ```
+
+---
+
 ## Prometheus Integration
 
 Add the AgentSpec runtime as a scrape target in your `prometheus.yml`:

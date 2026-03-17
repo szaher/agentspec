@@ -194,6 +194,7 @@ func TestLocalBackendGet(t *testing.T) {
 	}
 	if got == nil {
 		t.Fatal("Get(beta) returned nil, want entry")
+		return
 	}
 	if got.FQN != "beta" {
 		t.Errorf("Get(beta).FQN = %q, want %q", got.FQN, "beta")
@@ -299,6 +300,7 @@ func TestLocalBackendLoadCorrupted(t *testing.T) {
 	_, err := b.Load()
 	if err == nil {
 		t.Fatal("Load returned nil error for corrupted state file without backup")
+		return
 	}
 
 	var corrupted *ErrStateCorrupted
@@ -521,6 +523,7 @@ func TestWriteAndReadLockInfo(t *testing.T) {
 	info := b.readLockInfo(lockPath)
 	if info == nil {
 		t.Fatal("readLockInfo returned nil, want non-nil")
+		return
 	}
 
 	if info.PID != pid {
@@ -744,6 +747,7 @@ func TestLocalBackendLockWithContext_StaleLockDeadProcess(t *testing.T) {
 	readInfo := b.readLockInfo(lockPath)
 	if readInfo == nil {
 		t.Fatal("readLockInfo returned nil after lock acquisition")
+		return
 	}
 	if readInfo.PID != os.Getpid() {
 		t.Errorf("lock PID = %d, want %d", readInfo.PID, os.Getpid())
@@ -915,6 +919,7 @@ func TestLocalBackendSaveToReadOnlyDir(t *testing.T) {
 	err := b.Save(entries)
 	if err == nil {
 		t.Fatal("Save to read-only dir should return error")
+		return
 	}
 	if !strings.Contains(err.Error(), "create temp file") {
 		t.Errorf("error = %q, want it to contain %q", err.Error(), "create temp file")
@@ -995,6 +1000,7 @@ func TestLocalBackendRecoverFromBackup_BothCorrupted(t *testing.T) {
 	_, err := b.Load()
 	if err == nil {
 		t.Fatal("Load should return error when both files are corrupted")
+		return
 	}
 
 	var corrupted *ErrStateCorrupted
@@ -1027,6 +1033,7 @@ func TestLocalBackendLoadFromBackup_BackupError(t *testing.T) {
 	_, err := b.Load()
 	if err == nil {
 		t.Fatal("Load should return error when backup is corrupted and main file is missing")
+		return
 	}
 
 	var corrupted *ErrStateCorrupted

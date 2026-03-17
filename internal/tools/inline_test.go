@@ -58,6 +58,7 @@ func TestInterpreterForLanguage_ViaExecute(t *testing.T) {
 			if tc.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")
+					return
 				}
 				if tc.errContains != "" && !strings.Contains(err.Error(), tc.errContains) {
 					t.Fatalf("expected error containing %q, got: %v", tc.errContains, err)
@@ -81,6 +82,7 @@ func TestNewInlineExecutor(t *testing.T) {
 	executor := NewInlineExecutor(config, secrets)
 	if executor == nil {
 		t.Fatal("NewInlineExecutor returned nil")
+		return
 	}
 	if executor.config.Language != "python" {
 		t.Fatalf("expected language %q, got %q", "python", executor.config.Language)
@@ -125,6 +127,7 @@ func TestInlineExecutor_UnsupportedLanguage(t *testing.T) {
 	_, err := executor.Execute(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error for unsupported language, got nil")
+		return
 	}
 	if !strings.Contains(err.Error(), "unsupported language") {
 		t.Fatalf("expected error containing 'unsupported language', got: %v", err)
@@ -146,6 +149,7 @@ func TestInlineExecutor_Timeout(t *testing.T) {
 	_, err := executor.Execute(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected timeout error, got nil")
+		return
 	}
 	errStr := err.Error()
 	if !strings.Contains(errStr, "deadline") && !strings.Contains(errStr, "killed") && !strings.Contains(errStr, "signal") {

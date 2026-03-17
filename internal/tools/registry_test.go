@@ -85,6 +85,7 @@ func TestRegistry_ExecuteUnregistered(t *testing.T) {
 	_, err := r.Execute(context.Background(), call)
 	if err == nil {
 		t.Fatal("expected error for unregistered tool, got nil")
+		return
 	}
 	expected := `tool "nonexistent" not registered`
 	if err.Error() != expected {

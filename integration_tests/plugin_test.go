@@ -64,6 +64,7 @@ func TestPluginDuplicateTypeConflict(t *testing.T) {
 	err := plugins.CheckConflicts([]*plugins.LoadedPlugin{plugin1, plugin2})
 	if err == nil {
 		t.Fatal("expected conflict error for duplicate Monitor type")
+		return
 	}
 }
 
@@ -109,5 +110,6 @@ func TestPluginMissingError(t *testing.T) {
 	_, err := plugins.ResolvePluginPath("nonexistent-plugin", "1.0.0")
 	if err == nil {
 		t.Fatal("expected error for missing plugin")
+		return
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -68,6 +69,15 @@ type LocalBackend struct {
 	lockFile   *os.File
 	lockConfig LockConfig
 	lockTime   time.Time // when lock was acquired, for held duration logging
+
+	// Cache fields (T020)
+	cachedEntries []Entry           // cached copy of all entries
+	index         map[string]*Entry // FQN → Entry pointer for O(1) lookup
+	cacheModTime  time.Time         // file mtime when cache was populated
+	hits          uint64            // cache hit counter
+	misses        uint64            // cache miss counter
+	logger        *slog.Logger      // structured logger
+	getCalls      atomic.Uint64     // total Get() calls for throttled logging
 }
 
 // NewLocalBackend creates a new local JSON state backend.
@@ -89,6 +99,11 @@ func (b *LocalBackend) WithLockConfig(cfg LockConfig) *LocalBackend {
 	return b
 }
 
+// SetLogger sets the structured logger for cache diagnostics.
+func (b *LocalBackend) SetLogger(l *slog.Logger) {
+	b.logger = l
+}
+
 // stateFile is the on-disk JSON structure.
 type stateFile struct {
 	Version string  `json:"version"`
@@ -97,13 +112,30 @@ type stateFile struct {
 
 // Load reads all state entries from the JSON file.
 // If the state file is corrupted, it attempts recovery from the .bak backup.
+// If the cache is warm and the file has not been modified, it returns
+// a copy of the cached entries without touching disk (T021).
 func (b *LocalBackend) Load() ([]Entry, error) {
-	data, err := os.ReadFile(b.Path)
+	// Stat the file to get current mtime.
+	info, err := os.Stat(b.Path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
+			b.invalidateCache()
 			// Try backup if main file doesn't exist
 			return b.loadFromBackup()
 		}
+		return nil, err
+	}
+
+	modTime := info.ModTime()
+
+	// Cache hit: entries are cached and mtime has not changed.
+	if b.cachedEntries != nil && modTime.Equal(b.cacheModTime) {
+		return b.copyEntries(), nil
+	}
+
+	// Cache miss: read from disk.
+	data, err := os.ReadFile(b.Path)
+	if err != nil {
 		return nil, err
 	}
 
@@ -112,7 +144,13 @@ func (b *LocalBackend) Load() ([]Entry, error) {
 		slog.Error("state file corrupted", "path", b.Path, "json_error", err)
 		return b.recoverFromBackup(err)
 	}
-	return sf.Entries, nil
+
+	// Populate cache and build index.
+	b.cachedEntries = sf.Entries
+	b.buildIndex()
+	b.cacheModTime = modTime
+
+	return b.copyEntries(), nil
 }
 
 // loadFromBackup attempts to load from the .bak file when the main file is missing.
@@ -164,6 +202,8 @@ func (b *LocalBackend) recoverFromBackup(originalErr error) ([]Entry, error) {
 
 // Save writes all state entries atomically using temp-file → fsync → rename.
 // Creates a .bak backup of the previous state before replacing.
+// After writing, the cache is invalidated so the next read picks up
+// the fresh data (T023).
 func (b *LocalBackend) Save(entries []Entry) error {
 	sort.Slice(entries, func(i, j int) bool {
 		return entries[i].FQN < entries[j].FQN
@@ -226,21 +266,30 @@ func (b *LocalBackend) Save(entries []Entry) error {
 		return fmt.Errorf("rename temp to state: %w", err)
 	}
 
+	// Invalidate cache after successful write (T023).
+	b.invalidateCache()
+
 	success = true
 	return nil
 }
 
-// Get retrieves a single entry by FQN.
+// Get retrieves a single entry by FQN using O(1) index lookup (T022).
 func (b *LocalBackend) Get(fqn string) (*Entry, error) {
-	entries, err := b.Load()
-	if err != nil {
+	if err := b.ensureCache(); err != nil {
 		return nil, err
 	}
-	for i := range entries {
-		if entries[i].FQN == fqn {
-			return &entries[i], nil
-		}
+
+	entry, ok := b.index[fqn]
+	if ok {
+		b.hits++
+		b.emitCacheLog()
+		// Return a copy so callers cannot mutate cached data.
+		cp := *entry
+		return &cp, nil
 	}
+
+	b.misses++
+	b.emitCacheLog()
 	return nil, nil
 }
 
@@ -407,4 +456,62 @@ func (b *LocalBackend) readLockInfo(lockPath string) *lockInfo {
 // isProcessAlive checks if a process with the given PID is still running.
 func isProcessAlive(pid int) bool {
 	return syscall.Kill(pid, 0) == nil
+}
+
+// CacheStats returns the current hit and miss counters.
+func (b *LocalBackend) CacheStats() (hits, misses uint64) {
+	return b.hits, b.misses
+}
+
+// --- internal helpers ---
+
+// ensureCache guarantees the cache is warm by calling Load if needed.
+func (b *LocalBackend) ensureCache() error {
+	if b.cachedEntries != nil {
+		// Cache may be stale — Load will check mtime.
+		_, err := b.Load()
+		return err
+	}
+	_, err := b.Load()
+	return err
+}
+
+// buildIndex constructs the FQN → *Entry index from cachedEntries.
+func (b *LocalBackend) buildIndex() {
+	b.index = make(map[string]*Entry, len(b.cachedEntries))
+	for i := range b.cachedEntries {
+		b.index[b.cachedEntries[i].FQN] = &b.cachedEntries[i]
+	}
+}
+
+// invalidateCache clears all cached state (T023).
+func (b *LocalBackend) invalidateCache() {
+	b.cachedEntries = nil
+	b.index = nil
+	b.cacheModTime = time.Time{}
+}
+
+// copyEntries returns a shallow copy of the cached entries slice
+// so callers cannot mutate the cache.
+func (b *LocalBackend) copyEntries() []Entry {
+	if b.cachedEntries == nil {
+		return nil
+	}
+	cp := make([]Entry, len(b.cachedEntries))
+	copy(cp, b.cachedEntries)
+	return cp
+}
+
+// emitCacheLog logs cache statistics every 100th Get() call (T024).
+func (b *LocalBackend) emitCacheLog() {
+	if b.logger == nil {
+		return
+	}
+	n := b.getCalls.Add(1)
+	if n%100 == 0 {
+		b.logger.Info("state cache",
+			"hits", b.hits,
+			"misses", b.misses,
+		)
+	}
 }

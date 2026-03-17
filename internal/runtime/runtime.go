@@ -17,13 +17,14 @@ import (
 
 // Runtime manages the full lifecycle of an agent runtime.
 type Runtime struct {
-	config   *RuntimeConfig
-	server   *Server
-	mcpPool  *agentmcp.Pool
-	registry *tools.Registry
-	logger   *slog.Logger
-	apiKey   string
-	port     int
+	config       *RuntimeConfig
+	server       *Server
+	mcpPool      *agentmcp.Pool
+	registry     *tools.Registry
+	logger       *slog.Logger
+	apiKey       string
+	port         int
+	sessionStore *session.MemoryStore
 }
 
 // Options configures the runtime.
@@ -76,7 +77,7 @@ func New(config *RuntimeConfig, opts Options) (*Runtime, error) {
 	resolver := secrets.NewEnvResolver()
 
 	// Create session manager
-	sessionStore := session.NewMemoryStore(30 * time.Minute)
+	sessionStore := session.NewMemoryStore(30*time.Minute, 0)
 	memoryStore := memory.NewSlidingWindow(50)
 	sessionMgr := session.NewManager(sessionStore, memoryStore)
 
@@ -104,14 +105,18 @@ func New(config *RuntimeConfig, opts Options) (*Runtime, error) {
 
 	server := NewServer(config, llmClient, registry, sessionMgr, strategy, serverOpts...)
 
+	// Set logger on session store for eviction logging
+	sessionStore.SetLogger(logger)
+
 	rt := &Runtime{
-		config:   config,
-		server:   server,
-		mcpPool:  mcpPool,
-		registry: registry,
-		logger:   logger,
-		apiKey:   opts.APIKey,
-		port:     port,
+		config:       config,
+		server:       server,
+		mcpPool:      mcpPool,
+		registry:     registry,
+		logger:       logger,
+		apiKey:       opts.APIKey,
+		port:         port,
+		sessionStore: sessionStore,
 	}
 
 	// Register tools
@@ -124,6 +129,12 @@ func New(config *RuntimeConfig, opts Options) (*Runtime, error) {
 
 // Start starts the runtime (MCP servers, HTTP server).
 func (rt *Runtime) Start(ctx context.Context) error {
+	// Start background eviction goroutines
+	rt.sessionStore.Start(ctx)
+	if rt.server.rateLimiter != nil {
+		rt.server.rateLimiter.Start(ctx)
+	}
+
 	// Start MCP servers
 	for _, srv := range rt.config.MCPServers {
 		rt.logger.Info("starting MCP server", "name", srv.Name, "command", srv.Command)

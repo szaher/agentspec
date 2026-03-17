@@ -9,7 +9,7 @@ import (
 )
 
 func TestMemoryStoreCreate(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	meta := map[string]string{"env": "test", "version": "1"}
@@ -44,7 +44,7 @@ func TestMemoryStoreCreate(t *testing.T) {
 }
 
 func TestMemoryStoreGet(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	sess, err := store.Create(ctx, "agent-x", nil)
@@ -69,6 +69,7 @@ func TestMemoryStoreGet(t *testing.T) {
 	_, err = store.Get(ctx, "sess_nonexistent")
 	if err == nil {
 		t.Fatal("Get with unknown ID should return an error")
+		return
 	}
 	if !strings.Contains(err.Error(), "not found") {
 		t.Errorf("error %q does not contain \"not found\"", err.Error())
@@ -76,7 +77,7 @@ func TestMemoryStoreGet(t *testing.T) {
 }
 
 func TestMemoryStoreDelete(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	sess, err := store.Create(ctx, "agent-d", nil)
@@ -91,11 +92,12 @@ func TestMemoryStoreDelete(t *testing.T) {
 	_, err = store.Get(ctx, sess.ID)
 	if err == nil {
 		t.Fatal("Get after Delete should return an error")
+		return
 	}
 }
 
 func TestMemoryStoreList(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	// Create 2 sessions for "agent-a" and 1 for "agent-b".
@@ -135,7 +137,7 @@ func TestMemoryStoreList(t *testing.T) {
 }
 
 func TestMemoryStoreTouch(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	sess, err := store.Create(ctx, "agent-t", nil)
@@ -165,11 +167,12 @@ func TestMemoryStoreTouch(t *testing.T) {
 	err = store.Touch(ctx, "sess_unknown")
 	if err == nil {
 		t.Fatal("Touch with unknown ID should return an error")
+		return
 	}
 }
 
 func TestMemoryStoreExpiry(t *testing.T) {
-	store := NewMemoryStore(1 * time.Millisecond)
+	store := NewMemoryStore(1*time.Millisecond, 0)
 	ctx := context.Background()
 
 	sess, err := store.Create(ctx, "agent-e", nil)
@@ -183,6 +186,7 @@ func TestMemoryStoreExpiry(t *testing.T) {
 	_, err = store.Get(ctx, sess.ID)
 	if err == nil {
 		t.Fatal("Get should return error for expired session")
+		return
 	}
 	if !strings.Contains(err.Error(), "expired") {
 		t.Errorf("error %q does not contain \"expired\"", err.Error())
@@ -218,7 +222,7 @@ func TestGenerateSecureID(t *testing.T) {
 }
 
 func TestMemoryStoreConcurrency(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	const goroutines = 10

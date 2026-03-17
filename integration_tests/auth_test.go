@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/szaher/designs/agentz/internal/auth"
+	"github.com/szaher/designs/agentz/internal/eviction"
 	"github.com/szaher/designs/agentz/internal/loop"
 	"github.com/szaher/designs/agentz/internal/runtime"
 	"github.com/szaher/designs/agentz/internal/session"
@@ -20,7 +21,7 @@ func newAuthTestServer(apiKey string) *httptest.Server {
 		},
 	}
 	registry := tools.NewRegistry()
-	sessionMgr := session.NewManager(session.NewMemoryStore(0), nil)
+	sessionMgr := session.NewManager(session.NewMemoryStore(0, 0), nil)
 	strategy := &loop.ReActStrategy{}
 
 	var opts []runtime.ServerOption
@@ -129,7 +130,7 @@ func TestNoAuthWithFlagAllows(t *testing.T) {
 		},
 	}
 	registry := tools.NewRegistry()
-	sessionMgr := session.NewManager(session.NewMemoryStore(0), nil)
+	sessionMgr := session.NewManager(session.NewMemoryStore(0, 0), nil)
 	strategy := &loop.ReActStrategy{}
 
 	server := runtime.NewServer(config, nil, registry, sessionMgr, strategy, runtime.WithNoAuth(true))
@@ -153,7 +154,7 @@ func TestNoAuthWithFlagAllows(t *testing.T) {
 
 // TestAuthRateLimiting verifies brute-force protection blocks IPs after 10 failures.
 func TestAuthRateLimiting(t *testing.T) {
-	rl := auth.NewRateLimiter(auth.DefaultRateLimitConfig())
+	rl := auth.NewRateLimiter(auth.DefaultRateLimitConfig(), eviction.Policy{})
 
 	// Simulate 10 failures
 	for i := 0; i < 10; i++ {

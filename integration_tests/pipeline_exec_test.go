@@ -72,6 +72,7 @@ func TestPipelineDAGCycleDetection(t *testing.T) {
 	_, err := pipeline.BuildDAG(steps)
 	if err == nil {
 		t.Fatal("expected cycle detection error")
+		return
 	}
 }
 
@@ -84,6 +85,7 @@ func TestPipelineDAGDuplicateStep(t *testing.T) {
 	_, err := pipeline.BuildDAG(steps)
 	if err == nil {
 		t.Fatal("expected duplicate step error")
+		return
 	}
 }
 
@@ -95,6 +97,7 @@ func TestPipelineDAGUnknownDependency(t *testing.T) {
 	_, err := pipeline.BuildDAG(steps)
 	if err == nil {
 		t.Fatal("expected unknown dependency error")
+		return
 	}
 }
 

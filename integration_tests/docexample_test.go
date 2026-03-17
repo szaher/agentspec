@@ -49,6 +49,7 @@ func TestDocExamples(t *testing.T) {
 			}
 			if f == nil {
 				t.Fatalf("parsed file is nil for %s", name)
+				return
 			}
 
 			// Structural validation
@@ -200,6 +201,7 @@ func validateCompleteBlock(t *testing.T, content, mdFile string, blockNum int) {
 	}
 	if f == nil {
 		t.Fatalf("parsed file is nil for block %d", blockNum)
+		return
 	}
 
 	structErrs := validate.ValidateStructural(f)
@@ -225,6 +227,7 @@ func validateFragmentBlock(t *testing.T, content, mdFile string, blockNum int) {
 	}
 	if f == nil {
 		t.Fatalf("parsed file is nil for fragment block %d", blockNum)
+		return
 	}
 
 	structErrs := validate.ValidateStructural(f)

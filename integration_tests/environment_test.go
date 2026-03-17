@@ -48,6 +48,7 @@ func TestMultiEnvironmentPlan(t *testing.T) {
 	}
 	if devAgent == nil {
 		t.Fatal("agent 'assistant' not found in dev environment")
+		return
 	}
 	if model, ok := devAgent.Attributes["model"].(string); !ok || model != "claude-haiku-latest" {
 		t.Errorf("dev agent model: expected 'claude-haiku-latest', got %v", devAgent.Attributes["model"])
@@ -68,6 +69,7 @@ func TestMultiEnvironmentPlan(t *testing.T) {
 	}
 	if prodAgent == nil {
 		t.Fatal("agent 'assistant' not found in prod environment")
+		return
 	}
 	if model, ok := prodAgent.Attributes["model"].(string); !ok || model != "claude-sonnet-4-20250514" {
 		t.Errorf("prod agent model: expected 'claude-sonnet-4-20250514', got %v", prodAgent.Attributes["model"])

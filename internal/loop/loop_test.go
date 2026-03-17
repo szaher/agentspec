@@ -205,6 +205,7 @@ func TestReAct_ContextCancellation(t *testing.T) {
 	}, mock, tools, nil)
 	if err == nil {
 		t.Fatal("expected error from cancelled context, got nil")
+		return
 	}
 }
 
@@ -593,6 +594,7 @@ func TestReAct_LLMError(t *testing.T) {
 	}, mock, tools, nil)
 	if err == nil {
 		t.Fatal("expected error from LLM failure, got nil")
+		return
 	}
 	if !strings.Contains(err.Error(), "rate limit") {
 		t.Errorf("error %q should contain 'rate limit'", err.Error())
