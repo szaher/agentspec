@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/llm"
+	"github.com/szaher/agentspec/internal/llm"
 )
 
 // RedisClient is the interface for Redis operations needed by the session store.

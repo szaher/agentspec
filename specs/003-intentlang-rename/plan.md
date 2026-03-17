@@ -107,7 +107,7 @@ spec/spec.md                        # Update references
 integration_tests/*.go              # 8 test files: extension + state refs
 ```
 
-**Structure Decision**: No new directories. This is a rename/refactor across the existing structure. The `cmd/agentz/` directory is renamed to `cmd/agentspec/`. The Go module path remains `github.com/szaher/designs/agentz`.
+**Structure Decision**: No new directories. This is a rename/refactor across the existing structure. The `cmd/agentz/` directory is renamed to `cmd/agentspec/`. The Go module path remains `github.com/szaher/agentspec`.
 
 ## Rename Strategy
 
@@ -127,7 +127,7 @@ integration_tests/*.go              # 8 test files: extension + state refs
 
 4. **CI workflow**: Update glob patterns from `examples/*/*.az` to `examples/*/*.ias` and binary name from `agentz` to `agentspec`.
 
-5. **Go module path**: Stays as `github.com/szaher/designs/agentz`. A module path rename would be a separate, more disruptive change requiring a major version bump.
+5. **Go module path**: Stays as `github.com/szaher/agentspec`. A module path rename would be a separate, more disruptive change requiring a major version bump.
 
 6. **Migrate command**: The existing `agentz migrate` command is updated to handle `.az` → `.ias` file renames in addition to its existing version migration functionality.
 

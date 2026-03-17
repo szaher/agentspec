@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/eviction"
+	"github.com/szaher/agentspec/internal/eviction"
 )
 
 func TestRateLimiterAllow(t *testing.T) {

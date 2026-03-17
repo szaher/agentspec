@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/runtime"
 )
 
 // TestBenchmarkCompilationTime measures compilation time for a large .ias file.

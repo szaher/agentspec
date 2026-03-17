@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/state"
+	"github.com/szaher/agentspec/internal/state"
 )
 
 func testEntries() []state.Entry {

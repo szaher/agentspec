@@ -3,9 +3,9 @@
 package plan
 
 import (
-	"github.com/szaher/designs/agentz/internal/adapters"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/state"
+	"github.com/szaher/agentspec/internal/adapters"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/state"
 )
 
 // Plan represents a computed set of changes.

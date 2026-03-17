@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/runtime"
-	"github.com/szaher/designs/agentz/internal/sdk/generator"
+	"github.com/szaher/agentspec/internal/runtime"
+	"github.com/szaher/agentspec/internal/sdk/generator"
 )
 
 func TestSDKGeneratePython(t *testing.T) {

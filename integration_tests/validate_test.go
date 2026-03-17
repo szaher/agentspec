@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/ast"
-	"github.com/szaher/designs/agentz/internal/formatter"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/migrate"
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/validate"
+	"github.com/szaher/agentspec/internal/ast"
+	"github.com/szaher/agentspec/internal/formatter"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/migrate"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/validate"
 )
 
 func TestParseValidateFormatRoundTrip(t *testing.T) {

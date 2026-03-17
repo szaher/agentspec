@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/auth"
-	"github.com/szaher/designs/agentz/internal/controlflow"
-	"github.com/szaher/designs/agentz/internal/eviction"
-	"github.com/szaher/designs/agentz/internal/frontend"
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/loop"
-	"github.com/szaher/designs/agentz/internal/session"
-	"github.com/szaher/designs/agentz/internal/telemetry"
-	"github.com/szaher/designs/agentz/internal/tools"
+	"github.com/szaher/agentspec/internal/auth"
+	"github.com/szaher/agentspec/internal/controlflow"
+	"github.com/szaher/agentspec/internal/eviction"
+	"github.com/szaher/agentspec/internal/frontend"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/loop"
+	"github.com/szaher/agentspec/internal/session"
+	"github.com/szaher/agentspec/internal/telemetry"
+	"github.com/szaher/agentspec/internal/tools"
 )
 
 // Server is the runtime HTTP server for agent invocations.

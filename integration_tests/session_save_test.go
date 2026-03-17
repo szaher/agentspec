@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/session"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/session"
 )
 
 // mockRedisClient implements session.RedisClient with in-memory list support.

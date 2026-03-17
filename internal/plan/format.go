@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/szaher/designs/agentz/internal/adapters"
+	"github.com/szaher/agentspec/internal/adapters"
 )
 
 // FormatText produces a human-readable text plan output.

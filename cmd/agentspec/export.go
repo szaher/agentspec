@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/adapters"
-	"github.com/szaher/designs/agentz/internal/plan"
+	"github.com/szaher/agentspec/internal/adapters"
+	"github.com/szaher/agentspec/internal/plan"
 )
 
 func newExportCmd() *cobra.Command {
@@ -20,6 +20,10 @@ func newExportCmd() *cobra.Command {
 		Use:   "export",
 		Short: "Export adapter-specific artifacts without applying",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if env != "" {
+				return fmt.Errorf("--env is not yet implemented; environment overlays will be available in a future release")
+			}
+
 			files, err := resolveFiles(args)
 			if err != nil {
 				return err
@@ -65,8 +69,6 @@ func newExportCmd() *cobra.Command {
 	cmd.Flags().StringVar(&target, "target", "", "Binding name")
 	cmd.Flags().StringVar(&env, "env", "", "Environment name")
 	cmd.Flags().StringVar(&outDir, "out-dir", "", "Output directory (default: ./export/)")
-
-	_ = env // will be used in Phase 6
 
 	return cmd
 }

@@ -1,43 +1,46 @@
 # dev
 
-Start a local development server with live reload.
+Invoke an agent and print the response (one-shot).
 
 ## Usage
 
 ```bash
-agentspec dev <file.ias>
+agentspec dev <file.ias> --input "your message"
 ```
 
 ## Description
 
-The `dev` command launches a development server that loads the agent defined in the spec file and exposes it over HTTP. This provides a rapid feedback loop during authoring: you can send requests to the agent and see results immediately.
-
-With `--watch` enabled, the server monitors the spec file for changes and reloads the agent automatically. The `--hot-reload` flag goes further by preserving session state across reloads so you can iterate without losing conversation context.
+The `dev` command performs a one-shot agent invocation: it parses and validates the spec, invokes the agent with the configured LLM, prints the response, and exits. This is useful for quick testing of agent behavior without starting a persistent server.
 
 ## Flags
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--watch` | | `false` | Watch the spec file for changes and reload automatically |
-| `--port` | | `3000` | Port for the local development server |
-| `--hot-reload` | | `false` | Preserve session state across reloads |
+| `--input` | | | Message to send to the agent (required) |
+| `--agent` | | | Agent name (defaults to first agent in spec) |
+| `--stream` | | `false` | Stream response tokens as they are generated |
 
 ## Examples
 
 ```bash
-# Start the dev server on the default port
-agentspec dev agent.ias
+# Invoke an agent with a message
+agentspec dev agent.ias --input "Summarize this document"
 
-# Start with file watching and hot reload
-agentspec dev --watch --hot-reload agent.ias
+# Stream the response
+agentspec dev agent.ias --input "What is the weather?" --stream
 
-# Use a custom port
-agentspec dev --port 9090 --watch agent.ias
+# Target a specific agent in a multi-agent spec
+agentspec dev multi-agent.ias --agent researcher --input "Find recent papers on AI safety"
 ```
 
 ## Exit Codes
 
 | Code | Meaning |
 |------|---------|
-| `0` | Server shut down cleanly |
-| `1` | An error occurred (port conflict, invalid spec, etc.) |
+| `0` | Agent executed successfully |
+| `1` | An error occurred during execution |
+
+## See Also
+
+- [CLI: run](run.md) -- Start the runtime server for persistent agent hosting
+- [CLI: eval](eval.md) -- Evaluate agents against test cases

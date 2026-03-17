@@ -5,8 +5,8 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/adapters/kubernetes"
-	"github.com/szaher/designs/agentz/internal/ir"
+	"github.com/szaher/agentspec/internal/adapters/kubernetes"
+	"github.com/szaher/agentspec/internal/ir"
 )
 
 func isKubectlAvailable() bool {

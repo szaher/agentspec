@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/ast"
-	"github.com/szaher/designs/agentz/internal/compiler/targets"
-	"github.com/szaher/designs/agentz/internal/imports"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/runtime"
-	"github.com/szaher/designs/agentz/internal/validate"
+	"github.com/szaher/agentspec/internal/ast"
+	"github.com/szaher/agentspec/internal/compiler/targets"
+	"github.com/szaher/agentspec/internal/imports"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/runtime"
+	"github.com/szaher/agentspec/internal/validate"
 )
 
 // CompileOptions configures the compilation process.

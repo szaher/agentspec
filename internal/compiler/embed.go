@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/runtime"
 )
 
 // StandaloneResult is the output of a standalone compilation.

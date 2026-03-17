@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/runtime"
 )
 
 // CaseResult is the outcome of evaluating a single test case.

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/ast"
+	"github.com/szaher/agentspec/internal/ast"
 )
 
 // ---------------------------------------------------------------------------

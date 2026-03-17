@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/szaher/designs/agentz/internal/ast"
+	"github.com/szaher/agentspec/internal/ast"
 )
 
 // ParseError represents a parse error with position information.

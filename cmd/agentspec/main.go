@@ -68,6 +68,12 @@ via pluggable adapters, and generates SDKs for multiple languages.`,
 	root.AddCommand(newPublishCmd())
 	root.AddCommand(newInstallCmd())
 
+	// Deprecation aliases for the run↔dev rename
+	// Old 'run' (one-shot) behavior is now 'dev'
+	root.AddCommand(newDeprecatedAlias("invoke", "dev", newDevCmd))
+	// Old 'dev' (server) behavior is now 'run'
+	root.AddCommand(newDeprecatedAlias("serve", "run", newRunCmd))
+
 	return root
 }
 
@@ -91,6 +97,26 @@ func migrateStateFile() error {
 	}
 	fmt.Fprintf(os.Stderr, "Notice: Migrated state file '%s' → '%s'\n", oldStateFile, defaultStateFile)
 	return nil
+}
+
+// newDeprecatedAlias creates a hidden command that delegates to another command
+// while printing a deprecation warning to stderr.
+func newDeprecatedAlias(oldName, newName string, buildCmd func() *cobra.Command) *cobra.Command {
+	actual := buildCmd()
+	alias := &cobra.Command{
+		Use:    oldName,
+		Short:  actual.Short,
+		Long:   actual.Long,
+		Hidden: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Fprintf(os.Stderr, "Warning: '%s' is deprecated and will be removed in a future release. Use '%s' instead.\n", oldName, newName)
+			actual.SetArgs(args)
+			return actual.RunE(actual, args)
+		},
+	}
+	// Copy flags from the actual command
+	alias.Flags().AddFlagSet(actual.Flags())
+	return alias
 }
 
 func main() {

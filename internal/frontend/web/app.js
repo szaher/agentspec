@@ -28,6 +28,11 @@
     els.btnKeyClear = document.getElementById("btn-key-clear");
     els.btnToggleActivity = document.getElementById("btn-toggle-activity");
     els.dynamicInputs = document.getElementById("dynamic-inputs");
+    els.loadingOverlay = document.getElementById("loading-overlay");
+    els.errorBanner = document.getElementById("error-banner");
+    els.errorBannerMsg = document.getElementById("error-banner-msg");
+    els.btnRetry = document.getElementById("btn-retry");
+    els.welcomeCard = document.getElementById("welcome-card");
   }
 
   // --- Helpers ---
@@ -139,20 +144,50 @@
   }
 
   // --- API ---
+  function showLoading() {
+    els.loadingOverlay.classList.add("visible");
+  }
+
+  function hideLoading() {
+    els.loadingOverlay.classList.remove("visible");
+  }
+
+  function showError(msg) {
+    els.errorBannerMsg.textContent = msg;
+    els.errorBanner.classList.add("visible");
+  }
+
+  function hideError() {
+    els.errorBanner.classList.remove("visible");
+  }
+
+  function showWelcome() {
+    els.welcomeCard.classList.add("visible");
+  }
+
+  function hideWelcome() {
+    els.welcomeCard.classList.remove("visible");
+  }
+
   function fetchAgents() {
+    showLoading();
+    hideError();
     fetch("/v1/agents", { headers: authHeaders() })
       .then(function (r) {
         if (!r.ok) throw new Error("Failed to load agents");
         return r.json();
       })
       .then(function (data) {
+        hideLoading();
         state.agents = data.agents || [];
         renderAgentSelect();
         setConnected(true);
+        showWelcome();
       })
       .catch(function (err) {
+        hideLoading();
         setConnected(false);
-        addSystemMessage("Failed to connect: " + err.message);
+        showError("Unable to connect to the agent server: " + err.message);
       });
   }
 
@@ -308,6 +343,7 @@
     var text = els.input.value.trim();
     if (!text || state.streaming || !state.currentAgent) return;
 
+    hideWelcome();
     addMessage("user", text);
     els.input.value = "";
     els.input.style.height = "auto";
@@ -553,6 +589,11 @@
     els.btnToggleActivity.addEventListener("click", function () {
       els.activityLog.innerHTML = "";
     });
+
+    // Retry button in error banner
+    els.btnRetry.addEventListener("click", function () {
+      fetchAgents();
+    });
   }
 
   // --- Init ---
@@ -560,7 +601,6 @@
     initRefs();
     initEvents();
     fetchAgents();
-    addSystemMessage("Welcome to AgentSpec. Select an agent and start chatting.");
   }
 
   if (document.readyState === "loading") {

@@ -89,6 +89,26 @@ header h1 span { color: var(--accent); }
 .modal-actions .btn-primary { background: var(--accent); color: #fff; }
 .modal-actions .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
 
+/* Loading overlay */
+.loading-overlay { display: none; position: absolute; inset: 0; background: var(--bg); z-index: 10; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+.loading-overlay.visible { display: flex; }
+.loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: var(--muted); font-size: 13px; }
+
+/* Error banner */
+.error-banner { display: none; padding: 12px 20px; background: rgba(239,68,68,0.1); border-bottom: 1px solid var(--error); color: var(--error); font-size: 13px; align-items: center; justify-content: space-between; }
+.error-banner.visible { display: flex; }
+.error-banner button { background: var(--error); color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; cursor: pointer; margin-left: 12px; white-space: nowrap; }
+.error-banner button:hover { opacity: 0.9; }
+
+/* Welcome card */
+.welcome-card { display: none; align-self: center; text-align: center; padding: 40px 32px; max-width: 400px; margin: auto; }
+.welcome-card.visible { display: block; }
+.welcome-card h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+.welcome-card h2 span { color: var(--accent); }
+.welcome-card p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
 @media (max-width: 768px) {
   .activity-panel { display: none; }
   .msg { max-width: 95%; }
@@ -106,9 +126,23 @@ header h1 span { color: var(--accent); }
   </div>
 </header>
 
+<div class="error-banner" id="error-banner">
+  <span id="error-banner-msg">Unable to connect to the agent server.</span>
+  <button id="btn-retry">Retry</button>
+</div>
+
 <div class="main">
-  <div class="chat-area">
-    <div id="messages"></div>
+  <div class="chat-area" style="position:relative;">
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading agents...</div>
+    </div>
+    <div id="messages">
+      <div class="welcome-card" id="welcome-card">
+        <h2>Welcome to <span>Agent</span>Spec</h2>
+        <p>Select an agent and type a message to get started.</p>
+      </div>
+    </div>
     <div class="input-area">
       <div id="dynamic-inputs"></div>
       <div class="input-row">

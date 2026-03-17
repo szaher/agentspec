@@ -213,7 +213,7 @@ jobs:
 
       - name: Install AgentSpec
         run: |
-          go install github.com/szaher/designs/agentz/cmd/agentspec@latest
+          go install github.com/szaher/agentspec/cmd/agentspec@latest
 
       - name: Validate
         run: agentspec validate my-agent.ias

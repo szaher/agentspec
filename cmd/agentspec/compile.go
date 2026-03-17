@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/compiler"
+	"github.com/szaher/agentspec/internal/compiler"
 )
 
 func newCompileCmd() *cobra.Command {

@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/llm"
+	"github.com/szaher/agentspec/internal/llm"
 )
 
 // ToolCallRecord is an audit record of a single tool invocation.

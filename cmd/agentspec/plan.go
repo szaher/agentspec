@@ -5,10 +5,10 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/plan"
-	"github.com/szaher/designs/agentz/internal/state"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/plan"
+	"github.com/szaher/agentspec/internal/state"
 )
 
 func newPlanCmd() *cobra.Command {
@@ -23,6 +23,10 @@ func newPlanCmd() *cobra.Command {
 		Use:   "plan",
 		Short: "Show what changes would be made without applying",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if env != "" {
+				return fmt.Errorf("--env is not yet implemented; environment overlays will be available in a future release")
+			}
+
 			files, err := resolveFiles(args)
 			if err != nil {
 				return err
@@ -76,8 +80,6 @@ func newPlanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&env, "env", "", "Environment name")
 	cmd.Flags().StringVar(&format, "format", "text", "Output format (text|json)")
 	cmd.Flags().StringVar(&out, "out", "", "Write plan to file")
-
-	_ = env // will be used in Phase 6
 
 	return cmd
 }

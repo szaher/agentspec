@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/llm"
+	"github.com/szaher/agentspec/internal/llm"
 )
 
 // mockLLMClient implements llm.Client for testing the Summary memory store.

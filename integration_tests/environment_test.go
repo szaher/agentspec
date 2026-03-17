@@ -3,9 +3,9 @@ package integration_tests
 import (
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/validate"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/validate"
 )
 
 func TestMultiEnvironmentPlan(t *testing.T) {

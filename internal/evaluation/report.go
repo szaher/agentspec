@@ -91,6 +91,10 @@ func formatTable(result *RunResult) string {
 		if c.Error != "" {
 			fmt.Fprintf(&b, "    error: %s\n", c.Error)
 		}
+		if !c.Passed && c.Expected != "" {
+			fmt.Fprintf(&b, "    expected: %s\n", c.Expected)
+			fmt.Fprintf(&b, "    actual:   %s\n", c.Actual)
+		}
 	}
 
 	fmt.Fprintf(&b, "\nResults: %d/%d passed (%d%%)\n",

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/sdk/generator"
+	"github.com/szaher/agentspec/internal/sdk/generator"
 )
 
 func newSDKCmd() *cobra.Command {

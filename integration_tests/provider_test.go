@@ -4,10 +4,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/runtime"
 )
 
 func TestParseModelString(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/registry"
+	"github.com/szaher/agentspec/internal/registry"
 )
 
 func newPublishCmd() *cobra.Command {
@@ -30,7 +30,7 @@ func newPublishCmd() *cobra.Command {
 
 func runPublish(sign bool) error {
 	if sign {
-		fmt.Println("Package signing is not yet implemented. Publishing unsigned package.")
+		return fmt.Errorf("package signing is not yet available; publish without --sign or wait for a future release")
 	}
 
 	// Read and validate manifest

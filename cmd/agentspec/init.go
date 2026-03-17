@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/templates"
+	"github.com/szaher/agentspec/internal/templates"
 )
 
 func newInitCmd() *cobra.Command {

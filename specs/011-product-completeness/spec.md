@@ -7,13 +7,21 @@
 
 **Gap Analysis References**: UX-001 through UX-008, GAP-013, GAP-014, GAP-015, GAP-016, GAP-020, GAP-021, GAP-022, BUG-020, BUG-028, FEAT-007, FEAT-008
 
+## Clarifications
+
+### Session 2026-03-17
+
+- Q: Which 4 compiler targets must produce functional tool implementations? → A: The four existing registered targets: CrewAI, LangGraph, LlamaIndex, and LlamaStack.
+- Q: Should confusing CLI commands (`run` vs `dev`) be renamed or just better documented? → A: Rename commands (swap `run`↔`dev` semantics) AND improve help text, README, and docs. This is a breaking change requiring deprecation aliases for the old names.
+- Q: How should unimplemented CLI flags be discovered beyond `--sign`? → A: One-time audit of all CLI flags; fix all discovered unimplemented flags in this feature.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Complete CLI Documentation (Priority: P1)
 
 A new user reads the README to understand what AgentSpec can do. All available commands must be documented with descriptions and usage examples so the user can discover and learn the full capability set.
 
-**Why this priority**: 8 of 19 CLI commands are currently undocumented in the README (init, compile, publish, install, eval, status, logs, destroy). Users cannot discover these capabilities, leading to underutilization and confusion.
+**Why this priority**: 9 of 20 CLI commands are currently undocumented in the README (init, compile, publish, install, eval, status, logs, destroy, pkg). Users cannot discover these capabilities, leading to underutilization and confusion.
 
 **Independent Test**: Can be tested by comparing the list of commands in the README against the list of commands registered in the CLI — they must match exactly.
 
@@ -44,7 +52,7 @@ An engineer compiles their agent to a target framework (e.g., CrewAI, LangGraph)
 
 ### User Story 3 - Polished Frontend Experience (Priority: P2)
 
-An engineer opens the built-in web UI (`agentspec dev --ui`) to interact with their agent. The interface must provide clear feedback during loading, graceful error handling, and helpful guidance when no conversations exist.
+An engineer opens the built-in web UI (`agentspec run --ui`) to interact with their agent. The interface must provide clear feedback during loading, graceful error handling, and helpful guidance when no conversations exist.
 
 **Why this priority**: First impressions matter. The current frontend shows a blank screen during load, no error messages on failure, and no guidance for new users. This creates confusion about whether the system is working.
 
@@ -81,29 +89,32 @@ An engineer expects `agentspec run` to start a server (similar to `docker run`).
 
 **Why this priority**: `run` does one-shot invocation while `dev` starts a server — the opposite of what most users expect. This causes confusion and wasted time.
 
-**Independent Test**: Can be tested by verifying that command help text clearly explains the behavior, and that the README accurately describes each command's purpose.
+**Breaking Change**: Commands will be renamed — `run` becomes the server command (swapping semantics with `dev`). Deprecation aliases for the old names will be provided for one release cycle to ease migration.
+
+**Independent Test**: Can be tested by verifying that the renamed commands behave as expected, deprecation aliases emit warnings, and that the README/docs accurately describe each command's purpose.
 
 **Acceptance Scenarios**:
 
-1. **Given** the `run` command, **When** a user reads its help text, **Then** the description clearly states it performs a one-shot agent invocation (not a server).
-2. **Given** the `dev` command, **When** a user reads its help text, **Then** the description clearly states it starts a development server with file watching.
-3. **Given** command documentation, **When** comparing `run` vs `dev`, **Then** the differences are explicit and easy to understand.
+1. **Given** the renamed `run` command, **When** a user executes it, **Then** it starts the server (previously `dev` behavior) with clear help text.
+2. **Given** the renamed `dev` command, **When** a user executes it, **Then** it performs one-shot invocation (previously `run` behavior) with clear help text.
+3. **Given** the old command names used as aliases, **When** a user invokes them, **Then** a deprecation warning is printed and the correct behavior executes.
+4. **Given** command documentation (README, docs site, help text), **When** comparing `run` vs `dev`, **Then** the differences are explicit and consistent across all sources.
 
 ---
 
 ### User Story 6 - Fast Dev Mode File Watching (Priority: P3)
 
-An engineer edits an .ias file while the dev server is running. Changes should be detected and applied within 500ms, not after a 2-second polling interval.
+An engineer edits an .ias file while the server (`agentspec run`) is running. Changes should be detected and applied within 500ms, not after a 2-second polling interval.
 
 **Why this priority**: The current 2-second polling with directory walking introduces noticeable latency and wastes CPU cycles. Event-based file watching is more responsive and efficient.
 
-**Independent Test**: Can be tested by saving an .ias file change and measuring the time until the dev server reloads — must be under 500ms.
+**Independent Test**: Can be tested by saving an .ias file change and measuring the time until the server (`agentspec run`) reloads — must be under 500ms.
 
 **Acceptance Scenarios**:
 
-1. **Given** a running dev server, **When** an .ias file is saved, **Then** the change is detected within 500ms.
+1. **Given** a running server (`agentspec run`), **When** an .ias file is saved, **Then** the change is detected within 500ms.
 2. **Given** a large project with 100+ .ias files, **When** one file is modified, **Then** only the changed file triggers a reload (not a full directory walk).
-3. **Given** a dev server on a platform without event-based watching, **When** the server starts, **Then** it falls back to polling with a message explaining the limitation.
+3. **Given** a server on a platform without event-based watching, **When** the server starts, **Then** it falls back to polling with a message explaining the limitation.
 
 ---
 
@@ -113,12 +124,15 @@ An engineer uses `agentspec publish --sign` expecting their package to be crypto
 
 **Why this priority**: Flags that accept input but do nothing create a false sense of security and erode trust. The `--sign` flag prints "not yet implemented" but continues silently.
 
-**Independent Test**: Can be tested by verifying that `--sign` either performs signing or returns an error explaining the feature is not yet available.
+**Scope**: A one-time audit of ALL CLI flags across all commands will be performed. Every flag that accepts input but has no effect will be fixed (either implemented or removed/errored).
+
+**Independent Test**: Can be tested by auditing all CLI commands for flags that accept input but produce no side effects — none should exist after this feature.
 
 **Acceptance Scenarios**:
 
 1. **Given** the `--sign` flag on publish, **When** the feature is not implemented, **Then** the command returns an error (not a warning) and does not publish.
 2. **Given** a flag marked as "coming soon" in help text, **When** the user invokes it, **Then** the behavior is clear and the command does not proceed as if the flag worked.
+3. **Given** the full CLI audit, **When** any flag is found that accepts input but has no effect, **Then** it is either implemented, removed, or converted to return an error.
 
 ---
 
@@ -126,7 +140,7 @@ An engineer uses `agentspec publish --sign` expecting their package to be crypto
 
 - What happens when the README documentation validation discovers a new undocumented command? CI fails with a report listing the undocumented commands.
 - What happens when a compiler target framework does not support a specific tool type? Generated code includes a clear comment explaining the limitation and suggests alternatives.
-- What happens when the frontend loses connection mid-conversation? Existing messages are preserved and a reconnection attempt is made automatically.
+- What happens when the frontend loses connection mid-conversation? Existing messages are preserved and an error banner with a retry button is shown.
 - What happens when fsnotify is not available on the platform? Dev mode falls back to polling with a logged message.
 
 ## Requirements *(mandatory)*
@@ -135,7 +149,7 @@ An engineer uses `agentspec publish --sign` expecting their package to be crypto
 
 - **FR-001**: README MUST document all CLI commands with descriptions and usage examples.
 - **FR-002**: CI MUST validate that all registered CLI commands are documented in the README.
-- **FR-003**: Compiler targets MUST generate functional tool implementations that call the configured backend (HTTP URL, command binary, or inline script).
+- **FR-003**: All 4 existing compiler targets (CrewAI, LangGraph, LlamaIndex, LlamaStack) MUST generate functional tool implementations that call the configured backend (HTTP URL, command binary, or inline script).
 - **FR-004**: Compiler-generated code MUST clearly mark remaining customization points with TODO comments.
 - **FR-005**: Frontend MUST display a loading indicator during initial agent fetch.
 - **FR-006**: Frontend MUST display an error banner with retry button on connection failure.
@@ -144,15 +158,17 @@ An engineer uses `agentspec publish --sign` expecting their package to be crypto
 - **FR-009**: The `eval` command MUST support a `--live` flag that invokes agents with a real LLM client.
 - **FR-010**: The `eval` command MUST produce a summary report with pass/fail per test case.
 - **FR-011**: Dev mode MUST detect file changes within 500ms using event-based file watching (with polling fallback).
-- **FR-012**: CLI flags for unimplemented features MUST return an error, not silently continue.
+- **FR-012**: A one-time audit of all CLI flags MUST be performed; every flag that accepts input but has no effect MUST be fixed (implemented, removed, or converted to return an error).
 - **FR-013**: All command help text MUST clearly describe the command's behavior and differentiate it from similar commands.
+- **FR-014**: The `run` and `dev` commands MUST be renamed (semantics swapped) so that `run` starts the server and `dev` performs one-shot invocation.
+- **FR-015**: Deprecation aliases for the old `run`/`dev` command names MUST be provided for one release cycle, emitting a warning when used.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
 - **SC-001**: 100% of CLI commands documented in README with descriptions and examples.
-- **SC-002**: Compiled agent code for all 4 targets produces functional tool calls (not "not implemented" stubs).
+- **SC-002**: Compiled agent code for all 4 existing targets (CrewAI, LangGraph, LlamaIndex, LlamaStack) produces functional tool calls (not "not implemented" stubs).
 - **SC-003**: Frontend displays appropriate state (loading, error, empty) within 200ms of state change.
 - **SC-004**: `eval --live` successfully invokes agents and compares against expected outputs.
 - **SC-005**: Dev mode file change detection latency is under 500ms on supported platforms.
@@ -165,4 +181,5 @@ An engineer uses `agentspec publish --sign` expecting their package to be crypto
 - Event-based file watching is available on Linux, macOS, and Windows; polling fallback covers edge cases.
 - The `eval --live` command requires the same LLM provider configuration as the `run` command (API keys in environment).
 - Markdown rendering in the frontend will use a lightweight library, not a full framework.
-- The `--sign` flag will be removed (not implemented) as package signing is deferred to a future feature.
+- All unimplemented flags (including `--sign`) will be removed or converted to errors as discovered during the one-time CLI audit.
+- The `run`↔`dev` command rename is a breaking change; deprecation aliases will be maintained for one release cycle.

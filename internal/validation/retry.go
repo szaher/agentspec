@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/szaher/designs/agentz/internal/expr"
+	"github.com/szaher/agentspec/internal/expr"
 )
 
 // AgentInvoker is the interface for invoking an agent. This allows

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/szaher/designs/agentz/internal/ast"
+	"github.com/szaher/agentspec/internal/ast"
 )
 
 // ValidateSemantic performs semantic validation: reference resolution,

@@ -7,7 +7,7 @@ The AgentSpec Go SDK provides a typed client for the AgentSpec HTTP API. It foll
 ## Installation
 
 ```bash
-go get github.com/szaher/designs/agentz/sdk
+go get github.com/szaher/agentspec/sdk
 ```
 
 **Requirements:** Go 1.25+
@@ -26,7 +26,7 @@ import (
     "fmt"
     "log"
 
-    agentspec "github.com/szaher/designs/agentz/sdk"
+    agentspec "github.com/szaher/agentspec/sdk"
 )
 
 func main() {
@@ -346,7 +346,7 @@ The SDK returns typed errors that can be inspected using `errors.As`.
 import (
     "errors"
 
-    agentspec "github.com/szaher/designs/agentz/sdk"
+    agentspec "github.com/szaher/agentspec/sdk"
 )
 
 response, err := client.Agents.Invoke(ctx, &agentspec.InvokeRequest{
@@ -507,7 +507,7 @@ import (
     "os"
     "strings"
 
-    agentspec "github.com/szaher/designs/agentz/sdk"
+    agentspec "github.com/szaher/agentspec/sdk"
 )
 
 func main() {

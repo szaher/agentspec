@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/imports"
-	"github.com/szaher/designs/agentz/internal/registry"
+	"github.com/szaher/agentspec/internal/imports"
+	"github.com/szaher/agentspec/internal/registry"
 )
 
 // TestManifestParseAndWrite verifies reading and writing agentpack.yaml manifests.

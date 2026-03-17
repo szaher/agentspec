@@ -8,9 +8,12 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/evaluation"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/evaluation"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/loop"
+	"github.com/szaher/agentspec/internal/runtime"
+	"github.com/szaher/agentspec/internal/tools"
 )
 
 func newEvalCmd() *cobra.Command {
@@ -20,6 +23,7 @@ func newEvalCmd() *cobra.Command {
 		output    string
 		format    string
 		compareTo string
+		live      bool
 	)
 
 	cmd := &cobra.Command{
@@ -53,8 +57,13 @@ using configurable scoring methods.`,
 				tagFilter = strings.Split(tags, ",")
 			}
 
-			// Create a stub invoker for eval (in production, this would connect to a running agent)
-			invoker := &stubInvoker{}
+			// Create invoker — use live invoker with real LLM if --live flag is set
+			var invoker evaluation.AgentInvoker
+			if live {
+				invoker = newLiveInvoker(config)
+			} else {
+				invoker = &stubInvoker{}
+			}
 			runner := evaluation.NewRunner(invoker)
 
 			// Run evals for matching agents
@@ -119,6 +128,7 @@ using configurable scoring methods.`,
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Write report to file")
 	cmd.Flags().StringVar(&format, "format", "table", "Output format: table, json, markdown")
 	cmd.Flags().StringVar(&compareTo, "compare", "", "Path to previous eval report for comparison")
+	cmd.Flags().BoolVar(&live, "live", false, "Invoke agents with real LLM client instead of stub")
 
 	return cmd
 }
@@ -136,14 +146,56 @@ func loadPreviousResult(path string) (*evaluation.RunResult, error) {
 }
 
 // stubInvoker is a placeholder that returns an error.
-// In production use, the eval command would start or connect to a running agent.
 type stubInvoker struct{}
 
 func (s *stubInvoker) Invoke(_ context.Context, agentName, input string) (string, error) {
-	return "", fmt.Errorf("agent %q not running — start the agent first or compile and run it", agentName)
+	return "", fmt.Errorf("agent %q not running — use --live to invoke with a real LLM, or start the agent first", agentName)
+}
+
+// liveInvoker invokes agents using a real LLM client.
+type liveInvoker struct {
+	config *runtime.RuntimeConfig
+}
+
+func newLiveInvoker(config *runtime.RuntimeConfig) *liveInvoker {
+	return &liveInvoker{config: config}
+}
+
+func (l *liveInvoker) Invoke(ctx context.Context, agentName, input string) (string, error) {
+	var agentConfig *runtime.AgentConfig
+	for i, a := range l.config.Agents {
+		if a.Name == agentName {
+			agentConfig = &l.config.Agents[i]
+			break
+		}
+	}
+	if agentConfig == nil {
+		return "", fmt.Errorf("agent %q not found in config", agentName)
+	}
+
+	llmClient, resolvedModel := llm.NewClientForModel(agentConfig.Model)
+	registry := tools.NewRegistry()
+	strategy := &loop.ReActStrategy{}
+
+	inv := loop.Invocation{
+		AgentName:   agentConfig.Name,
+		Model:       resolvedModel,
+		System:      agentConfig.System,
+		Input:       input,
+		MaxTurns:    agentConfig.MaxTurns,
+		MaxTokens:   4096,
+		TokenBudget: agentConfig.TokenBudget,
+		Temperature: agentConfig.Temperature,
+	}
+
+	resp, err := strategy.Execute(ctx, inv, llmClient, registry, nil)
+	if err != nil {
+		return "", fmt.Errorf("invocation failed: %w", err)
+	}
+
+	return resp.Output, nil
 }
 
 // Ensure parseAndLower is available (defined in plan.go)
 // Ensure resolveCompileInputs is available (defined in compile.go)
-// Ensure parseAndLower signature matches usage
 var _ = (*ir.Document)(nil)

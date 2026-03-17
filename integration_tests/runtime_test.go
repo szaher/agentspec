@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/loop"
-	"github.com/szaher/designs/agentz/internal/memory"
-	"github.com/szaher/designs/agentz/internal/runtime"
-	"github.com/szaher/designs/agentz/internal/session"
-	"github.com/szaher/designs/agentz/internal/tools"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/loop"
+	"github.com/szaher/agentspec/internal/memory"
+	"github.com/szaher/agentspec/internal/runtime"
+	"github.com/szaher/agentspec/internal/session"
+	"github.com/szaher/agentspec/internal/tools"
 )
 
 func newTestServer(t *testing.T, mockClient *llm.MockClient) *httptest.Server {

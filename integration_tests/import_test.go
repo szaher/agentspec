@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/imports"
-	"github.com/szaher/designs/agentz/internal/parser"
+	"github.com/szaher/agentspec/internal/imports"
+	"github.com/szaher/agentspec/internal/parser"
 )
 
 func TestImportResolverLocalFile(t *testing.T) {

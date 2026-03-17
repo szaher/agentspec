@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/plugins"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/plugins"
 )
 
 func init() {
@@ -82,7 +82,8 @@ func (t *LlamaStackTarget) generateAgent(doc *ir.Document, agents []ir.Resource,
 	sb.WriteString("\"\"\"LlamaStack agent generated from AgentSpec.\"\"\"\n\n")
 	sb.WriteString("import asyncio\n")
 	sb.WriteString("import subprocess\n")
-	sb.WriteString("import sys\n\n")
+	sb.WriteString("import sys\n")
+	sb.WriteString("import urllib.request\n\n")
 	sb.WriteString("from llama_stack_client import LlamaStackClient\n")
 	sb.WriteString("from llama_stack_client.types.agent_create_params import AgentConfig\n\n")
 
@@ -112,7 +113,8 @@ func (t *LlamaStackTarget) generateAgent(doc *ir.Document, agents []ir.Resource,
 
 		if tool, ok := skill.Attributes["tool"].(map[string]interface{}); ok {
 			toolType, _ := tool["type"].(string)
-			if toolType == "command" {
+			switch toolType {
+			case "command":
 				binary, _ := tool["binary"].(string)
 				args, _ := tool["args"].(string)
 				if binary != "" {
@@ -125,13 +127,46 @@ func (t *LlamaStackTarget) generateAgent(doc *ir.Document, agents []ir.Resource,
 					sb.WriteString("], capture_output=True, text=True)\n")
 					sb.WriteString("    return result.stdout\n")
 				} else {
-					sb.WriteString("    return \"not implemented\"\n")
+					sb.WriteString("    # TODO(agentspec): configure binary for this command tool\n")
+					sb.WriteString("    raise NotImplementedError(\"Command tool missing binary configuration\")\n")
 				}
-			} else {
-				sb.WriteString("    return \"not implemented\"\n")
+			case "http":
+				url, _ := tool["url"].(string)
+				method, _ := tool["method"].(string)
+				if url != "" {
+					if method == "" {
+						method = "GET"
+					}
+					fmt.Fprintf(&sb, "    req = urllib.request.Request(%q, method=%q)\n", url, method)
+					sb.WriteString("    with urllib.request.urlopen(req) as resp:\n")
+					sb.WriteString("        return resp.read().decode()\n")
+				} else {
+					sb.WriteString("    # TODO(agentspec): configure HTTP URL for this tool\n")
+					sb.WriteString("    raise NotImplementedError(\"HTTP tool missing url configuration\")\n")
+				}
+			case "inline":
+				code, _ := tool["code"].(string)
+				lang, _ := tool["language"].(string)
+				if code != "" {
+					if lang == "" || lang == "python" {
+						for _, line := range strings.Split(code, "\n") {
+							fmt.Fprintf(&sb, "    %s\n", line)
+						}
+					} else {
+						fmt.Fprintf(&sb, "    result = subprocess.run([%q, \"-c\", %q], capture_output=True, text=True)\n", lang, code)
+						sb.WriteString("    return result.stdout\n")
+					}
+				} else {
+					sb.WriteString("    # TODO(agentspec): provide inline code for this tool\n")
+					sb.WriteString("    raise NotImplementedError(\"Inline tool missing code\")\n")
+				}
+			default:
+				sb.WriteString("    # TODO(agentspec): unsupported tool type\n")
+				sb.WriteString("    raise NotImplementedError(\"Tool type not supported\")\n")
 			}
 		} else {
-			sb.WriteString("    return \"not implemented\"\n")
+			sb.WriteString("    # TODO(agentspec): no tool configuration found\n")
+			sb.WriteString("    raise NotImplementedError(\"No tool configuration\")\n")
 		}
 		sb.WriteString("\n\n")
 	}

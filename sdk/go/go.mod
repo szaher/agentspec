@@ -1,3 +1,3 @@
-module github.com/szaher/designs/agentz/sdk/go
+module github.com/szaher/agentspec/sdk/go
 
 go 1.25

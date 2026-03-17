@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/plugins"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/plugins"
 )
 
 // Target is the interface for a built-in compilation target.

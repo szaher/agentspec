@@ -2,141 +2,224 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
+	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/loop"
-	"github.com/szaher/designs/agentz/internal/memory"
-	"github.com/szaher/designs/agentz/internal/runtime"
-	"github.com/szaher/designs/agentz/internal/session"
-	"github.com/szaher/designs/agentz/internal/tools"
+	"github.com/szaher/agentspec/internal/runtime"
 )
 
 func newRunCmd() *cobra.Command {
-	var (
-		input  string
-		agent  string
-		stream bool
-	)
+	var port int
+	var enableUI bool
+	var noAuth bool
+	var corsOrigins string
 
 	cmd := &cobra.Command{
 		Use:   "run [file.ias]",
-		Short: "Invoke an agent and print the response",
-		Long:  "One-shot agent invocation: parse, validate, start runtime, invoke, print response, shutdown.",
+		Short: "Start agent runtime server with hot reload",
+		Long:  "Watches .ias files for changes and automatically restarts the runtime. Includes built-in web UI.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			files, err := resolveFiles(args)
 			if err != nil {
 				return err
 			}
 
-			doc, err := parseAndLower(files)
-			if err != nil {
-				return err
-			}
-
-			config, err := runtime.FromIR(doc)
-			if err != nil {
-				return err
-			}
-
-			// Find the target agent
-			var agentConfig *runtime.AgentConfig
-			if agent != "" {
-				for i, a := range config.Agents {
-					if a.Name == agent {
-						agentConfig = &config.Agents[i]
-						break
-					}
-				}
-				if agentConfig == nil {
-					return fmt.Errorf("agent %q not found", agent)
-				}
-			} else {
-				agentConfig = &config.Agents[0]
-			}
-
-			if input == "" {
-				return fmt.Errorf("--input is required")
-			}
-
-			// Create LLM client — auto-detect provider from agent's model string
-			llmClient, resolvedModel := llm.NewClientForModel(agentConfig.Model)
-			agentConfig.Model = resolvedModel
-
-			// Create tool registry
-			registry := tools.NewRegistry()
-
-			// Create session manager
-			sessionStore := session.NewMemoryStore(0, 0)
-			memoryStore := memory.NewSlidingWindow(50)
-			_ = session.NewManager(sessionStore, memoryStore)
-
-			// Create strategy
-			strategy := &loop.ReActStrategy{}
+			logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+				Level: slog.LevelDebug,
+			}))
 
 			ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
 
-			inv := loop.Invocation{
-				AgentName:   agentConfig.Name,
-				Model:       agentConfig.Model,
-				System:      agentConfig.System,
-				Input:       input,
-				MaxTurns:    agentConfig.MaxTurns,
-				MaxTokens:   4096,
-				TokenBudget: agentConfig.TokenBudget,
-				Temperature: agentConfig.Temperature,
-				Stream:      stream,
-			}
-
-			var onEvent loop.StreamCallback
-			if stream {
-				onEvent = func(event llm.StreamEvent) {
-					switch event.Type {
-					case "text":
-						fmt.Print(event.Text)
-					case "tool_call_start":
-						if event.ToolCall != nil {
-							fmt.Fprintf(os.Stderr, "\n[calling tool: %s]\n", event.ToolCall.Name)
-						}
-					}
-				}
-			}
-
-			resp, err := strategy.Execute(ctx, inv, llmClient, registry, onEvent)
-			if err != nil {
-				return fmt.Errorf("invocation failed: %w", err)
-			}
-
-			if stream {
-				fmt.Println()
-			} else {
-				fmt.Println(resp.Output)
-			}
-
-			if verbose {
-				stats := map[string]interface{}{
-					"turns":       resp.Turns,
-					"duration_ms": resp.Duration.Milliseconds(),
-					"tokens":      resp.Tokens,
-					"tool_calls":  len(resp.ToolCalls),
-				}
-				data, _ := json.MarshalIndent(stats, "", "  ")
-				fmt.Fprintf(os.Stderr, "\n%s\n", string(data))
-			}
-
-			return nil
+			return runServerLoop(ctx, files, port, enableUI, noAuth, corsOrigins, logger)
 		},
 	}
 
-	cmd.Flags().StringVar(&input, "input", "", "Message to send to the agent")
-	cmd.Flags().StringVar(&agent, "agent", "", "Agent name (defaults to first agent)")
-	cmd.Flags().BoolVar(&stream, "stream", false, "Stream response")
+	cmd.Flags().IntVar(&port, "port", 8080, "HTTP server port")
+	cmd.Flags().BoolVar(&enableUI, "ui", true, "Enable built-in web frontend")
+	cmd.Flags().BoolVar(&noAuth, "no-auth", false, "Explicitly allow unauthenticated access (WARNING: insecure)")
+	cmd.Flags().StringVar(&corsOrigins, "cors-origins", "", "Comma-separated list of allowed CORS origins")
 
 	return cmd
+}
+
+func runServerLoop(ctx context.Context, files []string, port int, enableUI bool, noAuth bool, corsOriginsStr string, logger *slog.Logger) error {
+	var rt *runtime.Runtime
+
+	startRuntime := func() error {
+		if rt != nil {
+			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer shutdownCancel()
+			_ = rt.Shutdown(shutdownCtx)
+			rt = nil
+		}
+
+		doc, err := parseAndLower(files)
+		if err != nil {
+			return fmt.Errorf("parse error: %w", err)
+		}
+
+		config, err := runtime.FromIR(doc)
+		if err != nil {
+			return fmt.Errorf("config error: %w", err)
+		}
+
+		// Build CORS origins — auto-add localhost in dev mode
+		var corsOrigins []string
+		if corsOriginsStr != "" {
+			for _, o := range strings.Split(corsOriginsStr, ",") {
+				corsOrigins = append(corsOrigins, strings.TrimSpace(o))
+			}
+		}
+		// Auto-allow localhost origins for built-in UI
+		corsOrigins = append(corsOrigins,
+			fmt.Sprintf("http://localhost:%d", port),
+			fmt.Sprintf("http://127.0.0.1:%d", port),
+		)
+
+		rt, err = runtime.New(config, runtime.Options{
+			Port:        port,
+			Logger:      logger,
+			EnableUI:    enableUI,
+			NoAuth:      noAuth,
+			CORSOrigins: corsOrigins,
+		})
+		if err != nil {
+			return fmt.Errorf("runtime error: %w", err)
+		}
+
+		go func() {
+			if err := rt.Start(ctx); err != nil {
+				logger.Error("runtime stopped", "error", err)
+			}
+		}()
+
+		return nil
+	}
+
+	// Initial start
+	logger.Info("starting server", "files", files, "port", port, "ui", enableUI)
+	if err := startRuntime(); err != nil {
+		logger.Error("initial start failed", "error", err)
+		return err
+	}
+
+	// Watch for file changes — try fsnotify first, fall back to polling
+	watchDir := "."
+	if len(files) > 0 {
+		watchDir = filepath.Dir(files[0])
+	}
+
+	reload := func() {
+		logger.Info("file change detected, restarting...")
+		if err := startRuntime(); err != nil {
+			logger.Error("restart failed", "error", err)
+		} else {
+			logger.Info("runtime restarted successfully")
+		}
+	}
+
+	watcher, fsErr := fsnotify.NewWatcher()
+	if fsErr != nil {
+		logger.Warn("fsnotify unavailable, falling back to polling (2s interval)", "error", fsErr)
+		return watchWithPolling(ctx, watchDir, rt, reload, logger)
+	}
+	defer func() { _ = watcher.Close() }()
+
+	// Add watch directory
+	if err := watcher.Add(watchDir); err != nil {
+		logger.Warn("fsnotify watch failed, falling back to polling (2s interval)", "error", err)
+		return watchWithPolling(ctx, watchDir, rt, reload, logger)
+	}
+
+	// Debounce timer — only trigger reload after 100ms of quiet
+	debounce := time.NewTimer(0)
+	if !debounce.Stop() {
+		<-debounce.C
+	}
+	debouncing := false
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("shutting down server")
+			if rt != nil {
+				shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer shutdownCancel()
+				_ = rt.Shutdown(shutdownCtx)
+			}
+			return nil
+
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return nil
+			}
+			// Only react to Write and Create events on .ias files
+			if filepath.Ext(event.Name) == ".ias" && (event.Op&(fsnotify.Write|fsnotify.Create)) != 0 {
+				if debouncing {
+					debounce.Reset(100 * time.Millisecond)
+				} else {
+					debounce.Reset(100 * time.Millisecond)
+					debouncing = true
+				}
+			}
+
+		case <-debounce.C:
+			debouncing = false
+			reload()
+
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
+			}
+			logger.Error("file watcher error", "error", err)
+		}
+	}
+}
+
+// watchWithPolling is the fallback file watcher using polling when fsnotify is unavailable.
+func watchWithPolling(ctx context.Context, watchDir string, rt *runtime.Runtime, reload func(), logger *slog.Logger) error {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	lastMod := time.Now()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("shutting down server")
+			if rt != nil {
+				shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer shutdownCancel()
+				_ = rt.Shutdown(shutdownCtx)
+			}
+			return nil
+
+		case <-ticker.C:
+			changed := false
+			_ = filepath.Walk(watchDir, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return nil
+				}
+				if filepath.Ext(path) == ".ias" && info.ModTime().After(lastMod) {
+					changed = true
+					return filepath.SkipAll
+				}
+				return nil
+			})
+
+			if changed {
+				lastMod = time.Now()
+				reload()
+			}
+		}
+	}
 }

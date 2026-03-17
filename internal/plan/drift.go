@@ -1,8 +1,8 @@
 package plan
 
 import (
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/state"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/state"
 )
 
 // DriftResult describes detected drift between state and desired.

@@ -45,8 +45,8 @@ EOF
 Requires Go 1.25+.
 
 ```bash
-git clone https://github.com/szaher/designs.git
-cd designs/agentz
+git clone https://github.com/szaher/agentspec.git
+cd agentspec
 make build
 ```
 
@@ -56,6 +56,7 @@ The binary is built as `./agentspec`.
 
 | Command | Description |
 |---------|-------------|
+| `init` | Create a new AgentSpec project with starter files |
 | `validate <file>` | Check syntax and semantic correctness |
 | `fmt <file>` | Format to canonical style |
 | `plan <file>` | Preview changes without applying |
@@ -63,10 +64,17 @@ The binary is built as `./agentspec`.
 | `export <file>` | Generate platform-specific artifacts |
 | `diff <file>` | Show detailed resource differences |
 | `sdk <file>` | Generate client SDKs (Python, TypeScript, Go) |
-| `migrate [path]` | Rename `.az` files to `.ias` |
-| `migrate --to-v2` | Rewrite IntentLang 1.0 files to 2.0 syntax |
-| `run <file>` | Start the agent runtime server |
-| `dev <file>` | Development mode with file watching |
+| `compile <file>` | Compile agent to a target framework (CrewAI, LangGraph, etc.) |
+| `run <file>` | Start agent runtime server with hot reload and built-in web UI |
+| `dev <file>` | One-shot agent invocation: invoke with LLM, print response, exit |
+| `eval <file>` | Evaluate agent against test cases defined in the spec |
+| `status` | Show status of deployed agents |
+| `logs` | View agent runtime logs |
+| `destroy` | Tear down deployed agent resources |
+| `package <file>` | Package agent spec into a distributable bundle (AgentPack) |
+| `publish` | Publish an AgentPack to a registry |
+| `install <name>` | Install an AgentPack from a registry |
+| `migrate [path]` | Rename `.az` files to `.ias` and rewrite v1 to v2 syntax |
 | `version` | Display version information |
 
 ### Common Flags
@@ -81,6 +89,9 @@ The binary is built as `./agentspec`.
 ### Usage Examples
 
 ```bash
+# Initialize a new project
+./agentspec init
+
 # Format and check
 ./agentspec fmt examples/basic-agent/basic-agent.ias
 ./agentspec fmt --check examples/basic-agent/basic-agent.ias
@@ -101,6 +112,34 @@ The binary is built as `./agentspec`.
 
 # Generate SDKs
 ./agentspec sdk examples/basic-agent/basic-agent.ias --language python --out-dir ./sdk
+
+# Compile to a framework target
+./agentspec compile examples/basic-agent/basic-agent.ias --target crewai --out-dir ./output
+./agentspec compile examples/basic-agent/basic-agent.ias --target langgraph --out-dir ./output
+
+# Start the runtime server with hot reload and web UI
+./agentspec run examples/basic-agent/basic-agent.ias --port 8080 --ui
+
+# One-shot agent invocation
+./agentspec dev examples/basic-agent/basic-agent.ias --input "Hello, world!" --stream
+
+# Evaluate agent against test cases
+./agentspec eval examples/basic-agent/basic-agent.ias
+./agentspec eval examples/basic-agent/basic-agent.ias --live
+
+# Check deployed agent status
+./agentspec status
+
+# View runtime logs
+./agentspec logs
+
+# Tear down deployed resources
+./agentspec destroy
+
+# Package and publish
+./agentspec package examples/basic-agent/basic-agent.ias
+./agentspec publish
+./agentspec install my-agent
 ```
 
 ## IntentLang Syntax

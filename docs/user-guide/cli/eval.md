@@ -25,6 +25,7 @@ You can filter which agents and test cases to run using `--agent` and `--tags`. 
 | `--output` | `-o` | *(stdout)* | Write report to a file |
 | `--format` | | `table` | Output format: `table`, `json`, `markdown` |
 | `--compare` | | | Path to a previous eval report (JSON) for comparison |
+| `--live` | | `false` | Invoke agents with a real LLM client instead of stub |
 
 ## Scoring Methods
 
@@ -65,7 +66,10 @@ agent "support-bot" {
 ## Examples
 
 ```bash
-# Run all eval cases in a spec
+# Run all eval cases with live LLM invocation
+agentspec eval agent.ias --live
+
+# Run all eval cases (stub mode, no LLM)
 agentspec eval agent.ias
 
 # Evaluate a specific agent

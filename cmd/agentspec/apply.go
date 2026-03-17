@@ -7,19 +7,19 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/adapters"
-	"github.com/szaher/designs/agentz/internal/apply"
-	"github.com/szaher/designs/agentz/internal/events"
-	"github.com/szaher/designs/agentz/internal/plan"
-	"github.com/szaher/designs/agentz/internal/policy"
-	"github.com/szaher/designs/agentz/internal/state"
+	"github.com/szaher/agentspec/internal/adapters"
+	"github.com/szaher/agentspec/internal/apply"
+	"github.com/szaher/agentspec/internal/events"
+	"github.com/szaher/agentspec/internal/plan"
+	"github.com/szaher/agentspec/internal/policy"
+	"github.com/szaher/agentspec/internal/state"
 
 	// Register adapters
-	_ "github.com/szaher/designs/agentz/internal/adapters/compose"
-	_ "github.com/szaher/designs/agentz/internal/adapters/docker"
-	_ "github.com/szaher/designs/agentz/internal/adapters/kubernetes"
-	_ "github.com/szaher/designs/agentz/internal/adapters/local"
-	_ "github.com/szaher/designs/agentz/internal/adapters/process"
+	_ "github.com/szaher/agentspec/internal/adapters/compose"
+	_ "github.com/szaher/agentspec/internal/adapters/docker"
+	_ "github.com/szaher/agentspec/internal/adapters/kubernetes"
+	_ "github.com/szaher/agentspec/internal/adapters/local"
+	_ "github.com/szaher/agentspec/internal/adapters/process"
 )
 
 func newApplyCmd() *cobra.Command {
@@ -36,6 +36,13 @@ func newApplyCmd() *cobra.Command {
 		Use:   "apply",
 		Short: "Apply desired state idempotently",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if env != "" {
+				return fmt.Errorf("--env is not yet implemented; environment overlays will be available in a future release")
+			}
+			if planFile != "" {
+				return fmt.Errorf("--plan-file is not yet implemented; saved plan support will be available in a future release")
+			}
+
 			files, err := resolveFiles(args)
 			if err != nil {
 				return err
@@ -145,9 +152,6 @@ func newApplyCmd() *cobra.Command {
 	cmd.Flags().StringVar(&planFile, "plan-file", "", "Use a saved plan file")
 	cmd.Flags().StringVar(&policyMode, "policy", "enforce", "Policy evaluation mode: enforce (block on violations) or warn (report and proceed)")
 	cmd.Flags().DurationVar(&lockTimeout, "lock-timeout", 30*time.Second, "Timeout for acquiring state file lock")
-
-	_ = env      // will be used in Phase 6
-	_ = planFile // will be used for plan-file support
 
 	return cmd
 }

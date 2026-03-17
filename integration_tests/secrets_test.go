@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/secrets"
+	"github.com/szaher/agentspec/internal/secrets"
 )
 
 func TestEnvResolverSuccess(t *testing.T) {

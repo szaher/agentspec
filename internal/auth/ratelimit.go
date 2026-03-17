@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/eviction"
+	"github.com/szaher/agentspec/internal/eviction"
 )
 
 // RateLimitConfig holds rate limiting configuration.

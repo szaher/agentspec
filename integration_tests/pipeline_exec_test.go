@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/loop"
-	"github.com/szaher/designs/agentz/internal/pipeline"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/loop"
+	"github.com/szaher/agentspec/internal/pipeline"
 )
 
 func TestPipelineDAGBuild(t *testing.T) {

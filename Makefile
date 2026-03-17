@@ -1,6 +1,6 @@
 BINARY := agentspec
 PKG    := ./cmd/agentspec
-MODULE := github.com/szaher/designs/agentz
+MODULE := github.com/szaher/agentspec
 
 .PHONY: all build test lint fmt vet validate clean pre-commit fmt-examples
 

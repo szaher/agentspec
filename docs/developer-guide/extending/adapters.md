@@ -44,8 +44,8 @@ import (
     "fmt"
     "io"
 
-    "github.com/szaher/designs/agentz/internal/adapters"
-    "github.com/szaher/designs/agentz/internal/ir"
+    "github.com/szaher/agentspec/internal/adapters"
+    "github.com/szaher/agentspec/internal/ir"
 )
 
 // Adapter deploys agent skills as AWS Lambda functions.
@@ -238,7 +238,7 @@ Add a blank import in the CLI entrypoint to trigger the `init()` registration:
 ```go
 // cmd/agentspec/main.go
 import (
-    _ "github.com/szaher/designs/agentz/internal/adapters/lambda"
+    _ "github.com/szaher/agentspec/internal/adapters/lambda"
 )
 ```
 

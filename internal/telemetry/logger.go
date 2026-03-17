@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/szaher/designs/agentz/internal/session"
+	"github.com/szaher/agentspec/internal/session"
 )
 
 type contextKey string

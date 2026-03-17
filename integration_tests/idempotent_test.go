@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/state"
+	"github.com/szaher/agentspec/internal/state"
 )
 
 func TestStateFileLocking(t *testing.T) {

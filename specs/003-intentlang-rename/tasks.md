@@ -288,7 +288,7 @@ Unlike typical features, this rename MUST be done sequentially (US1 → US2 → 
 - [P] tasks = different files, no dependencies
 - [Story] label maps task to specific user story for traceability
 - User stories are **sequential** for this rename (unlike typical independent stories)
-- Go module path `github.com/szaher/designs/agentz` remains unchanged — only user-facing names change
+- Go module path `github.com/szaher/agentspec` remains unchanged — only user-facing names change
 - Internal `"agentz"` in import paths is expected and correct — do NOT rename Go import paths
 - Deprecation warnings go to stderr, not stdout
 - State file migration is silent rename + stderr notice (not a copy)

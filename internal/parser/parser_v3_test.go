@@ -3,7 +3,7 @@ package parser
 import (
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/ast"
+	"github.com/szaher/agentspec/internal/ast"
 )
 
 func TestParseIntentLang3Imports(t *testing.T) {

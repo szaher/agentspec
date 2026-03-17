@@ -4,7 +4,7 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/szaher/designs/agentz/internal/ir"
+	"github.com/szaher/agentspec/internal/ir"
 )
 
 // AgentConfig holds the runtime configuration for a single agent.

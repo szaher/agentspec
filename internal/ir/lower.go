@@ -3,7 +3,7 @@ package ir
 import (
 	"fmt"
 
-	"github.com/szaher/designs/agentz/internal/ast"
+	"github.com/szaher/agentspec/internal/ast"
 )
 
 // Lower converts an AST File to an IR Document by resolving

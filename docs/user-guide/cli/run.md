@@ -1,6 +1,6 @@
 # run
 
-Execute an agent locally from an IntentLang spec file.
+Start the agent runtime server with hot reload and built-in web UI.
 
 ## Usage
 
@@ -10,43 +10,39 @@ agentspec run <file.ias>
 
 ## Description
 
-The `run` command starts a local agent runtime and executes the agent defined in the given spec file. This is useful for testing agent behavior against real inputs without deploying to a remote environment.
-
-You can pass input directly with `--input`, or the agent will read from stdin if no input is provided. Use `--stream` to see token-by-token output as the agent generates a response. Sessions can be resumed by passing a `--session` ID from a previous run.
+The `run` command starts an HTTP server that hosts the agents defined in the given spec file. It watches `.ias` files for changes and automatically restarts the runtime when modifications are detected. A built-in web UI is available for interactive testing.
 
 ## Flags
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--input` | | | Input text to send to the agent |
-| `--stream` | | `false` | Stream output tokens as they are generated |
-| `--session` | | | Resume a previous session by ID |
-| `--verbose` | `-v` | `false` | Enable verbose runtime output |
-| `--port` | | | Start an HTTP server on the specified port instead of running once |
+| `--port` | | `8080` | HTTP server port |
+| `--ui` | | `true` | Enable built-in web frontend |
+| `--no-auth` | | `false` | Explicitly allow unauthenticated access (WARNING: insecure) |
+| `--cors-origins` | | | Comma-separated list of allowed CORS origins |
 
 ## Examples
 
 ```bash
-# Run an agent with inline input
-agentspec run --input "Summarize this document" agent.ias
+# Start the server with default settings
+agentspec run agent.ias
 
-# Run with streaming output
-agentspec run --stream --input "What is the weather?" weather-agent.ias
+# Start on a custom port with UI disabled
+agentspec run --port 9090 --ui=false agent.ias
 
-# Start the agent as a local HTTP server
-agentspec run --port 8080 agent.ias
+# Allow unauthenticated access for local testing
+agentspec run --no-auth agent.ias
 ```
 
 ## Exit Codes
 
 | Code | Meaning |
 |------|---------|
-| `0` | Agent executed successfully |
-| `1` | An error occurred during execution |
+| `0` | Server shut down cleanly |
+| `1` | An error occurred (port conflict, invalid spec, etc.) |
 
 ## See Also
 
-- [HTTP API Overview](../api/index.md) -- For production use, agents expose an HTTP API that can be invoked programmatically as an alternative to the CLI
-- [CLI: apply](apply.md) -- Deploy agents to remote targets
-- [CLI: dev](dev.md) -- Run an agent in development mode with live reloading
+- [CLI: dev](dev.md) -- One-shot agent invocation for quick testing
+- [HTTP API Overview](../api/index.md) -- API exposed by the runtime server
 - [Agent Runtime Configuration](../configuration/runtime.md) -- Configure strategies, timeouts, and streaming

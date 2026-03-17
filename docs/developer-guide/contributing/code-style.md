@@ -145,8 +145,8 @@ import (
     "github.com/tetratelabs/wazero"
 
     // Internal
-    "github.com/szaher/designs/agentz/internal/ir"
-    "github.com/szaher/designs/agentz/internal/state"
+    "github.com/szaher/agentspec/internal/ir"
+    "github.com/szaher/agentspec/internal/state"
 )
 ```
 

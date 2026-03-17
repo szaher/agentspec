@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/session"
+	"github.com/szaher/agentspec/internal/session"
 )
 
 // Span represents a single trace span for an operation.

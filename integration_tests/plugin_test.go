@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/plugins"
+	"github.com/szaher/agentspec/internal/plugins"
 )
 
 func TestPluginManifestLoad(t *testing.T) {
