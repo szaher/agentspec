@@ -18,7 +18,7 @@ Before publishing, the command checks that all exported files listed in the mani
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--sign` | `false` | Sign the package (not yet implemented) |
+| `--sign` | `false` | Sign the package (returns error — not yet available) |
 
 ## Package Manifest
 
@@ -61,7 +61,7 @@ Consumers install published packages by referencing the Git repository URL and v
 # Publish the package defined in agentpack.yaml
 agentspec publish
 
-# Attempt to publish with signing (not yet implemented)
+# Attempt to publish with signing (returns error — not yet available)
 agentspec publish --sign
 ```
 

@@ -11,17 +11,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/compiler"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/loop"
-	"github.com/szaher/designs/agentz/internal/memory"
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/runtime"
-	"github.com/szaher/designs/agentz/internal/session"
-	"github.com/szaher/designs/agentz/internal/telemetry"
-	"github.com/szaher/designs/agentz/internal/tools"
-	"github.com/szaher/designs/agentz/internal/validate"
+	"github.com/szaher/agentspec/internal/compiler"
+	"github.com/szaher/agentspec/internal/compiler/targets"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/loop"
+	"github.com/szaher/agentspec/internal/memory"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/runtime"
+	"github.com/szaher/agentspec/internal/session"
+	"github.com/szaher/agentspec/internal/telemetry"
+	"github.com/szaher/agentspec/internal/tools"
+	"github.com/szaher/agentspec/internal/validate"
 )
 
 func TestCompilePipeline(t *testing.T) {
@@ -466,5 +467,118 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("metrics: expected 200, got %d", resp.StatusCode)
+	}
+}
+
+// TestCompilerToolGeneration verifies that all 4 compiler targets generate
+// functional tool code for HTTP, command, and inline tool types, without
+// any "not implemented" stub strings in the output.
+func TestCompilerToolGeneration(t *testing.T) {
+	// Build an IR document with all 3 tool types
+	doc := &ir.Document{
+		Package:     ir.Package{Name: "tool-gen-test", Version: "1.0.0"},
+		LangVersion: "3.0",
+		Resources: []ir.Resource{
+			{
+				Kind: "Prompt",
+				Name: "sys",
+				Attributes: map[string]interface{}{
+					"content": "You are a test agent.",
+				},
+			},
+			{
+				Kind: "Skill",
+				Name: "web-search",
+				Attributes: map[string]interface{}{
+					"description": "Search the web",
+					"input": []interface{}{
+						map[string]interface{}{"name": "query", "type": "string"},
+					},
+					"tool": map[string]interface{}{
+						"type":   "http",
+						"url":    "https://api.example.com/search",
+						"method": "GET",
+					},
+				},
+			},
+			{
+				Kind: "Skill",
+				Name: "list-files",
+				Attributes: map[string]interface{}{
+					"description": "List files in a directory",
+					"input": []interface{}{
+						map[string]interface{}{"name": "path", "type": "string"},
+					},
+					"tool": map[string]interface{}{
+						"type":   "command",
+						"binary": "ls",
+						"args":   "-la",
+					},
+				},
+			},
+			{
+				Kind: "Skill",
+				Name: "compute",
+				Attributes: map[string]interface{}{
+					"description": "Run a computation",
+					"input": []interface{}{
+						map[string]interface{}{"name": "expr", "type": "string"},
+					},
+					"tool": map[string]interface{}{
+						"type":     "inline",
+						"code":     "result = eval(expr)\nreturn str(result)",
+						"language": "python",
+					},
+				},
+			},
+			{
+				Kind: "Agent",
+				Name: "test-agent",
+				Attributes: map[string]interface{}{
+					"model":  "claude-sonnet-4-20250514",
+					"prompt": "sys",
+					"skills": []interface{}{"web-search", "list-files", "compute"},
+				},
+			},
+		},
+	}
+
+	targetNames := []string{"crewai", "langgraph", "llamaindex", "llamastack"}
+
+	for _, targetName := range targetNames {
+		t.Run(targetName, func(t *testing.T) {
+			target, ok := targets.Get(targetName)
+			if !ok {
+				t.Fatalf("target %q not registered", targetName)
+			}
+
+			result, err := target.Compile(doc, "tool-gen-test")
+			if err != nil {
+				t.Fatalf("compile failed: %v", err)
+			}
+
+			// Check all generated files for "not implemented" stubs
+			for _, f := range result.Files {
+				if strings.Contains(f.Content, "\"not implemented\"") {
+					t.Errorf("file %s contains \"not implemented\" stub", f.Path)
+				}
+			}
+
+			// Verify expected patterns exist in generated code
+			allContent := ""
+			for _, f := range result.Files {
+				allContent += f.Content
+			}
+
+			// HTTP tool should use urllib
+			if !strings.Contains(allContent, "urllib.request") {
+				t.Error("generated code should contain urllib.request for HTTP tool")
+			}
+
+			// Command tool should use subprocess
+			if !strings.Contains(allContent, "subprocess.run") {
+				t.Error("generated code should contain subprocess.run for command tool")
+			}
+		})
 	}
 }

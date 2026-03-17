@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/llm"
+	"github.com/szaher/agentspec/internal/llm"
 )
 
 // RouterStrategy classifies input and dispatches to a specialized sub-agent.

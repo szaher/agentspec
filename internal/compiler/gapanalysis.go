@@ -3,8 +3,8 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/plugins"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/plugins"
 )
 
 // DetectedFeature represents an AgentSpec feature found in the IR document.

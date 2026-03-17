@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/sandbox"
+	"github.com/szaher/agentspec/internal/sandbox"
 )
 
 // InlineConfig configures an inline code executor.

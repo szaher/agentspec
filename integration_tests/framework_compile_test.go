@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/compiler/targets"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/plugins"
+	"github.com/szaher/agentspec/internal/compiler/targets"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/plugins"
 )
 
 // TestFrameworkCompileCrewAI verifies CrewAI target generates correct project structure.

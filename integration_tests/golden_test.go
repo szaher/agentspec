@@ -5,15 +5,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	adapterlocal "github.com/szaher/designs/agentz/internal/adapters/local"
-	"github.com/szaher/designs/agentz/internal/apply"
-	"github.com/szaher/designs/agentz/internal/events"
-	"github.com/szaher/designs/agentz/internal/formatter"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/plan"
-	"github.com/szaher/designs/agentz/internal/state"
-	"github.com/szaher/designs/agentz/internal/validate"
+	adapterlocal "github.com/szaher/agentspec/internal/adapters/local"
+	"github.com/szaher/agentspec/internal/apply"
+	"github.com/szaher/agentspec/internal/events"
+	"github.com/szaher/agentspec/internal/formatter"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/plan"
+	"github.com/szaher/agentspec/internal/state"
+	"github.com/szaher/agentspec/internal/validate"
 )
 
 // TestGoldenPathLifecycle tests the complete lifecycle:

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/llm"
+	"github.com/szaher/agentspec/internal/llm"
 )
 
 // mockExecutor is a simple Executor that returns a fixed result or error.

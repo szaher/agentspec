@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/szaher/designs/agentz/internal/ir"
+	"github.com/szaher/agentspec/internal/ir"
 )
 
 // Manifests holds generated Kubernetes resource manifests.

@@ -26,8 +26,8 @@ AgentSpec is installed by building the CLI binary from source.
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/szaher/designs.git
-cd designs/agentz
+git clone https://github.com/szaher/agentspec.git
+cd agentspec
 ```
 
 ### 2. Build the CLI

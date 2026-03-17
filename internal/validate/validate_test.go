@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/ast"
+	"github.com/szaher/agentspec/internal/ast"
 )
 
 // ---------------------------------------------------------------------------

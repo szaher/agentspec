@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	adaptercompose "github.com/szaher/designs/agentz/internal/adapters/compose"
-	adapterlocal "github.com/szaher/designs/agentz/internal/adapters/local"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
+	adaptercompose "github.com/szaher/agentspec/internal/adapters/compose"
+	adapterlocal "github.com/szaher/agentspec/internal/adapters/local"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
 )
 
 func TestExportLocalMCP(t *testing.T) {

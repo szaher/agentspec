@@ -3,8 +3,8 @@ package integration_tests
 import (
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/expr"
-	"github.com/szaher/designs/agentz/internal/validation"
+	"github.com/szaher/agentspec/internal/expr"
+	"github.com/szaher/agentspec/internal/validation"
 )
 
 func TestValidationRuleExecution(t *testing.T) {

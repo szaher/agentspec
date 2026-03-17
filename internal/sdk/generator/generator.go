@@ -12,7 +12,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/runtime"
 )
 
 // Language represents a target SDK language.
@@ -883,7 +883,7 @@ func generateGo(cfg Config) error {
 	}
 
 	// Write go.mod
-	goModContent := "module github.com/szaher/designs/agentz/sdk/go\n\ngo 1.25\n"
+	goModContent := "module github.com/szaher/agentspec/sdk/go\n\ngo 1.25\n"
 	if err := os.WriteFile(filepath.Join(cfg.OutDir, "go.mod"), []byte(goModContent), 0644); err != nil {
 		return err
 	}

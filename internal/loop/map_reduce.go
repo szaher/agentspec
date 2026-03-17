@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/llm"
+	"github.com/szaher/agentspec/internal/llm"
 )
 
 // MapReduceStrategy splits input into chunks, fans out to parallel agent calls,

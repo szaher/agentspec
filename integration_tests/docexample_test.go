@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/validate"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/validate"
 )
 
 // TestDocExamples validates all .ias example files in docs/examples/.

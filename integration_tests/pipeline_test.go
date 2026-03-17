@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/pipeline"
+	"github.com/szaher/agentspec/internal/pipeline"
 )
 
 // TestDAGSortPerformance (T031A) builds a 100-step linear chain where

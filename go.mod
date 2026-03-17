@@ -1,4 +1,4 @@
-module github.com/szaher/designs/agentz
+module github.com/szaher/agentspec
 
 go 1.25
 
@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/google/jsonschema-go v0.4.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/segmentio/asm v1.1.3 // indirect

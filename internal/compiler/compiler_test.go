@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/ast"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/plugins"
-	runtimePkg "github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/ast"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/plugins"
+	runtimePkg "github.com/szaher/agentspec/internal/runtime"
 )
 
 // ---------- gapanalysis: DetectFeatures ----------

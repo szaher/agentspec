@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/controlflow"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
+	"github.com/szaher/agentspec/internal/controlflow"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
 )
 
 // mockSkillInvoker returns canned responses for skill invocations.

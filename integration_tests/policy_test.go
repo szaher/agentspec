@@ -3,8 +3,8 @@ package integration_tests
 import (
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/policy"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/policy"
 )
 
 func TestPolicyPinnedImports(t *testing.T) {

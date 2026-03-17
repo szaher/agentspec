@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/szaher/designs/agentz/internal/llm"
+	"github.com/szaher/agentspec/internal/llm"
 )
 
 // Discovery aggregates tool information from multiple MCP servers

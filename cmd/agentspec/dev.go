@@ -2,160 +2,141 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"strings"
 	"syscall"
-	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/loop"
+	"github.com/szaher/agentspec/internal/memory"
+	"github.com/szaher/agentspec/internal/runtime"
+	"github.com/szaher/agentspec/internal/session"
+	"github.com/szaher/agentspec/internal/tools"
 )
 
 func newDevCmd() *cobra.Command {
-	var port int
-	var enableUI bool
-	var noAuth bool
-	var corsOrigins string
+	var (
+		input  string
+		agent  string
+		stream bool
+	)
 
 	cmd := &cobra.Command{
 		Use:   "dev [file.ias]",
-		Short: "Start development server with hot reload",
-		Long:  "Watches .ias files for changes and automatically restarts the runtime.",
+		Short: "Invoke an agent and print the response",
+		Long:  "One-shot agent invocation: parse, validate, invoke with LLM, print response, exit.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			files, err := resolveFiles(args)
 			if err != nil {
 				return err
 			}
 
-			logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-				Level: slog.LevelDebug,
-			}))
+			doc, err := parseAndLower(files)
+			if err != nil {
+				return err
+			}
+
+			config, err := runtime.FromIR(doc)
+			if err != nil {
+				return err
+			}
+
+			// Find the target agent
+			var agentConfig *runtime.AgentConfig
+			if agent != "" {
+				for i, a := range config.Agents {
+					if a.Name == agent {
+						agentConfig = &config.Agents[i]
+						break
+					}
+				}
+				if agentConfig == nil {
+					return fmt.Errorf("agent %q not found", agent)
+				}
+			} else {
+				agentConfig = &config.Agents[0]
+			}
+
+			if input == "" {
+				return fmt.Errorf("--input is required")
+			}
+
+			// Create LLM client — auto-detect provider from agent's model string
+			llmClient, resolvedModel := llm.NewClientForModel(agentConfig.Model)
+			agentConfig.Model = resolvedModel
+
+			// Create tool registry
+			registry := tools.NewRegistry()
+
+			// Create session manager
+			sessionStore := session.NewMemoryStore(0, 0)
+			memoryStore := memory.NewSlidingWindow(50)
+			_ = session.NewManager(sessionStore, memoryStore)
+
+			// Create strategy
+			strategy := &loop.ReActStrategy{}
 
 			ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
 
-			return runDevLoop(ctx, files, port, enableUI, noAuth, corsOrigins, logger)
+			inv := loop.Invocation{
+				AgentName:   agentConfig.Name,
+				Model:       agentConfig.Model,
+				System:      agentConfig.System,
+				Input:       input,
+				MaxTurns:    agentConfig.MaxTurns,
+				MaxTokens:   4096,
+				TokenBudget: agentConfig.TokenBudget,
+				Temperature: agentConfig.Temperature,
+				Stream:      stream,
+			}
+
+			var onEvent loop.StreamCallback
+			if stream {
+				onEvent = func(event llm.StreamEvent) {
+					switch event.Type {
+					case "text":
+						fmt.Print(event.Text)
+					case "tool_call_start":
+						if event.ToolCall != nil {
+							fmt.Fprintf(os.Stderr, "\n[calling tool: %s]\n", event.ToolCall.Name)
+						}
+					}
+				}
+			}
+
+			resp, err := strategy.Execute(ctx, inv, llmClient, registry, onEvent)
+			if err != nil {
+				return fmt.Errorf("invocation failed: %w", err)
+			}
+
+			if stream {
+				fmt.Println()
+			} else {
+				fmt.Println(resp.Output)
+			}
+
+			if verbose {
+				stats := map[string]interface{}{
+					"turns":       resp.Turns,
+					"duration_ms": resp.Duration.Milliseconds(),
+					"tokens":      resp.Tokens,
+					"tool_calls":  len(resp.ToolCalls),
+				}
+				data, _ := json.MarshalIndent(stats, "", "  ")
+				fmt.Fprintf(os.Stderr, "\n%s\n", string(data))
+			}
+
+			return nil
 		},
 	}
 
-	cmd.Flags().IntVar(&port, "port", 8080, "HTTP server port")
-	cmd.Flags().BoolVar(&enableUI, "ui", true, "Enable built-in web frontend")
-	cmd.Flags().BoolVar(&noAuth, "no-auth", false, "Explicitly allow unauthenticated access (WARNING: insecure)")
-	cmd.Flags().StringVar(&corsOrigins, "cors-origins", "", "Comma-separated list of allowed CORS origins")
+	cmd.Flags().StringVar(&input, "input", "", "Message to send to the agent")
+	cmd.Flags().StringVar(&agent, "agent", "", "Agent name (defaults to first agent)")
+	cmd.Flags().BoolVar(&stream, "stream", false, "Stream response")
 
 	return cmd
-}
-
-func runDevLoop(ctx context.Context, files []string, port int, enableUI bool, noAuth bool, corsOriginsStr string, logger *slog.Logger) error {
-	var rt *runtime.Runtime
-
-	startRuntime := func() error {
-		if rt != nil {
-			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer shutdownCancel()
-			_ = rt.Shutdown(shutdownCtx)
-			rt = nil
-		}
-
-		doc, err := parseAndLower(files)
-		if err != nil {
-			return fmt.Errorf("parse error: %w", err)
-		}
-
-		config, err := runtime.FromIR(doc)
-		if err != nil {
-			return fmt.Errorf("config error: %w", err)
-		}
-
-		// Build CORS origins — auto-add localhost in dev mode
-		var corsOrigins []string
-		if corsOriginsStr != "" {
-			for _, o := range strings.Split(corsOriginsStr, ",") {
-				corsOrigins = append(corsOrigins, strings.TrimSpace(o))
-			}
-		}
-		// Dev mode: auto-allow localhost origins for built-in UI
-		corsOrigins = append(corsOrigins,
-			fmt.Sprintf("http://localhost:%d", port),
-			fmt.Sprintf("http://127.0.0.1:%d", port),
-		)
-
-		rt, err = runtime.New(config, runtime.Options{
-			Port:        port,
-			Logger:      logger,
-			EnableUI:    enableUI,
-			NoAuth:      noAuth,
-			CORSOrigins: corsOrigins,
-		})
-		if err != nil {
-			return fmt.Errorf("runtime error: %w", err)
-		}
-
-		go func() {
-			if err := rt.Start(ctx); err != nil {
-				logger.Error("runtime stopped", "error", err)
-			}
-		}()
-
-		return nil
-	}
-
-	// Initial start
-	logger.Info("starting dev server", "files", files, "port", port, "ui", enableUI)
-	if err := startRuntime(); err != nil {
-		logger.Error("initial start failed", "error", err)
-		return err
-	}
-
-	// Watch for file changes
-	watchDir := "."
-	if len(files) > 0 {
-		watchDir = filepath.Dir(files[0])
-	}
-
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	lastMod := time.Now()
-
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Info("shutting down dev server")
-			if rt != nil {
-				shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer shutdownCancel()
-				_ = rt.Shutdown(shutdownCtx)
-			}
-			return nil
-
-		case <-ticker.C:
-			// Check for file modifications
-			changed := false
-			_ = filepath.Walk(watchDir, func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return nil
-				}
-				if filepath.Ext(path) == ".ias" && info.ModTime().After(lastMod) {
-					changed = true
-					return filepath.SkipAll
-				}
-				return nil
-			})
-
-			if changed {
-				lastMod = time.Now()
-				logger.Info("file change detected, restarting...")
-				if err := startRuntime(); err != nil {
-					logger.Error("restart failed", "error", err)
-				} else {
-					logger.Info("runtime restarted successfully")
-				}
-			}
-		}
-	}
 }

@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/plan"
-	"github.com/szaher/designs/agentz/internal/state"
+	"github.com/szaher/agentspec/internal/plan"
+	"github.com/szaher/agentspec/internal/state"
 )
 
 func newDiffCmd() *cobra.Command {

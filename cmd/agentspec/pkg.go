@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/adapters/docker"
-	"github.com/szaher/designs/agentz/internal/adapters/kubernetes"
-	"github.com/szaher/designs/agentz/internal/compiler"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
+	"github.com/szaher/agentspec/internal/adapters/docker"
+	"github.com/szaher/agentspec/internal/adapters/kubernetes"
+	"github.com/szaher/agentspec/internal/compiler"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
 )
 
 // PackageResult is the output of the package command.

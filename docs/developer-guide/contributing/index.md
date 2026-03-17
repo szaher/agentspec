@@ -29,11 +29,11 @@ golangci-lint version
 ## Clone the Repository
 
 ```bash
-git clone https://github.com/szaher/designs.git
-cd designs/agentz
+git clone https://github.com/szaher/agentspec.git
+cd agentspec
 ```
 
-The Go module path is `github.com/szaher/designs/agentz`. All import paths use this prefix.
+The Go module path is `github.com/szaher/agentspec`. All import paths use this prefix.
 
 ## Build
 

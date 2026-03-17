@@ -6,13 +6,13 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/loop"
-	agentmcp "github.com/szaher/designs/agentz/internal/mcp"
-	"github.com/szaher/designs/agentz/internal/memory"
-	"github.com/szaher/designs/agentz/internal/secrets"
-	"github.com/szaher/designs/agentz/internal/session"
-	"github.com/szaher/designs/agentz/internal/tools"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/loop"
+	agentmcp "github.com/szaher/agentspec/internal/mcp"
+	"github.com/szaher/agentspec/internal/memory"
+	"github.com/szaher/agentspec/internal/secrets"
+	"github.com/szaher/agentspec/internal/session"
+	"github.com/szaher/agentspec/internal/tools"
 )
 
 // Runtime manages the full lifecycle of an agent runtime.

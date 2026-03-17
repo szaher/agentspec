@@ -6,12 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/auth"
-	"github.com/szaher/designs/agentz/internal/eviction"
-	"github.com/szaher/designs/agentz/internal/loop"
-	"github.com/szaher/designs/agentz/internal/runtime"
-	"github.com/szaher/designs/agentz/internal/session"
-	"github.com/szaher/designs/agentz/internal/tools"
+	"github.com/szaher/agentspec/internal/auth"
+	"github.com/szaher/agentspec/internal/eviction"
+	"github.com/szaher/agentspec/internal/loop"
+	"github.com/szaher/agentspec/internal/runtime"
+	"github.com/szaher/agentspec/internal/session"
+	"github.com/szaher/agentspec/internal/tools"
 )
 
 func newAuthTestServer(apiKey string) *httptest.Server {

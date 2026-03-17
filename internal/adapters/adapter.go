@@ -8,7 +8,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/szaher/designs/agentz/internal/ir"
+	"github.com/szaher/agentspec/internal/ir"
 )
 
 // ActionType represents the type of change for a resource.

@@ -3,8 +3,8 @@ package policy
 import (
 	"fmt"
 
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/validate"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/validate"
 )
 
 // Enforce evaluates policies against IR resources and returns

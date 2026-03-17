@@ -8,9 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/szaher/designs/agentz/internal/formatter"
-	"github.com/szaher/designs/agentz/internal/migrate"
-	"github.com/szaher/designs/agentz/internal/parser"
+	"github.com/szaher/agentspec/internal/formatter"
+	"github.com/szaher/agentspec/internal/migrate"
+	"github.com/szaher/agentspec/internal/parser"
 )
 
 func newMigrateCmd() *cobra.Command {

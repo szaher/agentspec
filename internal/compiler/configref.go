@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/runtime"
 )
 
 // AgentConfigRef holds config reference info for one agent.

@@ -10,13 +10,13 @@ The `agentspec` command-line interface provides tools for authoring, validating,
 | [fmt](fmt.md) | Format an IntentLang file to canonical style |
 | [plan](plan.md) | Preview changes that would be applied from a spec |
 | [apply](apply.md) | Apply changes defined in a spec to the target environment |
-| [run](run.md) | Execute an agent locally from a spec file |
+| [run](run.md) | Start agent runtime server with hot reload and web UI |
 | [compile](compile.md) | Compile .ias files into a deployable agent artifact |
 | [package](package.md) | Package a compiled agent for deployment (Docker, Kubernetes, Helm) |
 | [eval](eval.md) | Run evaluation test cases against agents |
 | [install](install.md) | Install a package from a Git repository |
 | [publish](publish.md) | Publish an AgentPack package to a Git remote |
-| [dev](dev.md) | Start a local development server with live reload |
+| [dev](dev.md) | One-shot agent invocation: invoke with LLM, print response, exit |
 | [status](status.md) | Show the current state of deployed agents |
 | [logs](logs.md) | Stream or retrieve logs from running agents |
 | [destroy](destroy.md) | Tear down resources created by a spec |

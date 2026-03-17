@@ -5,7 +5,7 @@ package controlflow
 import (
 	"fmt"
 
-	"github.com/szaher/designs/agentz/internal/expr"
+	"github.com/szaher/agentspec/internal/expr"
 )
 
 // RuntimeContext holds the runtime variables available to control flow expressions.

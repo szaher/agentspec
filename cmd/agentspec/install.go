@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/registry"
+	"github.com/szaher/agentspec/internal/registry"
 )
 
 func newInstallCmd() *cobra.Command {

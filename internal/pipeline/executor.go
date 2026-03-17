@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/loop"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/loop"
 )
 
 // StepResult holds the result of executing a single pipeline step.

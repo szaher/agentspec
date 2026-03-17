@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/tools"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/tools"
 )
 
 func TestToolRegistryDispatch(t *testing.T) {

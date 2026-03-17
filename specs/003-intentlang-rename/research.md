@@ -29,9 +29,9 @@ Minimal research required — this is a rename/refactor with no technical unknow
 
 ### 4. Go Module Path
 
-- **Decision**: Keep `github.com/szaher/designs/agentz` unchanged
+- **Decision**: Keep `github.com/szaher/agentspec` unchanged
 - **Rationale**: Renaming Go module paths requires a major version bump and breaks all import references. The module path is internal infrastructure, not user-facing.
-- **Alternatives considered**: Rename to `github.com/szaher/designs/agentspec` — deferred to separate feature if ever needed.
+- **Alternatives considered**: Previously deferred; now completed — module path is `github.com/szaher/agentspec`.
 
 ### 5. State File Migration Approach
 

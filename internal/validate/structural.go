@@ -5,7 +5,7 @@ package validate
 import (
 	"fmt"
 
-	"github.com/szaher/designs/agentz/internal/ast"
+	"github.com/szaher/agentspec/internal/ast"
 )
 
 // ValidationError represents a validation error with position and hint.

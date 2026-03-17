@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/ir"
+	"github.com/szaher/agentspec/internal/ir"
 )
 
 func TestEnforce_ZeroViolations(t *testing.T) {

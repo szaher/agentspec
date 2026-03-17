@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/adapters/compose"
-	"github.com/szaher/designs/agentz/internal/adapters/docker"
-	"github.com/szaher/designs/agentz/internal/adapters/kubernetes"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
+	"github.com/szaher/agentspec/internal/adapters/compose"
+	"github.com/szaher/agentspec/internal/adapters/docker"
+	"github.com/szaher/agentspec/internal/adapters/kubernetes"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
 )
 
 // TestDockerfileFromBinary verifies Dockerfile generation for a compiled binary.

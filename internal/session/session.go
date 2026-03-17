@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/memory"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/memory"
 )
 
 // Manager handles session lifecycle: create, send message, close, expire.

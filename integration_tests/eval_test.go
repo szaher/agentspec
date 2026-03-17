@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/evaluation"
-	"github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/evaluation"
+	"github.com/szaher/agentspec/internal/runtime"
 )
 
 // testInvoker returns canned responses for eval testing.

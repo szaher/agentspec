@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/llm"
-	"github.com/szaher/designs/agentz/internal/loop"
+	"github.com/szaher/agentspec/internal/llm"
+	"github.com/szaher/agentspec/internal/loop"
 )
 
 func TestDelegationRouterEvaluate(t *testing.T) {

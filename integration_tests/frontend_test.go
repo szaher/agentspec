@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/frontend"
-	"github.com/szaher/designs/agentz/internal/loop"
-	"github.com/szaher/designs/agentz/internal/runtime"
-	"github.com/szaher/designs/agentz/internal/session"
-	"github.com/szaher/designs/agentz/internal/telemetry"
-	"github.com/szaher/designs/agentz/internal/tools"
+	"github.com/szaher/agentspec/internal/frontend"
+	"github.com/szaher/agentspec/internal/loop"
+	"github.com/szaher/agentspec/internal/runtime"
+	"github.com/szaher/agentspec/internal/session"
+	"github.com/szaher/agentspec/internal/telemetry"
+	"github.com/szaher/agentspec/internal/tools"
 )
 
 // TestFrontendServesIndexHTML verifies the frontend handler serves index.html.

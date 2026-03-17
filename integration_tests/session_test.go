@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/session"
+	"github.com/szaher/agentspec/internal/session"
 )
 
 // TestMemoryStoreBackgroundEviction verifies that the background eviction

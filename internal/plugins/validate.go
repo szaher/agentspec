@@ -8,7 +8,7 @@ import (
 
 	"github.com/tetratelabs/wazero"
 
-	"github.com/szaher/designs/agentz/internal/ir"
+	"github.com/szaher/agentspec/internal/ir"
 )
 
 // ValidateResources dispatches validation to plugins based on resource types.

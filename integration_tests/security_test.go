@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/sandbox"
-	"github.com/szaher/designs/agentz/internal/session"
+	"github.com/szaher/agentspec/internal/sandbox"
+	"github.com/szaher/agentspec/internal/session"
 )
 
 func TestSessionIDSecurity(t *testing.T) {

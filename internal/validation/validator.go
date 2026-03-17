@@ -7,7 +7,7 @@ package validation
 import (
 	"fmt"
 
-	"github.com/szaher/designs/agentz/internal/expr"
+	"github.com/szaher/agentspec/internal/expr"
 )
 
 // RuleDef describes a declared validation rule from the IR.

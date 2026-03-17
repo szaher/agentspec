@@ -101,7 +101,7 @@ The CLI binary name, internal string references, help text, error messages, and 
 
 ## Assumptions
 
-- The Go module path (`github.com/szaher/designs/agentz`) remains unchanged — only the binary name changes. A module path rename is a separate, more disruptive change.
+- The Go module path (`github.com/szaher/agentspec`) remains unchanged — only the binary name changes. A module path rename is a separate, more disruptive change.
 - The `cmd/agentz/` directory is renamed to `cmd/agentspec/` as part of the binary rename.
 - The `.az` extension remains supported with deprecation warnings for at least one release cycle before removal.
 - The constitution file and speckit tooling do not need to be renamed — they are project infrastructure, not user-facing.

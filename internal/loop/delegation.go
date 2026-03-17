@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/szaher/designs/agentz/internal/llm"
+	"github.com/szaher/agentspec/internal/llm"
 )
 
 // DelegationRule describes when an agent should delegate to another agent.

@@ -20,8 +20,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/auth"
-	"github.com/szaher/designs/agentz/internal/runtime"
+	"github.com/szaher/agentspec/internal/auth"
+	"github.com/szaher/agentspec/internal/runtime"
 )
 
 //go:embed config.json

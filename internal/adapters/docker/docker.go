@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/szaher/designs/agentz/internal/adapters"
-	"github.com/szaher/designs/agentz/internal/ir"
+	"github.com/szaher/agentspec/internal/adapters"
+	"github.com/szaher/agentspec/internal/ir"
 )
 
 // findModuleRoot walks up from the current directory to find the nearest

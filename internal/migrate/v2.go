@@ -2,7 +2,7 @@
 package migrate
 
 import (
-	"github.com/szaher/designs/agentz/internal/ast"
+	"github.com/szaher/agentspec/internal/ast"
 )
 
 // ToV2 rewrites an IntentLang 1.0 AST to 2.0:

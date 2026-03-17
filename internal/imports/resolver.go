@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/szaher/designs/agentz/internal/ast"
-	"github.com/szaher/designs/agentz/internal/parser"
+	"github.com/szaher/agentspec/internal/ast"
+	"github.com/szaher/agentspec/internal/parser"
 )
 
 // ResolvedImport holds the result of resolving a single import statement.

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/llm"
+	"github.com/szaher/agentspec/internal/llm"
 )
 
 // ---------- mock ToolExecutor ----------

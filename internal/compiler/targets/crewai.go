@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/plugins"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/plugins"
 )
 
 func init() {
@@ -215,8 +215,8 @@ func (t *CrewAITarget) generateTools(skills []ir.Resource) plugins.GeneratedFile
 					sb.WriteString("], capture_output=True, text=True)\n")
 					sb.WriteString("    return result.stdout\n")
 				} else {
-					sb.WriteString("    # TODO: implement tool logic\n")
-					sb.WriteString("    return \"not implemented\"\n")
+					sb.WriteString("    # TODO(agentspec): configure binary for this command tool\n")
+					sb.WriteString("    raise NotImplementedError(\"Command tool missing binary configuration\")\n")
 				}
 			case "http":
 				url, _ := tool["url"].(string)
@@ -229,16 +229,34 @@ func (t *CrewAITarget) generateTools(skills []ir.Resource) plugins.GeneratedFile
 					sb.WriteString("    with urllib.request.urlopen(req) as resp:\n")
 					sb.WriteString("        return resp.read().decode()\n")
 				} else {
-					sb.WriteString("    # TODO: implement HTTP tool\n")
-					sb.WriteString("    return \"not implemented\"\n")
+					sb.WriteString("    # TODO(agentspec): configure HTTP URL for this tool\n")
+					sb.WriteString("    raise NotImplementedError(\"HTTP tool missing url configuration\")\n")
+				}
+			case "inline":
+				code, _ := tool["code"].(string)
+				lang, _ := tool["language"].(string)
+				if code != "" {
+					if lang == "" || lang == "python" {
+						// Embed Python code directly
+						for _, line := range strings.Split(code, "\n") {
+							fmt.Fprintf(&sb, "    %s\n", line)
+						}
+					} else {
+						// Execute via subprocess for non-Python languages
+						fmt.Fprintf(&sb, "    result = subprocess.run([%q, \"-c\", %q], capture_output=True, text=True)\n", lang, code)
+						sb.WriteString("    return result.stdout\n")
+					}
+				} else {
+					sb.WriteString("    # TODO(agentspec): provide inline code for this tool\n")
+					sb.WriteString("    raise NotImplementedError(\"Inline tool missing code\")\n")
 				}
 			default:
-				sb.WriteString("    # TODO: implement tool logic\n")
-				sb.WriteString("    return \"not implemented\"\n")
+				sb.WriteString("    # TODO(agentspec): unsupported tool type\n")
+				sb.WriteString("    raise NotImplementedError(\"Tool type not supported\")\n")
 			}
 		} else {
-			sb.WriteString("    # TODO: implement tool logic\n")
-			sb.WriteString("    return \"not implemented\"\n")
+			sb.WriteString("    # TODO(agentspec): no tool configuration found\n")
+			sb.WriteString("    raise NotImplementedError(\"No tool configuration\")\n")
 		}
 
 		sb.WriteString("\n\n")

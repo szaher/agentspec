@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/formatter"
-	"github.com/szaher/designs/agentz/internal/parser"
+	"github.com/szaher/agentspec/internal/formatter"
+	"github.com/szaher/agentspec/internal/parser"
 )
 
 func newFmtCmd() *cobra.Command {

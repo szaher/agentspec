@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/szaher/designs/agentz/internal/llm"
+	"github.com/szaher/agentspec/internal/llm"
 )
 
 // Executor executes a tool call and returns the result as a string.

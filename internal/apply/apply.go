@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/szaher/designs/agentz/internal/adapters"
-	"github.com/szaher/designs/agentz/internal/events"
-	"github.com/szaher/designs/agentz/internal/state"
+	"github.com/szaher/agentspec/internal/adapters"
+	"github.com/szaher/agentspec/internal/events"
+	"github.com/szaher/agentspec/internal/state"
 )
 
 // Result summarizes the outcome of an apply operation.

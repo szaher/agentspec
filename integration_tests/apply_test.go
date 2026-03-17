@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/szaher/designs/agentz/internal/adapters"
-	adapterlocal "github.com/szaher/designs/agentz/internal/adapters/local"
-	"github.com/szaher/designs/agentz/internal/apply"
-	"github.com/szaher/designs/agentz/internal/events"
-	"github.com/szaher/designs/agentz/internal/ir"
-	"github.com/szaher/designs/agentz/internal/parser"
-	"github.com/szaher/designs/agentz/internal/plan"
-	"github.com/szaher/designs/agentz/internal/state"
+	"github.com/szaher/agentspec/internal/adapters"
+	adapterlocal "github.com/szaher/agentspec/internal/adapters/local"
+	"github.com/szaher/agentspec/internal/apply"
+	"github.com/szaher/agentspec/internal/events"
+	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/parser"
+	"github.com/szaher/agentspec/internal/plan"
+	"github.com/szaher/agentspec/internal/state"
 )
 
 func TestPlanApplyIdempotencyCycle(t *testing.T) {

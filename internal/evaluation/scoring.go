@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/szaher/designs/agentz/internal/expr"
+	"github.com/szaher/agentspec/internal/expr"
 )
 
 // Scorer evaluates how well an actual output matches the expected output.

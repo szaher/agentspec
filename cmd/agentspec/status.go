@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/szaher/designs/agentz/internal/adapters"
-	"github.com/szaher/designs/agentz/internal/plan"
+	"github.com/szaher/agentspec/internal/adapters"
+	"github.com/szaher/agentspec/internal/plan"
 )
 
 func newStatusCmd() *cobra.Command {
