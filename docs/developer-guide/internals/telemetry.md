@@ -177,6 +177,14 @@ For distributed tracing, the telemetry package supports OpenTelemetry integratio
 
 Every operation receives a correlation ID that is propagated through all events and log entries. This allows tracing a single `apply` or `invoke` operation across all subsystems.
 
+- The runtime uses ULID (Universally Unique Lexicographically Sortable Identifier) for correlation IDs, generated via the `oklog/ulid/v2` library.
+- ULIDs are 128-bit identifiers that encode a millisecond-precision timestamp, making them time-sortable.
+- The `CorrelationMiddleware` in `internal/telemetry/correlation.go` intercepts every HTTP request:
+  - If the client sends an `X-Correlation-ID` header, that value is propagated.
+  - Otherwise, a new ULID is generated.
+  - The ID is injected into the request context via `WithCorrelationID()` and set on the response `X-Correlation-ID` header.
+- Request-scoped loggers created via `RequestLogger()` automatically include the `correlation_id` field.
+
 ### Span Structure
 
 ```text
@@ -205,6 +213,18 @@ OpenTelemetry export can be configured via environment variables:
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | (disabled) | OTLP collector endpoint |
 | `OTEL_SERVICE_NAME` | `agentspec` | Service name in traces |
 | `OTEL_RESOURCE_ATTRIBUTES` | (none) | Additional resource attributes |
+
+## Structured Log Entries
+
+The following table lists the structured log messages emitted by the runtime, along with their source packages and fields:
+
+| Log Message | Package | Fields | When Emitted |
+|------------|---------|--------|-------------|
+| `rate limiter eviction` | `auth` | `evicted`, `remaining` | Each background eviction cycle |
+| `session cleanup` | `session` | `evicted`, `active` | Each background cleanup cycle |
+| `memory session eviction` | `memory` | `evicted`, `remaining`, `max` | When LRU session eviction occurs |
+| `state cache` | `state` | `hits`, `misses` | Every 100th Get() call |
+| `redis session list` | `session` | `count` | After listing sessions via SCAN |
 
 ## Implementing a Custom Emitter
 

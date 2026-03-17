@@ -6,6 +6,7 @@ require (
 	github.com/anthropics/anthropic-sdk-go v1.26.0
 	github.com/expr-lang/expr v1.17.8
 	github.com/modelcontextprotocol/go-sdk v1.3.1
+	github.com/oklog/ulid/v2 v2.1.1
 	github.com/spf13/cobra v1.10.2
 	github.com/tetratelabs/wazero v1.11.0
 	gopkg.in/yaml.v3 v3.0.1

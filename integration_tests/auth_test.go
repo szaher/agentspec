@@ -18,7 +18,7 @@ func newAuthTestServer(apiKey string) *httptest.Server {
 		},
 	}
 	registry := tools.NewRegistry()
-	sessionMgr := session.NewManager(session.NewMemoryStore(0), nil)
+	sessionMgr := session.NewManager(session.NewMemoryStore(0, 0), nil)
 	strategy := &loop.ReActStrategy{}
 
 	var opts []runtime.ServerOption

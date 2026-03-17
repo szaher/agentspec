@@ -1,13 +1,18 @@
 package auth
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/szaher/designs/agentz/internal/eviction"
 )
 
 // RateLimitConfig holds rate limiting configuration.
@@ -49,37 +54,65 @@ func RateLimitConfigFromEnv() RateLimitConfig {
 
 // RateLimiter implements per-client token bucket rate limiting.
 type RateLimiter struct {
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	config  RateLimitConfig
+	policy  eviction.Policy
+	logger  *slog.Logger
 	buckets map[string]*bucket
 }
 
 type bucket struct {
 	tokens     float64
 	lastRefill time.Time
+	lastAccess time.Time
 }
 
-// NewRateLimiter creates a rate limiter with the given configuration.
-func NewRateLimiter(config RateLimitConfig) *RateLimiter {
+// NewRateLimiter creates a rate limiter with the given configuration and eviction policy.
+// If the provided policy is the zero value, DefaultPolicy is used.
+func NewRateLimiter(config RateLimitConfig, policy eviction.Policy) *RateLimiter {
+	if (policy == eviction.Policy{}) {
+		policy = eviction.DefaultPolicy()
+	}
 	return &RateLimiter{
 		config:  config,
+		policy:  policy,
+		logger:  slog.Default(),
 		buckets: make(map[string]*bucket),
 	}
 }
 
 // Allow checks if a request from the given key is allowed.
 func (rl *RateLimiter) Allow(key string) bool {
+	// Try read lock first to find existing bucket.
+	rl.mu.RLock()
+	b, ok := rl.buckets[key]
+	rl.mu.RUnlock()
+
+	if !ok {
+		// Promote to write lock to create a new bucket.
+		rl.mu.Lock()
+		// Double-check after acquiring write lock.
+		b, ok = rl.buckets[key]
+		if !ok {
+			now := time.Now()
+			b = &bucket{
+				tokens:     float64(rl.config.Burst),
+				lastRefill: now,
+				lastAccess: now,
+			}
+			rl.buckets[key] = b
+
+			// If bucket count exceeds MaxEntries, evict oldest immediately.
+			if len(rl.buckets) > rl.policy.MaxEntries {
+				rl.evictOldestLocked(len(rl.buckets) - rl.policy.MaxEntries)
+			}
+		}
+		rl.mu.Unlock()
+	}
+
+	// Now update the bucket under write lock.
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
-
-	b, ok := rl.buckets[key]
-	if !ok {
-		b = &bucket{
-			tokens:     float64(rl.config.Burst),
-			lastRefill: time.Now(),
-		}
-		rl.buckets[key] = b
-	}
 
 	// Refill tokens
 	now := time.Now()
@@ -89,12 +122,87 @@ func (rl *RateLimiter) Allow(key string) bool {
 		b.tokens = float64(rl.config.Burst)
 	}
 	b.lastRefill = now
+	b.lastAccess = now
 
 	if b.tokens < 1 {
 		return false
 	}
 	b.tokens--
 	return true
+}
+
+// evictOldestLocked removes the n oldest buckets by lastAccess.
+// Caller must hold rl.mu write lock.
+func (rl *RateLimiter) evictOldestLocked(n int) {
+	if n <= 0 {
+		return
+	}
+
+	type entry struct {
+		key        string
+		lastAccess time.Time
+	}
+
+	entries := make([]entry, 0, len(rl.buckets))
+	for k, b := range rl.buckets {
+		entries = append(entries, entry{key: k, lastAccess: b.lastAccess})
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].lastAccess.Before(entries[j].lastAccess)
+	})
+
+	if n > len(entries) {
+		n = len(entries)
+	}
+	for i := 0; i < n; i++ {
+		delete(rl.buckets, entries[i].key)
+	}
+}
+
+// Start launches a background goroutine that periodically evicts stale buckets
+// according to the eviction policy. The goroutine stops when ctx is cancelled.
+func (rl *RateLimiter) Start(ctx context.Context) {
+	go func() {
+		ticker := time.NewTicker(rl.policy.EvictionInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				evicted := rl.evictStale()
+				rl.mu.RLock()
+				remaining := len(rl.buckets)
+				rl.mu.RUnlock()
+
+				rl.logger.LogAttrs(ctx, slog.LevelInfo, "rate limiter eviction",
+					slog.Int("evicted", evicted),
+					slog.Int("remaining", remaining),
+				)
+			}
+		}
+	}()
+}
+
+// evictStale removes buckets whose lastAccess is older than the TTL.
+// Returns the number of evicted entries.
+func (rl *RateLimiter) evictStale() int {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	cutoff := time.Now().Add(-rl.policy.TTL)
+	evicted := 0
+
+	for key, b := range rl.buckets {
+		if b.lastAccess.Before(cutoff) {
+			delete(rl.buckets, key)
+			evicted++
+		}
+	}
+
+	return evicted
 }
 
 // Middleware returns HTTP middleware that applies rate limiting.

@@ -186,6 +186,15 @@ When the toolchain starts, it checks for the legacy `.agentz.state.json` file. I
 Warning: Migrated state file from '.agentz.state.json' to '.agentspec.state.json'
 ```
 
+## State File Caching
+
+- The `LocalBackend` maintains an in-memory cache of state entries for O(1) lookups.
+- **Cache warming**: The first `Load()` call reads from disk and populates the cache. Subsequent `Load()` calls check the file's modification time (`mtime`) and return cached data if the file hasn't changed.
+- **Indexed lookups**: `Get(fqn)` uses an in-memory `map[string]*Entry` index for O(1) lookups instead of scanning the full entry list.
+- **Cache invalidation**: `Save()` invalidates the cache after writing to disk, forcing the next `Load()` to re-read from the file.
+- **External modification detection**: If the file is modified externally (e.g., by another process or manual edit), the next `Load()` detects the mtime change and refreshes the cache.
+- **Diagnostics**: Cache hit/miss counters are available via `CacheStats()` and logged periodically (every 100th `Get()` call) as structured log entries with fields `hits` and `misses`.
+
 ## Working with State
 
 ### Inspecting State

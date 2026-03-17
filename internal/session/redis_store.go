@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/szaher/designs/agentz/internal/llm"
@@ -16,6 +18,9 @@ type RedisClient interface {
 	Set(ctx context.Context, key string, value string, ttl time.Duration) error
 	Del(ctx context.Context, keys ...string) error
 	Keys(ctx context.Context, pattern string) ([]string, error)
+	Scan(ctx context.Context, cursor uint64, pattern string, count int64) (keys []string, nextCursor uint64, err error)
+	RPush(ctx context.Context, key string, values ...string) error
+	LRange(ctx context.Context, key string, start, stop int64) ([]string, error)
 }
 
 // RedisStore implements the session Store interface backed by Redis.
@@ -23,6 +28,7 @@ type RedisStore struct {
 	client RedisClient
 	prefix string
 	ttl    time.Duration
+	logger *slog.Logger
 }
 
 // RedisStoreOption configures a RedisStore.
@@ -49,6 +55,11 @@ func NewRedisStore(client RedisClient, opts ...RedisStoreOption) *RedisStore {
 		opt(s)
 	}
 	return s
+}
+
+// SetLogger sets the structured logger for diagnostics.
+func (s *RedisStore) SetLogger(logger *slog.Logger) {
+	s.logger = logger
 }
 
 func (s *RedisStore) sessionKey(id string) string {
@@ -102,16 +113,26 @@ func (s *RedisStore) Delete(ctx context.Context, id string) error {
 }
 
 // List returns all sessions, optionally filtered by agent name.
+// Uses cursor-based SCAN instead of KEYS for production safety.
 func (s *RedisStore) List(ctx context.Context, agentName string) ([]*Session, error) {
-	keys, err := s.client.Keys(ctx, s.prefix+"*")
-	if err != nil {
-		return nil, fmt.Errorf("redis keys: %w", err)
+	var keys []string
+	var cursor uint64
+	for {
+		batch, next, err := s.client.Scan(ctx, cursor, s.prefix+"*", 100)
+		if err != nil {
+			return nil, fmt.Errorf("redis scan: %w", err)
+		}
+		keys = append(keys, batch...)
+		cursor = next
+		if cursor == 0 {
+			break
+		}
 	}
 
 	var sessions []*Session
 	for _, key := range keys {
 		// Skip message keys
-		if len(key) > len(":messages") && key[len(key)-len(":messages"):] == ":messages" {
+		if strings.HasSuffix(key, ":messages") {
 			continue
 		}
 
@@ -128,6 +149,12 @@ func (s *RedisStore) List(ctx context.Context, agentName string) ([]*Session, er
 		if agentName == "" || sess.AgentName == agentName {
 			sessions = append(sessions, &sess)
 		}
+	}
+
+	if s.logger != nil {
+		s.logger.Info("redis session list",
+			slog.Int("count", len(sessions)),
+		)
 	}
 
 	return sessions, nil
@@ -149,30 +176,77 @@ func (s *RedisStore) Touch(ctx context.Context, id string) error {
 	return s.client.Set(ctx, s.sessionKey(id), string(data), s.ttl)
 }
 
-// SaveMessages saves conversation messages for a session.
+// SaveMessages appends conversation messages to the session's message list
+// using RPush for O(1) append performance. Each message is individually
+// JSON-serialized and pushed.
 func (s *RedisStore) SaveMessages(ctx context.Context, sessionID string, messages []llm.Message) error {
-	// Load existing messages
-	existing, _ := s.LoadMessages(ctx, sessionID)
-	all := append(existing, messages...)
-
-	data, err := json.Marshal(all)
-	if err != nil {
-		return fmt.Errorf("marshal messages: %w", err)
+	if len(messages) == 0 {
+		return nil
 	}
 
-	return s.client.Set(ctx, s.messagesKey(sessionID), string(data), s.ttl)
+	key := s.messagesKey(sessionID)
+	values := make([]string, 0, len(messages))
+	for _, msg := range messages {
+		data, err := json.Marshal(msg)
+		if err != nil {
+			return fmt.Errorf("marshal message: %w", err)
+		}
+		values = append(values, string(data))
+	}
+
+	return s.client.RPush(ctx, key, values...)
 }
 
-// LoadMessages loads conversation messages for a session.
+// LoadMessages loads conversation messages for a session using LRange.
+// If the key holds a legacy String-type value (from the old Set-based storage),
+// it falls back to Get(), parses the JSON array, deletes the old key, and
+// re-stores each message via RPush for transparent migration.
 func (s *RedisStore) LoadMessages(ctx context.Context, sessionID string) ([]llm.Message, error) {
-	data, err := s.client.Get(ctx, s.messagesKey(sessionID))
-	if err != nil {
-		return nil, nil // No messages yet
+	key := s.messagesKey(sessionID)
+
+	// Try LRange first (expected path for new-format data).
+	elements, err := s.client.LRange(ctx, key, 0, -1)
+	if err == nil {
+		// LRange succeeded — key is a list (or does not exist, returning empty).
+		if len(elements) == 0 {
+			return nil, nil
+		}
+		messages := make([]llm.Message, 0, len(elements))
+		for _, elem := range elements {
+			var msg llm.Message
+			if err := json.Unmarshal([]byte(elem), &msg); err != nil {
+				return nil, fmt.Errorf("unmarshal message element: %w", err)
+			}
+			messages = append(messages, msg)
+		}
+		return messages, nil
+	}
+
+	// LRange failed — key may hold a legacy string value (WRONGTYPE error).
+	// Fall back to Get() for migration.
+	data, getErr := s.client.Get(ctx, key)
+	if getErr != nil {
+		// Key does not exist at all.
+		return nil, nil
 	}
 
 	var messages []llm.Message
 	if err := json.Unmarshal([]byte(data), &messages); err != nil {
-		return nil, fmt.Errorf("unmarshal messages: %w", err)
+		return nil, fmt.Errorf("unmarshal legacy messages: %w", err)
+	}
+
+	// Migrate: delete the old string key and re-store as a list.
+	_ = s.client.Del(ctx, key)
+	if len(messages) > 0 {
+		values := make([]string, 0, len(messages))
+		for _, msg := range messages {
+			d, err := json.Marshal(msg)
+			if err != nil {
+				return messages, nil // Return what we have; migration is best-effort.
+			}
+			values = append(values, string(d))
+		}
+		_ = s.client.RPush(ctx, key, values...)
 	}
 
 	return messages, nil

@@ -267,7 +267,7 @@ func TestCompiledAgentHealthz(t *testing.T) {
 	})
 
 	registry := tools.NewRegistry()
-	sessionStore := session.NewMemoryStore(30 * time.Minute)
+	sessionStore := session.NewMemoryStore(30*time.Minute, 0)
 	memoryStore := memory.NewSlidingWindow(50)
 	sessionMgr := session.NewManager(sessionStore, memoryStore)
 	strategy := &loop.ReActStrategy{}
@@ -382,7 +382,7 @@ func TestProcessAdapterCompiledAgent(t *testing.T) {
 	}
 
 	registry := tools.NewRegistry()
-	sessionMgr := session.NewManager(session.NewMemoryStore(0), nil)
+	sessionMgr := session.NewManager(session.NewMemoryStore(0, 0), nil)
 	strategy := &loop.ReActStrategy{}
 	metrics := telemetry.NewMetrics()
 
