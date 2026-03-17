@@ -139,6 +139,33 @@ func newApplyCmd() *cobra.Command {
 				result.Created, result.Updated, result.Deleted, result.Failed)
 			fmt.Printf("State saved to %s\n", stateFile)
 
+			// Record version snapshot for agents
+			if result.Failed == 0 {
+				for _, res := range doc.Resources {
+					if res.Kind != "Agent" {
+						continue
+					}
+					snapshot := make(map[string]string)
+					for k, v := range res.Attributes {
+						snapshot[k] = fmt.Sprintf("%v", v)
+					}
+					versions, _ := backend.GetVersions(res.Name)
+					nextVer := 1
+					if len(versions) > 0 {
+						nextVer = versions[len(versions)-1].Version + 1
+					}
+					entry := state.VersionEntry{
+						Version:   nextVer,
+						Timestamp: time.Now().UTC().Format(time.RFC3339),
+						Summary:   fmt.Sprintf("Applied version %d", nextVer),
+						Snapshot:  snapshot,
+					}
+					if vErr := backend.SaveVersion(res.Name, entry); vErr != nil {
+						fmt.Fprintf(os.Stderr, "Warning: failed to save version for agent %q: %v\n", res.Name, vErr)
+					}
+				}
+			}
+
 			if result.Failed > 0 {
 				os.Exit(1)
 			}

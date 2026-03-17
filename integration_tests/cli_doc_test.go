@@ -33,6 +33,8 @@ func TestAllCLICommandsDocumented(t *testing.T) {
 		"eval",
 		"publish",
 		"install",
+		"rollback",
+		"history",
 	}
 
 	readmePath := "../README.md"

@@ -69,6 +69,10 @@ func formatStatement(sb *strings.Builder, stmt ast.Statement) {
 		formatPipeline(sb, s)
 	case *ast.Import:
 		formatImport(sb, s)
+	case *ast.User:
+		formatUser(sb, s)
+	case *ast.Guardrail:
+		formatGuardrail(sb, s)
 	}
 }
 
@@ -145,6 +149,25 @@ func formatAgent(sb *strings.Builder, a *ast.Agent) {
 	}
 	if a.Model != "" {
 		fmt.Fprintf(sb, "  model %q\n", a.Model)
+	}
+	if len(a.Models) > 0 {
+		sb.WriteString("  models [")
+		for i, m := range a.Models {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			fmt.Fprintf(sb, "%q", m)
+		}
+		sb.WriteString("]\n")
+	}
+	if a.BudgetDaily > 0 {
+		fmt.Fprintf(sb, "  budget daily %g\n", a.BudgetDaily)
+	}
+	if a.BudgetMonthly > 0 {
+		fmt.Fprintf(sb, "  budget monthly %g\n", a.BudgetMonthly)
+	}
+	for _, gr := range a.GuardrailRefs {
+		fmt.Fprintf(sb, "  uses guardrail %q\n", gr)
 	}
 	if a.Client != nil {
 		fmt.Fprintf(sb, "  connects to client %q\n", a.Client.Name)
@@ -714,6 +737,58 @@ func formatForEachBlock(sb *strings.Builder, block *ast.ForEachBlock, indent str
 		formatOnInputStmt(sb, stmt, indent+"  ")
 	}
 	sb.WriteString(indent + "}\n")
+}
+
+func formatUser(sb *strings.Builder, u *ast.User) {
+	fmt.Fprintf(sb, "user %q {\n", u.Name)
+	if u.KeyRef != "" {
+		fmt.Fprintf(sb, "  key secret(%q)\n", u.KeyRef)
+	}
+	if len(u.Agents) > 0 {
+		sb.WriteString("  agents [")
+		for i, a := range u.Agents {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			fmt.Fprintf(sb, "%q", a)
+		}
+		sb.WriteString("]\n")
+	}
+	if u.Role != "" {
+		fmt.Fprintf(sb, "  role %q\n", u.Role)
+	}
+	sb.WriteString("}\n")
+}
+
+func formatGuardrail(sb *strings.Builder, g *ast.Guardrail) {
+	fmt.Fprintf(sb, "guardrail %q {\n", g.Name)
+	if g.Mode != "" {
+		fmt.Fprintf(sb, "  mode %q\n", g.Mode)
+	}
+	if len(g.Keywords) > 0 {
+		sb.WriteString("  keywords [")
+		for i, k := range g.Keywords {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			fmt.Fprintf(sb, "%q", k)
+		}
+		sb.WriteString("]\n")
+	}
+	if len(g.Patterns) > 0 {
+		sb.WriteString("  patterns [")
+		for i, p := range g.Patterns {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			fmt.Fprintf(sb, "%q", p)
+		}
+		sb.WriteString("]\n")
+	}
+	if g.FallbackMsg != "" {
+		fmt.Fprintf(sb, "  fallback %q\n", g.FallbackMsg)
+	}
+	sb.WriteString("}\n")
 }
 
 func sortedKeys(m map[string]string) []string {

@@ -8,9 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Version information set at build time.
+// Version information set at build time via ldflags.
 var (
-	version     = "0.3.0"
+	version     = "dev"
+	commit      = "unknown"
+	date        = "unknown"
 	langVersion = "3.0"
 	irVersion   = "1.0"
 )
@@ -67,6 +69,8 @@ via pluggable adapters, and generates SDKs for multiple languages.`,
 	root.AddCommand(newEvalCmd())
 	root.AddCommand(newPublishCmd())
 	root.AddCommand(newInstallCmd())
+	root.AddCommand(newRollbackCmd())
+	root.AddCommand(newHistoryCmd())
 
 	// Deprecation aliases for the run↔dev rename
 	// Old 'run' (one-shot) behavior is now 'dev'

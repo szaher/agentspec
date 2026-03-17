@@ -100,6 +100,12 @@ type Agent struct {
 	MemoryCfg   *MemoryConfig
 	Delegates   []*Delegate
 
+	// Production readiness extensions
+	Models        []string // multi-model fallback chain (replaces Model when len > 0)
+	BudgetDaily   float64  // daily spending limit in dollars (0 = no limit)
+	BudgetMonthly float64  // monthly spending limit in dollars (0 = no limit)
+	GuardrailRefs []string // references to guardrail block names
+
 	// IntentLang 3.0: agent compilation extensions
 	ConfigParams    []*ConfigParam
 	ValidationRules []*ValidationRule
@@ -414,6 +420,35 @@ type ResourceLimits struct {
 
 func (r *ResourceLimits) Pos() Pos { return r.StartPos }
 func (r *ResourceLimits) End() Pos { return r.EndPos }
+
+// User defines an authenticated user with agent access control.
+type User struct {
+	Name     string
+	KeyRef   string   // secret reference name (e.g., "ALICE_API_KEY")
+	Agents   []string // allowed agent names
+	Role     string   // "invoke" or "admin"
+	StartPos Pos
+	EndPos   Pos
+}
+
+func (u *User) Pos() Pos  { return u.StartPos }
+func (u *User) End() Pos  { return u.EndPos }
+func (u *User) stmtNode() {}
+
+// Guardrail defines a content filter for agent output.
+type Guardrail struct {
+	Name        string
+	Mode        string   // "warn" or "block"
+	Keywords    []string // blocked keywords
+	Patterns    []string // blocked regex patterns
+	FallbackMsg string   // replacement message in block mode
+	StartPos    Pos
+	EndPos      Pos
+}
+
+func (g *Guardrail) Pos() Pos  { return g.StartPos }
+func (g *Guardrail) End() Pos  { return g.EndPos }
+func (g *Guardrail) stmtNode() {}
 
 // Delegate defines an agent delegation rule.
 type Delegate struct {

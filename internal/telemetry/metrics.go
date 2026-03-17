@@ -19,6 +19,12 @@ type Metrics struct {
 	tokensTotal      map[string]int64 // key: agent,type
 	toolCallsTotal   map[string]int64 // key: agent,tool,status
 
+	// Cost and budget
+	costTotal           map[string]float64 // key: "agent,model"
+	budgetUsage         map[string]float64 // key: "agent,period" (gauge)
+	fallbackTotal       map[string]int64   // key: "agent,from_model,to_model"
+	guardrailViolations map[string]int64   // key: "agent,guardrail,mode"
+
 	// Histograms (simplified: bucket counts + sum + count)
 	invocationDurations map[string]*histogram // key: agent
 }
@@ -56,12 +62,16 @@ func NewMetrics() *Metrics {
 		invocationsTotal:    make(map[string]int64),
 		tokensTotal:         make(map[string]int64),
 		toolCallsTotal:      make(map[string]int64),
+		costTotal:           make(map[string]float64),
+		budgetUsage:         make(map[string]float64),
+		fallbackTotal:       make(map[string]int64),
+		guardrailViolations: make(map[string]int64),
 		invocationDurations: make(map[string]*histogram),
 	}
 }
 
 // RecordInvocation records a completed agent invocation.
-func (m *Metrics) RecordInvocation(agent, status string, duration time.Duration, inputTokens, outputTokens int) {
+func (m *Metrics) RecordInvocation(agent, model, status string, duration time.Duration, inputTokens, outputTokens int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -77,9 +87,13 @@ func (m *Metrics) RecordInvocation(agent, status string, duration time.Duration,
 	}
 	h.observe(duration.Seconds())
 
-	// Record tokens
+	// Record tokens (by agent)
 	m.tokensTotal[fmt.Sprintf("%s,input", agent)] += int64(inputTokens)
 	m.tokensTotal[fmt.Sprintf("%s,output", agent)] += int64(outputTokens)
+
+	// Record tokens (by agent and model)
+	m.tokensTotal[fmt.Sprintf("%s,%s,input", agent, model)] += int64(inputTokens)
+	m.tokensTotal[fmt.Sprintf("%s,%s,output", agent, model)] += int64(outputTokens)
 }
 
 // RecordToolCall records a tool call.
@@ -89,6 +103,42 @@ func (m *Metrics) RecordToolCall(agent, tool, status string) {
 
 	key := fmt.Sprintf("%s,%s,%s", agent, tool, status)
 	m.toolCallsTotal[key]++
+}
+
+// RecordCost increments the cost counter for an agent and model.
+func (m *Metrics) RecordCost(agent, model string, cost float64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	key := fmt.Sprintf("%s,%s", agent, model)
+	m.costTotal[key] += cost
+}
+
+// SetBudgetUsage sets the budget usage gauge for an agent and period.
+func (m *Metrics) SetBudgetUsage(agent, period string, ratio float64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	key := fmt.Sprintf("%s,%s", agent, period)
+	m.budgetUsage[key] = ratio
+}
+
+// RecordFallback increments the fallback counter.
+func (m *Metrics) RecordFallback(agent, fromModel, toModel string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	key := fmt.Sprintf("%s,%s,%s", agent, fromModel, toModel)
+	m.fallbackTotal[key]++
+}
+
+// RecordGuardrailViolation increments the guardrail violations counter.
+func (m *Metrics) RecordGuardrailViolation(agent, guardrail, mode string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	key := fmt.Sprintf("%s,%s,%s", agent, guardrail, mode)
+	m.guardrailViolations[key]++
 }
 
 // Handler returns an HTTP handler that serves Prometheus-format metrics.
@@ -149,6 +199,46 @@ func (m *Metrics) Handler() http.Handler {
 			parts := strings.SplitN(key, ",", 3)
 			fmt.Fprintf(&sb, "agentspec_tool_calls_total{agent=%q,tool=%q,status=%q} %d\n",
 				parts[0], parts[1], parts[2], m.toolCallsTotal[key])
+		}
+		sb.WriteString("\n")
+
+		// Cost counter
+		sb.WriteString("# HELP agentspec_cost_dollars_total Total cost in dollars\n")
+		sb.WriteString("# TYPE agentspec_cost_dollars_total counter\n")
+		for _, key := range sortedMapKeys(m.costTotal) {
+			parts := strings.SplitN(key, ",", 2)
+			fmt.Fprintf(&sb, "agentspec_cost_dollars_total{agent=%q,model=%q} %g\n",
+				parts[0], parts[1], m.costTotal[key])
+		}
+		sb.WriteString("\n")
+
+		// Budget usage gauge
+		sb.WriteString("# HELP agentspec_budget_usage_ratio Budget usage ratio\n")
+		sb.WriteString("# TYPE agentspec_budget_usage_ratio gauge\n")
+		for _, key := range sortedMapKeys(m.budgetUsage) {
+			parts := strings.SplitN(key, ",", 2)
+			fmt.Fprintf(&sb, "agentspec_budget_usage_ratio{agent=%q,period=%q} %g\n",
+				parts[0], parts[1], m.budgetUsage[key])
+		}
+		sb.WriteString("\n")
+
+		// Fallback counter
+		sb.WriteString("# HELP agentspec_fallback_total Total model fallbacks\n")
+		sb.WriteString("# TYPE agentspec_fallback_total counter\n")
+		for _, key := range sortedKeys(m.fallbackTotal) {
+			parts := strings.SplitN(key, ",", 3)
+			fmt.Fprintf(&sb, "agentspec_fallback_total{agent=%q,from_model=%q,to_model=%q} %d\n",
+				parts[0], parts[1], parts[2], m.fallbackTotal[key])
+		}
+		sb.WriteString("\n")
+
+		// Guardrail violations counter
+		sb.WriteString("# HELP agentspec_guardrail_violations_total Total guardrail violations\n")
+		sb.WriteString("# TYPE agentspec_guardrail_violations_total counter\n")
+		for _, key := range sortedKeys(m.guardrailViolations) {
+			parts := strings.SplitN(key, ",", 3)
+			fmt.Fprintf(&sb, "agentspec_guardrail_violations_total{agent=%q,guardrail=%q,mode=%q} %d\n",
+				parts[0], parts[1], parts[2], m.guardrailViolations[key])
 		}
 
 		_, _ = w.Write([]byte(sb.String()))

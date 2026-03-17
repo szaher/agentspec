@@ -19,6 +19,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-23
 - Local JSON state file (`.agentspec.state.json`), Redis (session store, opt-in), in-memory maps (rate limiter, session store default, conversation memory) (010-memory-performance)
 - Go 1.25+ (backend), Vanilla JS (frontend) + cobra v1.10.2 (CLI), fsnotify (new — file watching), existing llm/loop/runtime packages (011-product-completeness)
 - N/A (no schema changes) (011-product-completeness)
+- Go 1.25+ (existing) + `crypto/tls` (stdlib), `log/slog` (stdlib), `regexp` (stdlib), cobra v1.10.2 (existing), fsnotify (existing), GoReleaser (CI only — not a Go dependency) (012-production-readiness)
+- Local JSON state file (`.agentspec.state.json`) extended with `budgets` and `agent_versions` sections. Separate `agentspec-audit.log` file for audit entries. (012-production-readiness)
 
 ## Project Structure
 
@@ -57,9 +59,9 @@ Go 1.25+: Follow standard conventions
 - Go module path: `github.com/szaher/agentspec` (unchanged)
 
 ## Recent Changes
+- 012-production-readiness: Added Go 1.25+ (existing) + `crypto/tls` (stdlib), `log/slog` (stdlib), `regexp` (stdlib), cobra v1.10.2 (existing), fsnotify (existing), GoReleaser (CI only — not a Go dependency)
 - 011-product-completeness: Added Go 1.25+ (backend), Vanilla JS (frontend) + cobra v1.10.2 (CLI), fsnotify (new — file watching), existing llm/loop/runtime packages
 - 010-memory-performance: Added Go 1.25+ + `log/slog` (structured logging), `sync` (RWMutex), `oklog/ulid` (correlation IDs), existing Redis client interface, `encoding/json` (state file)
-- 009-test-quality-foundation: Added Go 1.25+ (existing) + golangci-lint v2.10.1 (existing), govulncheck (new), gosec (new via golangci-lint)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

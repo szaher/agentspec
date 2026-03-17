@@ -152,6 +152,10 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parsePipeline()
 	case p.check(TokenTypeKw):
 		return p.parseTypeDef()
+	case p.check(TokenUser):
+		return p.parseUser()
+	case p.check(TokenGuardrail):
+		return p.parseGuardrail()
 	case p.check(TokenImport):
 		return p.parseImportAsStmt()
 	default:
@@ -299,12 +303,30 @@ func (p *Parser) parseAgent() *ast.Agent {
 				}
 				ref.EndPos = p.currentPos()
 				agent.Skills = append(agent.Skills, ref)
+			case p.check(TokenGuardrail):
+				p.advance()
+				agent.GuardrailRefs = append(agent.GuardrailRefs, p.expectString("guardrail reference"))
 			default:
-				p.addError("expected 'prompt' or 'skill' after 'uses'", "")
+				p.addError("expected 'prompt', 'skill', or 'guardrail' after 'uses'", "")
 			}
 		case p.check(TokenModel):
 			p.advance()
 			agent.Model = p.expectString("model")
+		case p.check(TokenModels):
+			p.advance()
+			agent.Models = p.parseStringList()
+		case p.check(TokenBudgetKw):
+			p.advance()
+			switch {
+			case p.check(TokenDaily):
+				p.advance()
+				agent.BudgetDaily = p.expectFloat("daily budget")
+			case p.check(TokenMonthly):
+				p.advance()
+				agent.BudgetMonthly = p.expectFloat("monthly budget")
+			default:
+				p.addError("expected 'daily' or 'monthly' after 'budget'", "")
+			}
 		case p.check(TokenConnects):
 			p.advance()
 			if p.check(TokenTo) {
@@ -1958,6 +1980,93 @@ func (p *Parser) isStopToken(stops []TokenType) bool {
 
 // expectToken for TokenColon (needed for with { key: value } syntax)
 // Already handled by the generic expectToken method.
+
+func (p *Parser) parseUser() *ast.User {
+	startPos := p.currentPos()
+	p.expect(TokenUser)
+
+	user := &ast.User{StartPos: startPos}
+	user.Name = p.expectString("user name")
+	p.registerName("User", user.Name, startPos)
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		switch {
+		case p.check(TokenKey):
+			p.advance()
+			// key secret("ENV_VAR")
+			if p.check(TokenSecret) {
+				p.advance()
+				p.expectToken(TokenLParen)
+				user.KeyRef = p.expectString("secret key reference")
+				p.expectToken(TokenRParen)
+			} else {
+				user.KeyRef = p.expectString("key reference")
+			}
+		case p.check(TokenAgents):
+			p.advance()
+			user.Agents = p.parseStringList()
+		case p.check(TokenRole):
+			p.advance()
+			user.Role = p.expectString("role")
+		default:
+			p.addError(fmt.Sprintf("unexpected token %s in user block", p.current().Type), "expected 'key', 'agents', or 'role'")
+			p.advance()
+		}
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	user.EndPos = p.currentPos()
+	return user
+}
+
+func (p *Parser) parseGuardrail() *ast.Guardrail {
+	startPos := p.currentPos()
+	p.expect(TokenGuardrail)
+
+	guard := &ast.Guardrail{StartPos: startPos}
+	guard.Name = p.expectString("guardrail name")
+	p.registerName("Guardrail", guard.Name, startPos)
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		switch {
+		case p.check(TokenMode):
+			p.advance()
+			guard.Mode = p.expectString("mode")
+		case p.check(TokenKeywords):
+			p.advance()
+			guard.Keywords = p.parseStringList()
+		case p.check(TokenPatterns):
+			p.advance()
+			guard.Patterns = p.parseStringList()
+		case p.check(TokenFallback):
+			p.advance()
+			guard.FallbackMsg = p.expectString("fallback message")
+		default:
+			p.addError(fmt.Sprintf("unexpected token %s in guardrail block", p.current().Type), "expected 'mode', 'keywords', 'patterns', or 'fallback'")
+			p.advance()
+		}
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	guard.EndPos = p.currentPos()
+	return guard
+}
 
 // AllNames returns all registered names for duplicate checking and suggestions.
 func (p *Parser) AllNames() map[string]map[string]bool {

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/szaher/agentspec/internal/auth"
 	"github.com/szaher/agentspec/internal/llm"
 	"github.com/szaher/agentspec/internal/loop"
 	agentmcp "github.com/szaher/agentspec/internal/mcp"
@@ -29,13 +30,16 @@ type Runtime struct {
 
 // Options configures the runtime.
 type Options struct {
-	Port        int
-	APIKey      string
-	NoAuth      bool
-	CORSOrigins []string
-	Logger      *slog.Logger
-	LLMClient   llm.Client
-	EnableUI    bool
+	Port         int
+	APIKey       string
+	NoAuth       bool
+	CORSOrigins  []string
+	Logger       *slog.Logger
+	LLMClient    llm.Client
+	EnableUI     bool
+	TLSCert      string
+	TLSKey       string
+	AuditLogPath string
 }
 
 // New creates a new runtime from the given config.
@@ -101,6 +105,16 @@ func New(config *RuntimeConfig, opts Options) (*Runtime, error) {
 	}
 	if opts.EnableUI {
 		serverOpts = append(serverOpts, WithUI(true))
+	}
+	if opts.TLSCert != "" || opts.TLSKey != "" {
+		serverOpts = append(serverOpts, WithTLS(opts.TLSCert, opts.TLSKey))
+	}
+	if opts.AuditLogPath != "" {
+		auditLogger, err := auth.NewAuditLogger(opts.AuditLogPath, logger)
+		if err != nil {
+			return nil, fmt.Errorf("create audit logger: %w", err)
+		}
+		serverOpts = append(serverOpts, WithAuditLogger(auditLogger))
 	}
 
 	server := NewServer(config, llmClient, registry, sessionMgr, strategy, serverOpts...)
@@ -190,6 +204,11 @@ func (rt *Runtime) Shutdown(ctx context.Context) error {
 // Port returns the configured port.
 func (rt *Runtime) Port() int {
 	return rt.port
+}
+
+// ReloadTLSCertificate reloads the TLS certificate from disk.
+func (rt *Runtime) ReloadTLSCertificate() error {
+	return rt.server.ReloadTLSCertificate()
 }
 
 func (rt *Runtime) registerTools(ctx context.Context, resolver secrets.Resolver) error {

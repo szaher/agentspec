@@ -105,9 +105,30 @@ func (b *LocalBackend) SetLogger(l *slog.Logger) {
 }
 
 // stateFile is the on-disk JSON structure.
+// VersionEntry records a snapshot of an agent configuration for rollback.
+type VersionEntry struct {
+	Version   int               `json:"version"`
+	Timestamp string            `json:"timestamp"`
+	Summary   string            `json:"summary"`
+	Snapshot  map[string]string `json:"snapshot"` // key-value attrs snapshot
+}
+
+// BudgetState tracks budget usage for persistence across restarts.
+type BudgetState struct {
+	Agent        string  `json:"agent"`
+	Period       string  `json:"period"` // "daily" or "monthly"
+	LimitDollars float64 `json:"limit_dollars"`
+	UsedDollars  float64 `json:"used_dollars"`
+	ResetAt      string  `json:"reset_at"`
+	Paused       bool    `json:"paused"`
+	WarnedAt     string  `json:"warned_at,omitempty"`
+}
+
 type stateFile struct {
-	Version string  `json:"version"`
-	Entries []Entry `json:"entries"`
+	Version       string                    `json:"version"`
+	Entries       []Entry                   `json:"entries"`
+	Budgets       []BudgetState             `json:"budgets,omitempty"`
+	AgentVersions map[string][]VersionEntry `json:"agent_versions,omitempty"`
 }
 
 // Load reads all state entries from the JSON file.
@@ -500,6 +521,90 @@ func (b *LocalBackend) copyEntries() []Entry {
 	cp := make([]Entry, len(b.cachedEntries))
 	copy(cp, b.cachedEntries)
 	return cp
+}
+
+// LoadBudgets reads budget state from the state file.
+func (b *LocalBackend) LoadBudgets() ([]BudgetState, error) {
+	data, err := os.ReadFile(b.Path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var sf stateFile
+	if err := json.Unmarshal(data, &sf); err != nil {
+		return nil, err
+	}
+	return sf.Budgets, nil
+}
+
+// SaveBudgets writes budget state to the state file.
+func (b *LocalBackend) SaveBudgets(budgets []BudgetState) error {
+	data, err := os.ReadFile(b.Path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	var sf stateFile
+	if len(data) > 0 {
+		_ = json.Unmarshal(data, &sf)
+	}
+	sf.Budgets = budgets
+	if sf.Version == "" {
+		sf.Version = "1.0"
+	}
+	return b.writeStateFile(sf)
+}
+
+// SaveVersion records a new version entry for an agent (max 10 retained).
+func (b *LocalBackend) SaveVersion(agent string, entry VersionEntry) error {
+	data, err := os.ReadFile(b.Path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	var sf stateFile
+	if len(data) > 0 {
+		_ = json.Unmarshal(data, &sf)
+	}
+	if sf.AgentVersions == nil {
+		sf.AgentVersions = make(map[string][]VersionEntry)
+	}
+	versions := sf.AgentVersions[agent]
+	versions = append(versions, entry)
+	if len(versions) > 10 {
+		versions = versions[len(versions)-10:]
+	}
+	sf.AgentVersions[agent] = versions
+	if sf.Version == "" {
+		sf.Version = "1.0"
+	}
+	return b.writeStateFile(sf)
+}
+
+// GetVersions returns the version history for an agent.
+func (b *LocalBackend) GetVersions(agent string) ([]VersionEntry, error) {
+	data, err := os.ReadFile(b.Path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var sf stateFile
+	if err := json.Unmarshal(data, &sf); err != nil {
+		return nil, err
+	}
+	return sf.AgentVersions[agent], nil
+}
+
+// writeStateFile serializes and atomically writes the state file.
+func (b *LocalBackend) writeStateFile(sf stateFile) error {
+	data, err := json.MarshalIndent(sf, "", "  ")
+	if err != nil {
+		return err
+	}
+	data = append(data, '\n')
+	return os.WriteFile(b.Path, data, 0644)
 }
 
 // emitCacheLog logs cache statistics every 100th Get() call (T024).

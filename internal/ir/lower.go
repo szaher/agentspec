@@ -314,6 +314,28 @@ func Lower(f *ast.File) (*Document, error) {
 			if s.OnInput != nil {
 				attrs["on_input"] = lowerOnInputStmts(s.OnInput.Statements)
 			}
+			// Production readiness extensions
+			if len(s.Models) > 0 {
+				models := make([]interface{}, len(s.Models))
+				for i, m := range s.Models {
+					models[i] = m
+				}
+				attrs["models"] = models
+			}
+			if s.BudgetDaily > 0 {
+				attrs["budget_daily"] = s.BudgetDaily
+			}
+			if s.BudgetMonthly > 0 {
+				attrs["budget_monthly"] = s.BudgetMonthly
+			}
+			if len(s.GuardrailRefs) > 0 {
+				grs := make([]interface{}, len(s.GuardrailRefs))
+				for i, g := range s.GuardrailRefs {
+					grs[i] = g
+					refs = append(refs, fmt.Sprintf("%s/Guardrail/%s", pkgName, g))
+				}
+				attrs["guardrails"] = grs
+			}
 
 			r := Resource{
 				Kind:       "Agent",
@@ -537,6 +559,60 @@ func Lower(f *ast.File) (*Document, error) {
 				FQN:        fmt.Sprintf("%s/Pipeline/%s", pkgName, s.Name),
 				Attributes: attrs,
 				References: refs,
+			}
+			r.Hash = ComputeHash(r.Attributes)
+			doc.Resources = append(doc.Resources, r)
+
+		case *ast.User:
+			attrs := map[string]interface{}{
+				"key_ref": s.KeyRef,
+			}
+			if len(s.Agents) > 0 {
+				agents := make([]interface{}, len(s.Agents))
+				for i, a := range s.Agents {
+					agents[i] = a
+				}
+				attrs["agents"] = agents
+			}
+			if s.Role != "" {
+				attrs["role"] = s.Role
+			}
+			r := Resource{
+				Kind:       "User",
+				Name:       s.Name,
+				FQN:        fmt.Sprintf("%s/User/%s", pkgName, s.Name),
+				Attributes: attrs,
+			}
+			r.Hash = ComputeHash(r.Attributes)
+			doc.Resources = append(doc.Resources, r)
+
+		case *ast.Guardrail:
+			attrs := map[string]interface{}{}
+			if s.Mode != "" {
+				attrs["mode"] = s.Mode
+			}
+			if len(s.Keywords) > 0 {
+				kw := make([]interface{}, len(s.Keywords))
+				for i, k := range s.Keywords {
+					kw[i] = k
+				}
+				attrs["keywords"] = kw
+			}
+			if len(s.Patterns) > 0 {
+				pat := make([]interface{}, len(s.Patterns))
+				for i, p := range s.Patterns {
+					pat[i] = p
+				}
+				attrs["patterns"] = pat
+			}
+			if s.FallbackMsg != "" {
+				attrs["fallback"] = s.FallbackMsg
+			}
+			r := Resource{
+				Kind:       "Guardrail",
+				Name:       s.Name,
+				FQN:        fmt.Sprintf("%s/Guardrail/%s", pkgName, s.Name),
+				Attributes: attrs,
 			}
 			r.Hash = ComputeHash(r.Attributes)
 			doc.Resources = append(doc.Resources, r)

@@ -2,15 +2,18 @@ package runtime
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/szaher/agentspec/internal/auth"
 	"github.com/szaher/agentspec/internal/controlflow"
+	"github.com/szaher/agentspec/internal/cost"
 	"github.com/szaher/agentspec/internal/eviction"
 	"github.com/szaher/agentspec/internal/frontend"
 	"github.com/szaher/agentspec/internal/llm"
@@ -40,6 +43,14 @@ type Server struct {
 
 	agentIndex    map[string]*AgentConfig
 	pipelineIndex map[string]*PipelineConfig
+	userStore     *auth.UserStore
+	auditLogger   *auth.AuditLogger
+	costTracker   *cost.CostTracker
+
+	tlsCertFile string
+	tlsKeyFile  string
+	tlsCertMu   sync.RWMutex
+	tlsCert     *tls.Certificate
 }
 
 // ServerOption configures the Server.
@@ -83,6 +94,29 @@ func WithCORSOrigins(origins []string) ServerOption {
 // WithUI enables the built-in web frontend.
 func WithUI(enable bool) ServerOption {
 	return func(s *Server) { s.enableUI = enable }
+}
+
+// WithTLS configures TLS certificate and key files.
+func WithTLS(certFile, keyFile string) ServerOption {
+	return func(s *Server) {
+		s.tlsCertFile = certFile
+		s.tlsKeyFile = keyFile
+	}
+}
+
+// WithUserStore sets the multi-user authentication store.
+func WithUserStore(store *auth.UserStore) ServerOption {
+	return func(s *Server) { s.userStore = store }
+}
+
+// WithAuditLogger sets the audit logger for invocation tracking.
+func WithAuditLogger(logger *auth.AuditLogger) ServerOption {
+	return func(s *Server) { s.auditLogger = logger }
+}
+
+// WithCostTracker sets the cost tracker for budget enforcement.
+func WithCostTracker(ct *cost.CostTracker) ServerOption {
+	return func(s *Server) { s.costTracker = ct }
 }
 
 // NewServer creates a new runtime HTTP server.
@@ -165,6 +199,7 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 }
 
 // ListenAndServe starts the HTTP server with production-ready timeouts.
+// When TLS cert/key are configured, serves HTTPS with certificate hot-reload.
 func (s *Server) ListenAndServe(addr string) error {
 	s.server = &http.Server{
 		Addr:              addr,
@@ -173,8 +208,66 @@ func (s *Server) ListenAndServe(addr string) error {
 		ReadTimeout:       30 * time.Second,
 		IdleTimeout:       120 * time.Second,
 	}
+
+	if s.tlsCertFile != "" && s.tlsKeyFile != "" {
+		// Validate cert/key at startup
+		cert, err := tls.LoadX509KeyPair(s.tlsCertFile, s.tlsKeyFile)
+		if err != nil {
+			return fmt.Errorf("failed to load TLS certificate: %w", err)
+		}
+		s.tlsCertMu.Lock()
+		s.tlsCert = &cert
+		s.tlsCertMu.Unlock()
+
+		// Configure TLS with hot-reload via GetCertificate callback
+		s.server.TLSConfig = &tls.Config{
+			GetCertificate: s.getCertificate,
+			MinVersion:     tls.VersionTLS12,
+		}
+
+		s.logger.Info("runtime server starting with TLS", "addr", addr, "cert", s.tlsCertFile, "agents", len(s.config.Agents))
+		return s.server.ListenAndServeTLS("", "")
+	}
+
+	if s.tlsCertFile != "" && s.tlsKeyFile == "" {
+		return fmt.Errorf("--tls-cert provided but --tls-key is missing")
+	}
+	if s.tlsKeyFile != "" && s.tlsCertFile == "" {
+		return fmt.Errorf("--tls-key provided but --tls-cert is missing")
+	}
+
 	s.logger.Info("runtime server starting", "addr", addr, "agents", len(s.config.Agents))
+	s.logger.Warn("TLS is not configured — serving plain HTTP")
 	return s.server.ListenAndServe()
+}
+
+// getCertificate provides the TLS certificate for each handshake, supporting hot-reload.
+func (s *Server) getCertificate(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	s.tlsCertMu.RLock()
+	cert := s.tlsCert
+	s.tlsCertMu.RUnlock()
+	if cert == nil {
+		return nil, fmt.Errorf("no TLS certificate loaded")
+	}
+	return cert, nil
+}
+
+// ReloadTLSCertificate reloads the TLS certificate from disk.
+// Called by the file watcher when cert/key files change.
+func (s *Server) ReloadTLSCertificate() error {
+	if s.tlsCertFile == "" || s.tlsKeyFile == "" {
+		return nil
+	}
+	cert, err := tls.LoadX509KeyPair(s.tlsCertFile, s.tlsKeyFile)
+	if err != nil {
+		s.logger.Error("failed to reload TLS certificate", "error", err)
+		return err
+	}
+	s.tlsCertMu.Lock()
+	s.tlsCert = &cert
+	s.tlsCertMu.Unlock()
+	s.logger.Info("TLS certificate reloaded", "cert", s.tlsCertFile)
+	return nil
 }
 
 // Shutdown gracefully stops the server.
@@ -185,10 +278,26 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+type contextKey string
+
+const userContextKey contextKey = "user"
+
+// UserFromContext extracts the authenticated user from the request context.
+func UserFromContext(ctx context.Context) *auth.User {
+	u, _ := ctx.Value(userContextKey).(*auth.User)
+	return u
+}
+
 func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Health check doesn't require auth
 		if r.URL.Path == "/healthz" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Metrics endpoint doesn't require auth
+		if r.URL.Path == "/v1/metrics" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -199,22 +308,39 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		if s.apiKey == "" {
-			if s.noAuth {
-				// Explicitly opted in to no-auth mode
-				next.ServeHTTP(w, r)
-				return
-			}
-			writeError(w, http.StatusUnauthorized, "unauthorized", "No API key configured. Use --no-auth to allow unauthenticated access.")
-			return
-		}
-
+		// Extract API key from header
 		key := r.Header.Get("X-API-Key")
 		if key == "" {
 			authHeader := r.Header.Get("Authorization")
 			if strings.HasPrefix(authHeader, "Bearer ") {
 				key = authHeader[7:]
 			}
+		}
+
+		// Multi-user auth mode: resolve key to user identity
+		if s.userStore != nil {
+			user, ok := s.userStore.Resolve(key)
+			if !ok {
+				if s.noAuth && key == "" {
+					next.ServeHTTP(w, r)
+					return
+				}
+				writeError(w, http.StatusUnauthorized, "unauthorized", "Missing or invalid API key")
+				return
+			}
+			ctx := context.WithValue(r.Context(), userContextKey, user)
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		// Single-key auth mode (backward compatible)
+		if s.apiKey == "" {
+			if s.noAuth {
+				next.ServeHTTP(w, r)
+				return
+			}
+			writeError(w, http.StatusUnauthorized, "unauthorized", "No API key configured. Use --no-auth to allow unauthenticated access.")
+			return
 		}
 
 		if !auth.ValidateKey(key, s.apiKey) {
@@ -260,8 +386,37 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check per-user agent access
+	user := UserFromContext(r.Context())
+	if user != nil && !user.IsAuthorized(agentName) {
+		if s.auditLogger != nil {
+			s.auditLogger.Log(auth.AuditEntry{
+				User:          user.Name,
+				Agent:         agentName,
+				Action:        "invoke",
+				Status:        "denied",
+				CorrelationID: telemetry.CorrelationID(r.Context()),
+			})
+		}
+		writeError(w, http.StatusForbidden, "forbidden", fmt.Sprintf("User %q is not authorized to access agent %q", user.Name, agentName))
+		return
+	}
+
 	logger := telemetry.RequestLogger(s.logger, r.Context(), agentName)
 	_ = logger // available for future logging within this handler
+
+	// Budget check before invocation
+	if s.costTracker != nil {
+		if err := s.costTracker.CheckBudget(agentName); err != nil {
+			w.Header().Set("Retry-After", "3600")
+			writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+				"error":   "budget_exceeded",
+				"message": err.Error(),
+				"agent":   agentName,
+			})
+			return
+		}
+	}
 
 	var req struct {
 		Message   string            `json:"message"`
@@ -306,19 +461,34 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	resp, err := s.strategy.Execute(r.Context(), inv, s.llmClient, s.registry, nil)
 	if err != nil {
-		s.metrics.RecordInvocation(agentName, "failed", time.Since(start), 0, 0)
+		s.metrics.RecordInvocation(agentName, agent.Model, "failed", time.Since(start), 0, 0)
 		writeError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
 
 	// Record metrics
-	s.metrics.RecordInvocation(agentName, "completed", time.Since(start), resp.Tokens.InputTokens, resp.Tokens.OutputTokens)
+	s.metrics.RecordInvocation(agentName, agent.Model, "completed", time.Since(start), resp.Tokens.InputTokens, resp.Tokens.OutputTokens)
 	for _, tc := range resp.ToolCalls {
 		status := "success"
 		if tc.Error != "" {
 			status = "error"
 		}
 		s.metrics.RecordToolCall(agentName, tc.ToolName, status)
+	}
+
+	// Record cost and update budget
+	if s.costTracker != nil {
+		invCost := s.costTracker.RecordUsage(agentName, agent.Model, resp.Tokens.InputTokens, resp.Tokens.OutputTokens)
+		s.metrics.RecordCost(agentName, agent.Model, invCost)
+
+		if warn, entry := s.costTracker.CheckWarnings(agentName); warn {
+			s.logger.Warn("budget warning: 80% threshold reached",
+				"agent", agentName,
+				"period", entry.Period,
+				"used", entry.UsedDollars,
+				"limit", entry.LimitDollars,
+			)
+		}
 	}
 
 	// Save messages to session
@@ -345,6 +515,25 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 		if tc.Error != "" {
 			toolCalls[i]["error"] = tc.Error
 		}
+	}
+
+	// Audit log
+	if s.auditLogger != nil {
+		userName := ""
+		if user != nil {
+			userName = user.Name
+		}
+		s.auditLogger.Log(auth.AuditEntry{
+			User:          userName,
+			Agent:         agentName,
+			SessionID:     req.SessionID,
+			Action:        "invoke",
+			InputTokens:   resp.Tokens.InputTokens,
+			OutputTokens:  resp.Tokens.OutputTokens,
+			DurationMs:    resp.Duration.Milliseconds(),
+			Status:        "success",
+			CorrelationID: telemetry.CorrelationID(r.Context()),
+		})
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -647,12 +836,12 @@ func (s *Server) handleControlFlowInvoke(w http.ResponseWriter, r *http.Request,
 	start := time.Now()
 	actions, output, err := executor.ExecuteBlock(r.Context(), agent.OnInput, rc)
 	if err != nil {
-		s.metrics.RecordInvocation(agent.Name, "failed", time.Since(start), 0, 0)
+		s.metrics.RecordInvocation(agent.Name, agent.Model, "failed", time.Since(start), 0, 0)
 		writeError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
 
-	s.metrics.RecordInvocation(agent.Name, "completed", time.Since(start), 0, 0)
+	s.metrics.RecordInvocation(agent.Name, agent.Model, "completed", time.Since(start), 0, 0)
 
 	// Build activity trace from actions
 	activity := make([]map[string]interface{}, len(actions))
