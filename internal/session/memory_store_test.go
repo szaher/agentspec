@@ -9,7 +9,7 @@ import (
 )
 
 func TestMemoryStoreCreate(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	meta := map[string]string{"env": "test", "version": "1"}
@@ -44,7 +44,7 @@ func TestMemoryStoreCreate(t *testing.T) {
 }
 
 func TestMemoryStoreGet(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	sess, err := store.Create(ctx, "agent-x", nil)
@@ -76,7 +76,7 @@ func TestMemoryStoreGet(t *testing.T) {
 }
 
 func TestMemoryStoreDelete(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	sess, err := store.Create(ctx, "agent-d", nil)
@@ -95,7 +95,7 @@ func TestMemoryStoreDelete(t *testing.T) {
 }
 
 func TestMemoryStoreList(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	// Create 2 sessions for "agent-a" and 1 for "agent-b".
@@ -135,7 +135,7 @@ func TestMemoryStoreList(t *testing.T) {
 }
 
 func TestMemoryStoreTouch(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	sess, err := store.Create(ctx, "agent-t", nil)
@@ -169,7 +169,7 @@ func TestMemoryStoreTouch(t *testing.T) {
 }
 
 func TestMemoryStoreExpiry(t *testing.T) {
-	store := NewMemoryStore(1 * time.Millisecond)
+	store := NewMemoryStore(1*time.Millisecond, 0)
 	ctx := context.Background()
 
 	sess, err := store.Create(ctx, "agent-e", nil)
@@ -218,7 +218,7 @@ func TestGenerateSecureID(t *testing.T) {
 }
 
 func TestMemoryStoreConcurrency(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	ctx := context.Background()
 
 	const goroutines = 10

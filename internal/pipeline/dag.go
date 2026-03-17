@@ -15,17 +15,19 @@ type Step struct {
 
 // DAG represents a directed acyclic graph of pipeline steps.
 type DAG struct {
-	Steps    map[string]*Step
-	Order    [][]string // Topological layers (steps in same layer can run in parallel)
-	Incoming map[string]int
+	Steps     map[string]*Step
+	Order     [][]string // Topological layers (steps in same layer can run in parallel)
+	Incoming  map[string]int
+	Adjacency map[string][]string // Forward adjacency: dep -> list of dependents
 }
 
 // BuildDAG constructs a DAG from a list of pipeline steps.
 // Returns an error if the graph contains cycles or references unknown steps.
 func BuildDAG(steps []Step) (*DAG, error) {
 	dag := &DAG{
-		Steps:    make(map[string]*Step),
-		Incoming: make(map[string]int),
+		Steps:     make(map[string]*Step),
+		Incoming:  make(map[string]int),
+		Adjacency: make(map[string][]string),
 	}
 
 	// Index steps
@@ -38,7 +40,7 @@ func BuildDAG(steps []Step) (*DAG, error) {
 		dag.Incoming[s.Name] = 0
 	}
 
-	// Validate dependencies and count incoming edges
+	// Validate dependencies, count incoming edges, and build adjacency list
 	for _, s := range dag.Steps {
 		for _, dep := range s.DependsOn {
 			if _, exists := dag.Steps[dep]; !exists {
@@ -48,6 +50,7 @@ func BuildDAG(steps []Step) (*DAG, error) {
 				return nil, fmt.Errorf("step %q depends on itself", s.Name)
 			}
 			dag.Incoming[s.Name]++
+			dag.Adjacency[dep] = append(dag.Adjacency[dep], s.Name)
 		}
 	}
 
@@ -61,7 +64,8 @@ func BuildDAG(steps []Step) (*DAG, error) {
 	return dag, nil
 }
 
-// topologicalSort performs a layered topological sort using Kahn's algorithm.
+// topologicalSort performs a layered topological sort using Kahn's algorithm
+// with a queue-based approach for O(V+E) complexity.
 // Each layer contains steps that can execute concurrently.
 func topologicalSort(dag *DAG) ([][]string, error) {
 	incoming := make(map[string]int)
@@ -69,41 +73,43 @@ func topologicalSort(dag *DAG) ([][]string, error) {
 		incoming[k] = v
 	}
 
+	// Initialize the queue with all nodes that have zero in-degree
+	var queue []string
+	for name, count := range incoming {
+		if count == 0 {
+			queue = append(queue, name)
+		}
+	}
+
 	var layers [][]string
 	processed := 0
 	total := len(dag.Steps)
 
-	for processed < total {
-		// Find all steps with no remaining dependencies
-		var layer []string
-		for name, count := range incoming {
-			if count == 0 {
-				layer = append(layer, name)
-			}
-		}
+	for len(queue) > 0 {
+		// Sort current queue for determinism
+		sortStrings(queue)
 
-		if len(layer) == 0 {
-			return nil, fmt.Errorf("cycle detected in pipeline dependencies")
-		}
-
-		// Sort layer for determinism
-		sortStrings(layer)
+		// Current queue forms one layer
+		layer := queue
 		layers = append(layers, layer)
 
-		// Remove processed steps and update incoming counts
+		// Build next layer's queue from dependents
+		var nextQueue []string
 		for _, name := range layer {
-			delete(incoming, name)
 			processed++
-
-			// Reduce count for dependents
-			for depName, depStep := range dag.Steps {
-				for _, dep := range depStep.DependsOn {
-					if dep == name {
-						incoming[depName]--
-					}
+			// Use adjacency list to find dependents in O(degree) time
+			for _, dependent := range dag.Adjacency[name] {
+				incoming[dependent]--
+				if incoming[dependent] == 0 {
+					nextQueue = append(nextQueue, dependent)
 				}
 			}
 		}
+		queue = nextQueue
+	}
+
+	if processed < total {
+		return nil, fmt.Errorf("cycle detected in pipeline dependencies")
 	}
 
 	return layers, nil

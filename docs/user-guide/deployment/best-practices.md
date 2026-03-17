@@ -104,6 +104,39 @@ Right-sizing CPU and memory prevents both over-provisioning (wasting resources) 
 
 ---
 
+## Memory Management
+
+Understanding how AgentSpec manages in-process memory is critical for stable, long-running production deployments. The runtime maintains several bounded data structures -- rate limiter buckets, session stores, and conversation memory -- each with configurable limits and automatic eviction.
+
+### Rate Limiter Tuning
+
+- Rate limiting is configured via the `AGENTSPEC_RATE_LIMIT` environment variable (format: `"rate:burst"`, e.g., `"10:20"` for 10 requests/second with burst of 20).
+- Rate limiter buckets are automatically evicted when idle for longer than the TTL (default 10 minutes).
+- Maximum bucket count is capped at 10,000 by default. When exceeded, the oldest buckets are evicted first.
+- A background goroutine runs every 5 minutes (default) to clean up stale buckets.
+
+### Session Store Configuration
+
+- In-memory sessions expire after 30 minutes of inactivity by default.
+- Background cleanup runs every 5 minutes to remove expired sessions.
+- For production with multiple replicas, use Redis session store for shared state.
+- Redis operations use cursor-based SCAN (non-blocking) for listing sessions.
+
+### Conversation Memory Limits
+
+- Sliding window memory retains the last 50 messages per session by default.
+- Both sliding window and summary memory stores track up to 10,000 concurrent sessions.
+- LRU eviction removes the least-recently-used session when the limit is exceeded.
+
+### Key Recommendations
+
+- Monitor structured log entries (`rate limiter eviction`, `session cleanup`, `memory session eviction`) to track memory pressure.
+- Use `X-Correlation-ID` headers in requests for end-to-end request tracing across logs.
+- For high-traffic deployments, consider using Redis session store to offload session state from memory.
+- Set `LOG_LEVEL` to `info` in production to see eviction and cleanup log entries.
+
+---
+
 ## Scaling Strategies
 
 ### Horizontal Scaling (Replicas and Autoscale)

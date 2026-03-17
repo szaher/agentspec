@@ -72,7 +72,7 @@ func newRunCmd() *cobra.Command {
 			registry := tools.NewRegistry()
 
 			// Create session manager
-			sessionStore := session.NewMemoryStore(0)
+			sessionStore := session.NewMemoryStore(0, 0)
 			memoryStore := memory.NewSlidingWindow(50)
 			_ = session.NewManager(sessionStore, memoryStore)
 

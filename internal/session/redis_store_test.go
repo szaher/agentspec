@@ -133,6 +133,35 @@ func (m *mockRedisClient) Expire(ctx context.Context, key string, ttl time.Durat
 	return nil
 }
 
+func (m *mockRedisClient) Scan(ctx context.Context, cursor uint64, pattern string, count int64) ([]string, uint64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	prefix := strings.TrimSuffix(pattern, "*")
+
+	var result []string
+	seen := make(map[string]struct{})
+
+	for k := range m.data {
+		if strings.HasPrefix(k, prefix) {
+			if _, ok := seen[k]; !ok {
+				result = append(result, k)
+				seen[k] = struct{}{}
+			}
+		}
+	}
+	for k := range m.lists {
+		if strings.HasPrefix(k, prefix) {
+			if _, ok := seen[k]; !ok {
+				result = append(result, k)
+				seen[k] = struct{}{}
+			}
+		}
+	}
+
+	return result, 0, nil
+}
+
 func (m *mockRedisClient) Type(ctx context.Context, key string) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

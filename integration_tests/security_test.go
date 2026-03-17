@@ -11,7 +11,7 @@ import (
 )
 
 func TestSessionIDSecurity(t *testing.T) {
-	store := session.NewMemoryStore(0)
+	store := session.NewMemoryStore(0, 0)
 
 	t.Run("cryptographic randomness prefix", func(t *testing.T) {
 		sess, err := store.Create(context.Background(), "test-agent", nil)

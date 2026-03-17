@@ -1,0 +1,25 @@
+// Package telemetry — Correlation ID middleware contract for 010-memory-performance.
+//
+// This contract documents the HTTP middleware that injects ULID-formatted
+// correlation IDs into request context (FR-009).
+package telemetry
+
+import "net/http"
+
+// CorrelationMiddleware wraps an http.Handler to inject a correlation ID
+// into each request's context.
+//
+// Behavior:
+//   - If the incoming request has an X-Correlation-ID header, that value is used.
+//   - Otherwise, a new ULID is generated.
+//   - The correlation ID is injected into the request context via WithCorrelationID().
+//   - The X-Correlation-ID response header is set to the correlation ID.
+//   - All downstream log entries created via RequestLogger() will include
+//     the correlation_id field automatically.
+//
+// Placement in middleware chain: after authentication, before route handlers.
+func CorrelationMiddleware(next http.Handler) http.Handler {
+	// Implementation generates ULID using oklog/ulid/v2 with math/rand source.
+	// Cryptographic randomness is not required for correlation IDs.
+	panic("contract only — see implementation")
+}

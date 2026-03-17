@@ -27,10 +27,10 @@ The AgentSpec runtime is the execution engine that runs deployed agents. It mana
            |
            v
   +------------------+
-  | Runtime.Start()  |  1. Connect to MCP servers
-  +--------+---------+  2. Discover and register MCP tools
-           |             3. Start HTTP server
-           v
+  | Runtime.Start()  |  1. Start background eviction goroutines
+  +--------+---------+  2. Connect to MCP servers
+           |             3. Discover and register MCP tools
+           v             4. Start HTTP server
   +------------------+
   |  HTTP Server     |  /healthz, /v1/agents/*, /v1/pipelines/*
   +--------+---------+
@@ -49,13 +49,14 @@ The `Runtime` struct orchestrates all runtime components:
 
 ```go
 type Runtime struct {
-    config   *RuntimeConfig
-    server   *Server
-    mcpPool  *agentmcp.Pool
-    registry *tools.Registry
-    logger   *slog.Logger
-    apiKey   string
-    port     int
+    config       *RuntimeConfig
+    server       *Server
+    mcpPool      *agentmcp.Pool
+    registry     *tools.Registry
+    logger       *slog.Logger
+    apiKey       string
+    port         int
+    sessionStore *session.MemoryStore
 }
 ```
 
@@ -65,7 +66,7 @@ type Runtime struct {
 2. **MCP Pool** -- Connection pool for MCP server processes.
 3. **Tool Registry** -- Central registry for all tool definitions and executors.
 4. **Secret Resolver** -- Resolves secret references (env vars by default).
-5. **Session Manager** -- In-memory session store with 30-minute TTL and sliding-window memory (50 messages).
+5. **Session Manager** -- In-memory session store with 30-minute TTL and sliding-window memory (50 messages). The session store reference is kept on the Runtime to start its background eviction goroutine during `Start()`.
 6. **Strategy** -- Default is `loop.ReActStrategy{}`.
 
 ### Tool Registration
@@ -228,6 +229,36 @@ func (m *Manager) LoadMessages(ctx, sessionID) ([]llm.Message, error)
 func (m *Manager) SaveMessages(ctx, sessionID, messages) error
 func (m *Manager) Close(ctx, sessionID) error
 ```
+
+## Background Eviction
+
+The runtime manages background goroutines that periodically clean up stale state:
+
+- **Rate limiter eviction**: When rate limiting is enabled, `rateLimiter.Start(ctx)` launches a goroutine that removes client buckets idle beyond the TTL (default 10 minutes). Runs every 5 minutes by default.
+- **Session store cleanup**: `sessionStore.Start(ctx)` launches a goroutine that removes expired sessions. Runs every 5 minutes by default.
+- **Conversation memory eviction**: The sliding window and summary memory stores use LRU tracking. When the session count exceeds the limit (default 10,000), the least-recently-used session is evicted synchronously during `Save()`.
+
+All background goroutines stop when the runtime context is cancelled (e.g., during shutdown). Eviction events are logged as structured log entries.
+
+## Request Correlation
+
+Every HTTP request is assigned a ULID correlation ID via the `CorrelationMiddleware`:
+
+1. The middleware checks for an `X-Correlation-ID` request header.
+2. If absent, a new ULID is generated (time-sortable, 128-bit identifier).
+3. The ID is injected into the request context and set on the response header.
+4. Request-scoped loggers (`telemetry.RequestLogger()`) include the `correlation_id` field in all log entries.
+
+This enables end-to-end request tracing across all subsystems.
+
+## Indexed Lookups
+
+The server builds index maps during initialization for O(1) agent and pipeline lookups:
+
+- `agentIndex map[string]*AgentConfig` -- populated from `config.Agents` in `NewServer()`.
+- `pipelineIndex map[string]*PipelineConfig` -- populated from `config.Pipelines` in `NewServer()`.
+
+These replace the previous `findAgent()` and `findPipeline()` linear scans, reducing lookup complexity from O(n) to O(1).
 
 ## Streaming
 

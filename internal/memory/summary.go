@@ -3,42 +3,78 @@ package memory
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/szaher/designs/agentz/internal/llm"
 )
 
+// SummaryOption configures a Summary memory store.
+type SummaryOption func(*Summary)
+
+// WithSummaryMaxSessions sets the maximum number of sessions to keep in memory.
+// When exceeded, the least-recently-used session is evicted.
+func WithSummaryMaxSessions(n int) SummaryOption {
+	return func(s *Summary) {
+		if n > 0 {
+			s.maxSessions = n
+		}
+	}
+}
+
 // Summary implements conversation memory with LLM-based summarization.
 // When message count exceeds the threshold, older messages are summarized
 // into a single summary message.
 type Summary struct {
-	mu        sync.Mutex
-	threshold int
-	sessions  map[string][]llm.Message
-	llmClient llm.Client
-	model     string
+	mu          sync.RWMutex
+	threshold   int
+	maxSessions int
+	sessions    map[string][]llm.Message
+	llmClient   llm.Client
+	model       string
+	lru         *LRU
+	logger      *slog.Logger
 }
 
 // NewSummary creates a summarization memory store.
-func NewSummary(threshold int, llmClient llm.Client, model string) *Summary {
+func NewSummary(threshold int, llmClient llm.Client, model string, opts ...SummaryOption) *Summary {
 	if threshold <= 0 {
 		threshold = 20
 	}
-	return &Summary{
-		threshold: threshold,
-		sessions:  make(map[string][]llm.Message),
-		llmClient: llmClient,
-		model:     model,
+	s := &Summary{
+		threshold:   threshold,
+		maxSessions: 10000,
+		sessions:    make(map[string][]llm.Message),
+		llmClient:   llmClient,
+		model:       model,
+		lru:         NewLRU(),
+		logger:      slog.Default(),
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
+}
+
+// SetLogger sets the logger for the summary store.
+func (s *Summary) SetLogger(logger *slog.Logger) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.logger = logger
 }
 
 // Load retrieves the message history for a session.
 func (s *Summary) Load(_ context.Context, sessionID string) ([]llm.Message, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
 	msgs := s.sessions[sessionID]
 	result := make([]llm.Message, len(msgs))
 	copy(result, msgs)
+	s.mu.RUnlock()
+
+	s.mu.Lock()
+	s.lru.Promote(sessionID)
+	s.mu.Unlock()
+
 	return result, nil
 }
 
@@ -49,6 +85,22 @@ func (s *Summary) Save(ctx context.Context, sessionID string, messages []llm.Mes
 	existing = append(existing, messages...)
 	s.sessions[sessionID] = existing
 	needsSummary := len(existing) > s.threshold
+
+	s.lru.Promote(sessionID)
+
+	// Evict least-recently-used sessions if we exceed maxSessions.
+	for s.lru.Len() > s.maxSessions {
+		evicted := s.lru.Evict()
+		if evicted == "" {
+			break
+		}
+		delete(s.sessions, evicted)
+		s.logger.Info("memory session eviction",
+			"evicted", evicted,
+			"remaining", s.lru.Len(),
+			"max", s.maxSessions,
+		)
+	}
 	s.mu.Unlock()
 
 	if needsSummary {
@@ -62,6 +114,7 @@ func (s *Summary) Clear(_ context.Context, sessionID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.sessions, sessionID)
+	s.lru.Remove(sessionID)
 	return nil
 }
 

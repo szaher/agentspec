@@ -82,7 +82,7 @@ func TestFrontendMountedOnServer(t *testing.T) {
 	}
 
 	registry := tools.NewRegistry()
-	sessionMgr := session.NewManager(session.NewMemoryStore(0), nil)
+	sessionMgr := session.NewManager(session.NewMemoryStore(0, 0), nil)
 	strategy := &loop.ReActStrategy{}
 	metrics := telemetry.NewMetrics()
 
@@ -144,7 +144,7 @@ func TestFrontendDisabledByDefault(t *testing.T) {
 	}
 
 	registry := tools.NewRegistry()
-	sessionMgr := session.NewManager(session.NewMemoryStore(0), nil)
+	sessionMgr := session.NewManager(session.NewMemoryStore(0, 0), nil)
 	strategy := &loop.ReActStrategy{}
 
 	// No WithUI option — frontend should not be mounted
@@ -178,7 +178,7 @@ func TestFrontendStaticAssetsSkipAuth(t *testing.T) {
 	}
 
 	registry := tools.NewRegistry()
-	sessionMgr := session.NewManager(session.NewMemoryStore(0), nil)
+	sessionMgr := session.NewManager(session.NewMemoryStore(0, 0), nil)
 	strategy := &loop.ReActStrategy{}
 
 	server := runtime.NewServer(config, nil, registry, sessionMgr, strategy,

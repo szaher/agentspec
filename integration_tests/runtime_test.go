@@ -40,7 +40,7 @@ func newTestServer(t *testing.T, mockClient *llm.MockClient) *httptest.Server {
 	}
 
 	registry := tools.NewRegistry()
-	sessionStore := session.NewMemoryStore(30 * time.Minute)
+	sessionStore := session.NewMemoryStore(30*time.Minute, 0)
 	memoryStore := memory.NewSlidingWindow(50)
 	sessionMgr := session.NewManager(sessionStore, memoryStore)
 	strategy := &loop.ReActStrategy{}
@@ -279,7 +279,7 @@ func TestRuntimeAPIKeyAuth(t *testing.T) {
 
 	mock := llm.NewMockClient(llm.MockResponse{Content: "ok", StopReason: llm.StopEndTurn})
 	registry := tools.NewRegistry()
-	sessionStore := session.NewMemoryStore(30 * time.Minute)
+	sessionStore := session.NewMemoryStore(30*time.Minute, 0)
 	memoryStore := memory.NewSlidingWindow(50)
 	sessionMgr := session.NewManager(sessionStore, memoryStore)
 	strategy := &loop.ReActStrategy{}

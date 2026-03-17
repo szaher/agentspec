@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/szaher/designs/agentz/internal/llm"
@@ -22,6 +23,7 @@ type RedisClient interface {
 	LRange(ctx context.Context, key string, start, stop int64) ([]string, error)
 	Expire(ctx context.Context, key string, ttl time.Duration) error
 	Type(ctx context.Context, key string) (string, error)
+	Scan(ctx context.Context, cursor uint64, pattern string, count int64) (keys []string, nextCursor uint64, err error)
 }
 
 // RedisStore implements the session Store interface backed by Redis.
@@ -29,6 +31,7 @@ type RedisStore struct {
 	client RedisClient
 	prefix string
 	ttl    time.Duration
+	logger *slog.Logger
 }
 
 // RedisStoreOption configures a RedisStore.
@@ -55,6 +58,11 @@ func NewRedisStore(client RedisClient, opts ...RedisStoreOption) *RedisStore {
 		opt(s)
 	}
 	return s
+}
+
+// SetLogger sets the structured logger for diagnostics.
+func (s *RedisStore) SetLogger(logger *slog.Logger) {
+	s.logger = logger
 }
 
 func (s *RedisStore) sessionKey(id string) string {
@@ -108,16 +116,26 @@ func (s *RedisStore) Delete(ctx context.Context, id string) error {
 }
 
 // List returns all sessions, optionally filtered by agent name.
+// Uses cursor-based SCAN instead of KEYS for production safety.
 func (s *RedisStore) List(ctx context.Context, agentName string) ([]*Session, error) {
-	keys, err := s.client.Keys(ctx, s.prefix+"*")
-	if err != nil {
-		return nil, fmt.Errorf("redis keys: %w", err)
+	var keys []string
+	var cursor uint64
+	for {
+		batch, next, err := s.client.Scan(ctx, cursor, s.prefix+"*", 100)
+		if err != nil {
+			return nil, fmt.Errorf("redis scan: %w", err)
+		}
+		keys = append(keys, batch...)
+		cursor = next
+		if cursor == 0 {
+			break
+		}
 	}
 
 	var sessions []*Session
 	for _, key := range keys {
 		// Skip message keys
-		if len(key) > len(":messages") && key[len(key)-len(":messages"):] == ":messages" {
+		if strings.HasSuffix(key, ":messages") {
 			continue
 		}
 
@@ -134,6 +152,12 @@ func (s *RedisStore) List(ctx context.Context, agentName string) ([]*Session, er
 		if agentName == "" || sess.AgentName == agentName {
 			sessions = append(sessions, &sess)
 		}
+	}
+
+	if s.logger != nil {
+		s.logger.Info("redis session list",
+			slog.Int("count", len(sessions)),
+		)
 	}
 
 	return sessions, nil

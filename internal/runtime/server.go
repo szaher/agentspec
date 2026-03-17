@@ -11,6 +11,7 @@ import (
 
 	"github.com/szaher/designs/agentz/internal/auth"
 	"github.com/szaher/designs/agentz/internal/controlflow"
+	"github.com/szaher/designs/agentz/internal/eviction"
 	"github.com/szaher/designs/agentz/internal/frontend"
 	"github.com/szaher/designs/agentz/internal/llm"
 	"github.com/szaher/designs/agentz/internal/loop"
@@ -37,8 +38,8 @@ type Server struct {
 	rateLimiter *auth.RateLimiter
 	enableUI    bool
 
-	agentsByName    map[string]*AgentConfig
-	pipelinesByName map[string]*PipelineConfig
+	agentIndex    map[string]*AgentConfig
+	pipelineIndex map[string]*PipelineConfig
 }
 
 // ServerOption configures the Server.
@@ -62,7 +63,10 @@ func WithMetrics(m *telemetry.Metrics) ServerOption {
 // WithRateLimit sets the per-agent rate limit (requests per second and burst).
 func WithRateLimit(rate float64, burst int) ServerOption {
 	return func(s *Server) {
-		s.rateLimiter = auth.NewRateLimiter(auth.RateLimitConfig{RequestsPerSecond: rate, Burst: burst})
+		s.rateLimiter = auth.NewRateLimiter(auth.RateLimitConfig{
+			RequestsPerSecond: rate,
+			Burst:             burst,
+		}, eviction.DefaultPolicy())
 	}
 }
 
@@ -96,13 +100,14 @@ func NewServer(config *RuntimeConfig, llmClient llm.Client, registry *tools.Regi
 		opt(s)
 	}
 
-	s.agentsByName = make(map[string]*AgentConfig, len(config.Agents))
+	// Build lookup indexes for O(1) agent and pipeline access
+	s.agentIndex = make(map[string]*AgentConfig, len(config.Agents))
 	for i := range config.Agents {
-		s.agentsByName[config.Agents[i].Name] = &config.Agents[i]
+		s.agentIndex[config.Agents[i].Name] = &config.Agents[i]
 	}
-	s.pipelinesByName = make(map[string]*PipelineConfig, len(config.Pipelines))
+	s.pipelineIndex = make(map[string]*PipelineConfig, len(config.Pipelines))
 	for i := range config.Pipelines {
-		s.pipelinesByName[config.Pipelines[i].Name] = &config.Pipelines[i]
+		s.pipelineIndex[config.Pipelines[i].Name] = &config.Pipelines[i]
 	}
 
 	if s.metrics == nil {
@@ -131,7 +136,7 @@ func NewServer(config *RuntimeConfig, llmClient llm.Client, registry *tools.Regi
 
 // Handler returns the HTTP handler for use with httptest or custom servers.
 func (s *Server) Handler() http.Handler {
-	return s.corsMiddleware(s.authMiddleware(s.mux))
+	return s.corsMiddleware(s.authMiddleware(telemetry.CorrelationMiddleware(s.mux)))
 }
 
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
@@ -163,7 +168,7 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 func (s *Server) ListenAndServe(addr string) error {
 	s.server = &http.Server{
 		Addr:              addr,
-		Handler:           s.corsMiddleware(s.authMiddleware(s.mux)),
+		Handler:           s.corsMiddleware(s.authMiddleware(telemetry.CorrelationMiddleware(s.mux))),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		IdleTimeout:       120 * time.Second,
@@ -249,11 +254,14 @@ func (s *Server) handleListAgents(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 	agentName := r.PathValue("name")
-	agent := s.findAgent(agentName)
+	agent := s.agentIndex[agentName]
 	if agent == nil {
 		writeError(w, http.StatusNotFound, "not_found", fmt.Sprintf("Agent %q not found", agentName))
 		return
 	}
+
+	logger := telemetry.RequestLogger(s.logger, r.Context(), agentName)
+	_ = logger // available for future logging within this handler
 
 	var req struct {
 		Message   string            `json:"message"`
@@ -356,11 +364,14 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 	agentName := r.PathValue("name")
-	agent := s.findAgent(agentName)
+	agent := s.agentIndex[agentName]
 	if agent == nil {
 		writeError(w, http.StatusNotFound, "not_found", fmt.Sprintf("Agent %q not found", agentName))
 		return
 	}
+
+	logger := telemetry.RequestLogger(s.logger, r.Context(), agentName)
+	_ = logger // available for future logging within this handler
 
 	var req struct {
 		Message   string            `json:"message"`
@@ -423,7 +434,7 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleCreateSession(w http.ResponseWriter, r *http.Request) {
 	agentName := r.PathValue("name")
-	if s.findAgent(agentName) == nil {
+	if s.agentIndex[agentName] == nil {
 		writeError(w, http.StatusNotFound, "not_found", fmt.Sprintf("Agent %q not found", agentName))
 		return
 	}
@@ -450,7 +461,7 @@ func (s *Server) handleSessionMessage(w http.ResponseWriter, r *http.Request) {
 	agentName := r.PathValue("name")
 	sessionID := r.PathValue("id")
 
-	agent := s.findAgent(agentName)
+	agent := s.agentIndex[agentName]
 	if agent == nil {
 		writeError(w, http.StatusNotFound, "not_found", fmt.Sprintf("Agent %q not found", agentName))
 		return
@@ -516,11 +527,14 @@ func (s *Server) handleDeleteSession(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handlePipelineRun(w http.ResponseWriter, r *http.Request) {
 	pipelineName := r.PathValue("name")
-	pConfig := s.findPipeline(pipelineName)
+	pConfig := s.pipelineIndex[pipelineName]
 	if pConfig == nil {
 		writeError(w, http.StatusNotFound, "not_found", fmt.Sprintf("Pipeline %q not found", pipelineName))
 		return
 	}
+
+	logger := telemetry.RequestLogger(s.logger, r.Context(), pipelineName)
+	_ = logger // available for future logging within this handler
 
 	var req struct {
 		Trigger map[string]interface{} `json:"trigger"`
@@ -575,7 +589,7 @@ func (s *Server) executePipeline(ctx context.Context, name string, steps []pipel
 			input = triggerInput
 		}
 
-		agent := s.findAgent(step.AgentRef)
+		agent := s.agentIndex[step.AgentRef]
 		if agent == nil {
 			stepsResult[step.Name] = map[string]interface{}{
 				"agent":  step.AgentRef,
@@ -715,7 +729,7 @@ type serverAgentDelegator struct {
 }
 
 func (ad *serverAgentDelegator) DelegateToAgent(ctx context.Context, agentName string, input interface{}) (string, error) {
-	agent := ad.server.findAgent(agentName)
+	agent := ad.server.agentIndex[agentName]
 	if agent == nil {
 		return "", fmt.Errorf("agent %q not found for delegation", agentName)
 	}
@@ -734,14 +748,6 @@ func (ad *serverAgentDelegator) DelegateToAgent(ctx context.Context, agentName s
 		return "", err
 	}
 	return resp.Output, nil
-}
-
-func (s *Server) findPipeline(name string) *PipelineConfig {
-	return s.pipelinesByName[name]
-}
-
-func (s *Server) findAgent(name string) *AgentConfig {
-	return s.agentsByName[name]
 }
 
 func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {

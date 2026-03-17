@@ -34,7 +34,7 @@ func (m *mockMemoryStore) Clear(_ context.Context, sessionID string) error {
 }
 
 func TestManagerCreate(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	mem := newMockMemoryStore()
 	mgr := NewManager(store, mem)
 	ctx := context.Background()
@@ -54,7 +54,7 @@ func TestManagerCreate(t *testing.T) {
 }
 
 func TestManagerSaveAndLoadMessages(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	mem := newMockMemoryStore()
 	mgr := NewManager(store, mem)
 	ctx := context.Background()
@@ -94,7 +94,7 @@ func TestManagerSaveAndLoadMessages(t *testing.T) {
 }
 
 func TestManagerLoadMessagesInvalidSession(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	mem := newMockMemoryStore()
 	mgr := NewManager(store, mem)
 	ctx := context.Background()
@@ -106,7 +106,7 @@ func TestManagerLoadMessagesInvalidSession(t *testing.T) {
 }
 
 func TestManagerClose(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	mem := newMockMemoryStore()
 	mgr := NewManager(store, mem)
 	ctx := context.Background()
@@ -145,7 +145,7 @@ func TestManagerClose(t *testing.T) {
 }
 
 func TestManagerList(t *testing.T) {
-	store := NewMemoryStore(5 * time.Minute)
+	store := NewMemoryStore(5*time.Minute, 0)
 	mem := newMockMemoryStore()
 	mgr := NewManager(store, mem)
 	ctx := context.Background()
@@ -178,7 +178,7 @@ func TestManagerList(t *testing.T) {
 }
 
 func TestManagerSaveMessages_TouchError(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	mem := newMockMemoryStore()
 	mgr := NewManager(store, mem)
 	ctx := context.Background()
@@ -217,7 +217,7 @@ func (m *failClearMemoryStore) Clear(_ context.Context, _ string) error {
 }
 
 func TestManagerClose_ClearError(t *testing.T) {
-	store := NewMemoryStore(0)
+	store := NewMemoryStore(0, 0)
 	mem := &failClearMemoryStore{
 		mockMemoryStore: mockMemoryStore{messages: make(map[string][]llm.Message)},
 	}

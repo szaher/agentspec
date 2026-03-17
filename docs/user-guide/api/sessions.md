@@ -200,6 +200,53 @@ By default, sessions are stored in memory and are lost when the runtime restarts
 !!! warning "In-Memory Sessions"
     In-memory sessions are suitable for development and testing. For production deployments, use Redis or another persistent session store to ensure sessions survive restarts and can be shared across replicas.
 
+### Redis Store Performance
+
+The Redis session store uses optimized data structures and access patterns for production workloads:
+
+- **Cursor-based listing.** Session listing uses the Redis `SCAN` command with a cursor instead of the blocking `KEYS` command. This avoids locking the Redis server when the session count is large and allows the runtime to page through results incrementally.
+- **O(1) message append.** New messages are appended to a session's history using the Redis `RPUSH` (List push) operation. This is an O(1) operation that avoids reloading and re-serializing the entire message array on every turn.
+- **Transparent migration.** Sessions that were stored under the legacy format (a single JSON string containing the full message array) are automatically migrated to the new Redis List format on first access. No manual migration step is required; the runtime detects the legacy format, converts it, and deletes the old key atomically.
+
+!!! note "Backwards Compatibility"
+    Existing Redis sessions created before the List-based storage change will continue to work. The runtime transparently migrates them on first read, so deployments can upgrade without downtime or data loss.
+
+---
+
+## Session Expiry and Eviction
+
+In-memory sessions have a configurable idle timeout. If a session is not accessed (created, continued, or listed individually) within the timeout window, it becomes eligible for eviction.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Idle timeout | 30 minutes | Duration of inactivity after which a session is considered expired. |
+| Sweep interval | 5 minutes | How often the background goroutine scans for and removes expired sessions. |
+
+A background goroutine runs on the configured sweep interval, iterating over all tracked sessions and removing those whose last-access time exceeds the idle timeout. This keeps steady-state memory usage proportional to the number of *active* sessions rather than the total number of sessions ever created.
+
+When listing sessions, expired sessions are also **lazily evicted**: any session whose idle timeout has elapsed is removed from the store and excluded from the response before results are returned to the caller.
+
+!!! tip "Rate Limiting"
+    The `AGENTSPEC_RATE_LIMIT` environment variable configures request rate limiting for session endpoints. The format is `"rate:burst"` -- for example, `"10:20"` allows 10 requests per second with a burst capacity of 20. When the rate limit is exceeded, the runtime responds with `429 Too Many Requests`.
+
+---
+
+## Conversation Memory Limits
+
+Each conversation memory store -- the sliding-window store and the summary store -- enforces a maximum number of concurrent sessions. This prevents unbounded memory growth when many users interact with the same agent.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Max concurrent sessions | 10,000 | Maximum number of sessions tracked per memory store instance. |
+| Sliding-window size | 50 messages | Maximum number of messages retained per session. |
+
+When the concurrent session limit is exceeded, the **least-recently-used (LRU)** session is evicted to make room for the new one. The evicted session's entire message history is discarded.
+
+Within a single session, the sliding-window memory store retains the most recent messages up to the configured window size. When a new message is appended and the window is full, the oldest message is dropped. This keeps per-session memory usage bounded while preserving the most relevant recent context for the agent.
+
+!!! warning "LRU Eviction"
+    LRU eviction is silent -- no error is returned to the caller whose session was evicted. If a subsequent request references an evicted session, the runtime returns a `404 not_found` error. Long-lived integrations should handle this case by creating a new session.
+
 ---
 
 ## What's Next
