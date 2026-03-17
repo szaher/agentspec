@@ -271,6 +271,65 @@ func TestReActLoopConcurrentToolCalls(t *testing.T) {
 	}
 }
 
+// TestToolCallIDCorrelation verifies that tool call IDs from the LLM response
+// are preserved through execution and appear in the tool call records.
+func TestToolCallIDCorrelation(t *testing.T) {
+	mock := llm.NewMockClient(
+		llm.MockResponse{
+			Content: "",
+			ToolCalls: []llm.ToolCall{
+				{ID: "toolu_abc123", Name: "tool_x", Input: map[string]interface{}{"k": "1"}},
+				{ID: "toolu_def456", Name: "tool_y", Input: map[string]interface{}{"k": "2"}},
+			},
+			StopReason: llm.StopToolUse,
+			Usage:      llm.TokenUsage{InputTokens: 30, OutputTokens: 20},
+		},
+		llm.MockResponse{
+			Content:    "Done.",
+			StopReason: llm.StopEndTurn,
+			Usage:      llm.TokenUsage{InputTokens: 40, OutputTokens: 10},
+		},
+	)
+
+	registry := tools.NewRegistry()
+	registry.Register("tool_x", llm.ToolDefinition{Name: "tool_x"}, &mockToolExecutor{output: "x_out"})
+	registry.Register("tool_y", llm.ToolDefinition{Name: "tool_y"}, &mockToolExecutor{output: "y_out"})
+
+	strategy := &loop.ReActStrategy{}
+	inv := loop.Invocation{
+		AgentName: "id-test",
+		Model:     "test-model",
+		Input:     "test",
+		MaxTurns:  5,
+		MaxTokens: 4096,
+	}
+
+	resp, err := strategy.Execute(context.Background(), inv, mock, registry, nil)
+	if err != nil {
+		t.Fatalf("execute failed: %v", err)
+	}
+
+	if len(resp.ToolCalls) != 2 {
+		t.Fatalf("expected 2 tool calls, got %d", len(resp.ToolCalls))
+	}
+
+	// Verify IDs are preserved from the LLM response
+	if resp.ToolCalls[0].ID != "toolu_abc123" {
+		t.Errorf("expected tool call 0 ID 'toolu_abc123', got %q", resp.ToolCalls[0].ID)
+	}
+	if resp.ToolCalls[1].ID != "toolu_def456" {
+		t.Errorf("expected tool call 1 ID 'toolu_def456', got %q", resp.ToolCalls[1].ID)
+	}
+
+	// Verify correct output correlation (tool_x → x_out, tool_y → y_out)
+	if resp.ToolCalls[0].Output != "x_out" {
+		t.Errorf("expected tool_x output 'x_out', got %q", resp.ToolCalls[0].Output)
+	}
+	if resp.ToolCalls[1].Output != "y_out" {
+		t.Errorf("expected tool_y output 'y_out', got %q", resp.ToolCalls[1].Output)
+	}
+}
+
 // mockToolExecutor is a simple tool executor that returns a fixed output.
 type mockToolExecutor struct {
 	output string

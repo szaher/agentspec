@@ -146,20 +146,30 @@ An engineer tags a release in Git. The CI/CD pipeline must automatically build b
 - What happens when all fallback models are rate-limited? The agent returns a 503 Service Unavailable with retry-after header.
 - What happens when guardrails produce false positives? Warn mode allows delivery while logging the detection for human review.
 
+## Clarifications
+
+### Session 2026-03-17
+
+- Q: What authentication mechanism should clients use for per-user auth? → A: Per-user API keys sent via Authorization header.
+- Q: Which monitoring stack does the observability dashboard target? → A: Prometheus metrics endpoint + Grafana dashboard JSON template.
+- Q: Where are audit log entries stored? → A: Separate structured JSON log file (e.g., `agentspec-audit.log`).
+- Q: Where are user-agent permission mappings configured? → A: Inline in the `.ias` spec file as a new `users` block.
+- Q: Where is budget spend tracked for persistence? → A: In the state file (`.agentspec.state.json`), survives restarts.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: System MUST support TLS with configurable certificate and key file paths.
-- **FR-002**: System MUST support per-user authentication with configurable user-agent permission mappings.
-- **FR-003**: System MUST log an audit trail of all agent invocations including user identity, agent name, timestamp, and session ID.
+- **FR-002**: System MUST support per-user authentication via unique API keys (sent in the Authorization header) with user-agent permission mappings defined inline in the `.ias` spec file as a `users` block.
+- **FR-003**: System MUST log an audit trail of all agent invocations to a separate structured JSON log file (`agentspec-audit.log`), including user identity, agent name, timestamp, and session ID.
 - **FR-004**: System MUST be backward compatible with single-API-key mode when multi-user auth is not configured.
-- **FR-005**: System MUST provide a pre-built observability dashboard template that works with the existing metrics endpoint.
+- **FR-005**: System MUST expose a Prometheus-compatible `/metrics` endpoint and provide a pre-built Grafana dashboard JSON template.
 - **FR-006**: System MUST track token consumption per agent, per model, and as a total.
-- **FR-007**: System MUST support configurable per-agent spending budgets (daily/monthly) that pause agents when exceeded.
+- **FR-007**: System MUST support configurable per-agent spending budgets (daily/monthly) that pause agents when exceeded. Budget usage is persisted in the state file (`.agentspec.state.json`) and survives server restarts.
 - **FR-008**: System MUST support multi-model fallback chains with configurable priority order.
 - **FR-009**: System MUST automatically retry with fallback models on primary model failure or rate-limiting.
-- **FR-010**: System MUST support configurable content guardrails (keyword blocklist, topic restrictions) with warn and block modes.
+- **FR-010**: System MUST support configurable content guardrails (keyword blocklist, regex pattern matching, topic keyword deny-lists) with warn and block modes. Topic restrictions use keyword-based matching, not semantic classification.
 - **FR-011**: System MUST maintain version history for agent configurations (last 10 versions).
 - **FR-012**: System MUST support `agentspec rollback` to restore the previous agent version.
 - **FR-013**: CI MUST automatically build cross-platform binaries, create releases, and generate changelogs on tagged commits.
@@ -193,9 +203,9 @@ An engineer tags a release in Git. The CI/CD pipeline must automatically build b
 ## Assumptions
 
 - TLS certificates are provided by the operator (not auto-generated); Let's Encrypt or similar ACME support is out of scope for this feature.
-- Multi-user auth starts with a simple user list configuration file; external identity providers (OIDC, SAML) are future enhancements.
+- Multi-user auth uses per-user API keys defined inline in the `.ias` spec file (a `users` block); changes are picked up via hot-reload. External identity providers (OIDC, SAML) are future enhancements.
 - Cost estimation uses a static pricing table that can be updated via configuration.
-- The observability dashboard template targets a common monitoring stack (not a custom-built dashboard).
+- The observability dashboard template targets Prometheus + Grafana (shipped as a Grafana JSON template).
 - Version history storage uses the existing state file mechanism with a fixed retention count (10 versions).
 - Guardrails operate on final agent output only, not on intermediate reasoning steps.
 - Release automation uses the project's existing CI platform.

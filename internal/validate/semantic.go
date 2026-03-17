@@ -63,6 +63,14 @@ func ValidateSemantic(f *ast.File) []*ValidationError {
 			if s.OnInput != nil {
 				errs = append(errs, validateOnInputRefs(s.OnInput.Statements, names)...)
 			}
+			// Production readiness: check guardrail references
+			for _, gr := range s.GuardrailRefs {
+				if !names["Guardrail"][gr] {
+					hint := suggestName(gr, names["Guardrail"])
+					errs = append(errs, posError(s.StartPos,
+						fmt.Sprintf("guardrail %q not found", gr), hint))
+				}
+			}
 		case *ast.Skill:
 			if s.ToolConfig != nil && s.ToolConfig.Type == "mcp" && s.ToolConfig.ServerTool != "" {
 				parts := strings.SplitN(s.ToolConfig.ServerTool, "/", 2)
@@ -127,6 +135,14 @@ func ValidateSemantic(f *ast.File) []*ValidationError {
 					hint := suggestName(s.Auth.Name, names["Secret"])
 					errs = append(errs, posError(s.Auth.StartPos,
 						fmt.Sprintf("secret %q not found", s.Auth.Name), hint))
+				}
+			}
+		case *ast.User:
+			for _, agentName := range s.Agents {
+				if !names["Agent"][agentName] {
+					hint := suggestName(agentName, names["Agent"])
+					errs = append(errs, posError(s.StartPos,
+						fmt.Sprintf("user %q references unknown agent %q", s.Name, agentName), hint))
 				}
 			}
 		}
@@ -215,6 +231,8 @@ func collectNames(f *ast.File) map[string]map[string]bool {
 		"DeployTarget": {},
 		"Type":         {},
 		"Pipeline":     {},
+		"User":         {},
+		"Guardrail":    {},
 	}
 
 	for _, stmt := range f.Statements {
@@ -243,6 +261,10 @@ func collectNames(f *ast.File) map[string]map[string]bool {
 			names["Type"][s.Name] = true
 		case *ast.Pipeline:
 			names["Pipeline"][s.Name] = true
+		case *ast.User:
+			names["User"][s.Name] = true
+		case *ast.Guardrail:
+			names["Guardrail"][s.Name] = true
 		}
 	}
 	return names

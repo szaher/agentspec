@@ -20,6 +20,9 @@ The `run` command starts an HTTP server that hosts the agents defined in the giv
 | `--ui` | | `true` | Enable built-in web frontend |
 | `--no-auth` | | `false` | Explicitly allow unauthenticated access (WARNING: insecure) |
 | `--cors-origins` | | | Comma-separated list of allowed CORS origins |
+| `--tls-cert` | | | Path to TLS certificate file (enables HTTPS) |
+| `--tls-key` | | | Path to TLS private key file |
+| `--audit-log` | | | Path to audit log file for invocation tracking |
 
 ## Examples
 

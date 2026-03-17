@@ -52,6 +52,18 @@ make build
 
 The binary is built as `./agentspec`.
 
+## Production Features
+
+- **TLS support** — serve HTTPS with certificate hot-reload (`--tls-cert`, `--tls-key`)
+- **Multi-user authentication** — per-user API keys with agent-level RBAC via `user` blocks
+- **Audit logging** — JSON-line audit trail of all invocations (`--audit-log`)
+- **Cost tracking** — per-model pricing with `budget daily/monthly` enforcement
+- **Multi-model fallback** — `models [...]` tries each model in order on failure
+- **Content guardrails** — keyword and regex filtering with `guardrail` blocks (warn/block modes)
+- **Agent versioning** — automatic version snapshots on apply, `rollback` and `history` commands
+- **Prometheus metrics** — `/v1/metrics` endpoint with invocation, token, cost, and error counters
+- **Release automation** — GoReleaser config for cross-platform binary builds
+
 ## CLI Commands
 
 | Command | Description |
@@ -74,6 +86,8 @@ The binary is built as `./agentspec`.
 | `package <file>` | Package agent spec into a distributable bundle (AgentPack) |
 | `publish` | Publish an AgentPack to a registry |
 | `install <name>` | Install an AgentPack from a registry |
+| `rollback --agent <name>` | Rollback agent to previous version |
+| `history --agent <name>` | Show agent version history |
 | `migrate [path]` | Rename `.az` files to `.ias` and rewrite v1 to v2 syntax |
 | `version` | Display version information |
 

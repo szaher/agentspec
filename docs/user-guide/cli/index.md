@@ -25,6 +25,8 @@ The `agentspec` command-line interface provides tools for authoring, validating,
 | [export](export.md) | Export a spec to JSON or YAML |
 | [diff](diff.md) | Show differences between a spec and the current state |
 | [sdk](sdk.md) | Generate typed SDK bindings from a spec |
+| [rollback](rollback.md) | Rollback an agent to its previous version |
+| [history](history.md) | Show version history for an agent |
 | [version](version.md) | Print version, build date, and commit hash |
 
 ## Common Flags

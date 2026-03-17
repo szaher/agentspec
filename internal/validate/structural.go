@@ -72,6 +72,10 @@ func ValidateStructural(f *ast.File) []*ValidationError {
 			errs = append(errs, validateTypeDef(s)...)
 		case *ast.Pipeline:
 			errs = append(errs, validatePipeline(s)...)
+		case *ast.User:
+			errs = append(errs, validateUser(s)...)
+		case *ast.Guardrail:
+			errs = append(errs, validateGuardrail(s)...)
 		case *ast.Import:
 			errs = append(errs, validateImport(s)...)
 		}
@@ -97,10 +101,23 @@ func validateAgent(a *ast.Agent) []*ValidationError {
 			fmt.Sprintf("agent %q requires a prompt reference", a.Name),
 			"add 'uses prompt \"name\"'"))
 	}
-	if a.Model == "" {
+	if a.Model == "" && len(a.Models) == 0 {
 		errs = append(errs, posError(a.StartPos,
-			fmt.Sprintf("agent %q requires a model", a.Name),
-			"add 'model \"model-name\"'"))
+			fmt.Sprintf("agent %q requires a model or models list", a.Name),
+			"add 'model \"model-name\"' or 'models [\"model1\", \"model2\"]'"))
+	}
+	if a.Model != "" && len(a.Models) > 0 {
+		errs = append(errs, posError(a.StartPos,
+			fmt.Sprintf("agent %q has both 'model' and 'models' — use one or the other", a.Name),
+			"remove either 'model' or 'models'"))
+	}
+	if a.BudgetDaily < 0 {
+		errs = append(errs, posError(a.StartPos,
+			fmt.Sprintf("agent %q has negative daily budget", a.Name), ""))
+	}
+	if a.BudgetMonthly < 0 {
+		errs = append(errs, posError(a.StartPos,
+			fmt.Sprintf("agent %q has negative monthly budget", a.Name), ""))
 	}
 	if a.Strategy != "" {
 		validStrategies := map[string]bool{
@@ -481,6 +498,58 @@ func validatePipeline(p *ast.Pipeline) []*ValidationError {
 					fmt.Sprintf("step %q cannot depend on itself", step.Name), ""))
 			}
 		}
+	}
+	return errs
+}
+
+func validateUser(u *ast.User) []*ValidationError {
+	var errs []*ValidationError
+	if u.Name == "" {
+		errs = append(errs, posError(u.StartPos, "user name is required", ""))
+	}
+	if u.KeyRef == "" {
+		errs = append(errs, posError(u.StartPos,
+			fmt.Sprintf("user %q requires a key reference", u.Name),
+			"add 'key secret(\"ENV_VAR\")'"))
+	}
+	if u.Role != "" {
+		validRoles := map[string]bool{"invoke": true, "admin": true}
+		if !validRoles[u.Role] {
+			errs = append(errs, posError(u.StartPos,
+				fmt.Sprintf("user %q has invalid role %q", u.Name, u.Role),
+				"valid roles: invoke, admin"))
+		}
+	}
+	return errs
+}
+
+func validateGuardrail(g *ast.Guardrail) []*ValidationError {
+	var errs []*ValidationError
+	if g.Name == "" {
+		errs = append(errs, posError(g.StartPos, "guardrail name is required", ""))
+	}
+	if g.Mode == "" {
+		errs = append(errs, posError(g.StartPos,
+			fmt.Sprintf("guardrail %q requires a mode", g.Name),
+			"add 'mode \"warn\"' or 'mode \"block\"'"))
+	}
+	if g.Mode != "" {
+		validModes := map[string]bool{"warn": true, "block": true}
+		if !validModes[g.Mode] {
+			errs = append(errs, posError(g.StartPos,
+				fmt.Sprintf("guardrail %q has invalid mode %q", g.Name, g.Mode),
+				"valid modes: warn, block"))
+		}
+	}
+	if len(g.Keywords) == 0 && len(g.Patterns) == 0 {
+		errs = append(errs, posError(g.StartPos,
+			fmt.Sprintf("guardrail %q requires at least one keyword or pattern", g.Name),
+			"add 'keywords [...]' or 'patterns [...]'"))
+	}
+	if g.Mode == "block" && g.FallbackMsg == "" {
+		errs = append(errs, posError(g.StartPos,
+			fmt.Sprintf("guardrail %q in block mode requires a fallback message", g.Name),
+			"add 'fallback \"message\"'"))
 	}
 	return errs
 }

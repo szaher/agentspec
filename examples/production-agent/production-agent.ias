@@ -1,0 +1,50 @@
+package "production-agent" version "1.0.0" lang "3.0"
+
+prompt "assistant-system" {
+  content "You are a helpful production assistant."
+}
+
+prompt "reviewer-system" {
+  content "You are a code review assistant."
+}
+
+guardrail "content-filter" {
+  mode "block"
+  keywords ["password", "credit_card", "ssn"]
+  patterns ["\\b\\d{3}-\\d{2}-\\d{4}\\b"]
+  fallback "I cannot share sensitive information."
+}
+
+guardrail "profanity-filter" {
+  mode "warn"
+  keywords ["badword"]
+  fallback "Content flagged for review."
+}
+
+user "admin" {
+  key secret("ADMIN_API_KEY")
+  agents ["assistant", "code-reviewer"]
+  role "admin"
+}
+
+user "developer" {
+  key secret("DEV_API_KEY")
+  agents ["assistant", "code-reviewer"]
+  role "invoke"
+}
+
+agent "assistant" {
+  uses prompt "assistant-system"
+  models ["claude-sonnet-4-20250514", "claude-haiku-4-5-20251001"]
+  budget daily 10
+  budget monthly 200
+  uses guardrail "content-filter"
+  uses guardrail "profanity-filter"
+}
+
+agent "code-reviewer" {
+  uses prompt "reviewer-system"
+  model "claude-sonnet-4-20250514"
+  budget daily 5
+  uses guardrail "content-filter"
+}

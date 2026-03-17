@@ -21,6 +21,9 @@ func newRunCmd() *cobra.Command {
 	var enableUI bool
 	var noAuth bool
 	var corsOrigins string
+	var tlsCert string
+	var tlsKey string
+	var auditLogPath string
 
 	cmd := &cobra.Command{
 		Use:   "run [file.ias]",
@@ -39,7 +42,7 @@ func newRunCmd() *cobra.Command {
 			ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
 
-			return runServerLoop(ctx, files, port, enableUI, noAuth, corsOrigins, logger)
+			return runServerLoop(ctx, files, port, enableUI, noAuth, corsOrigins, tlsCert, tlsKey, auditLogPath, logger)
 		},
 	}
 
@@ -47,11 +50,14 @@ func newRunCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&enableUI, "ui", true, "Enable built-in web frontend")
 	cmd.Flags().BoolVar(&noAuth, "no-auth", false, "Explicitly allow unauthenticated access (WARNING: insecure)")
 	cmd.Flags().StringVar(&corsOrigins, "cors-origins", "", "Comma-separated list of allowed CORS origins")
+	cmd.Flags().StringVar(&tlsCert, "tls-cert", "", "Path to TLS certificate file (PEM)")
+	cmd.Flags().StringVar(&tlsKey, "tls-key", "", "Path to TLS private key file (PEM)")
+	cmd.Flags().StringVar(&auditLogPath, "audit-log", "", "Path to audit log file (default: no audit logging)")
 
 	return cmd
 }
 
-func runServerLoop(ctx context.Context, files []string, port int, enableUI bool, noAuth bool, corsOriginsStr string, logger *slog.Logger) error {
+func runServerLoop(ctx context.Context, files []string, port int, enableUI bool, noAuth bool, corsOriginsStr string, tlsCert string, tlsKey string, auditLogPath string, logger *slog.Logger) error {
 	var rt *runtime.Runtime
 
 	startRuntime := func() error {
@@ -86,11 +92,14 @@ func runServerLoop(ctx context.Context, files []string, port int, enableUI bool,
 		)
 
 		rt, err = runtime.New(config, runtime.Options{
-			Port:        port,
-			Logger:      logger,
-			EnableUI:    enableUI,
-			NoAuth:      noAuth,
-			CORSOrigins: corsOrigins,
+			Port:         port,
+			Logger:       logger,
+			EnableUI:     enableUI,
+			NoAuth:       noAuth,
+			CORSOrigins:  corsOrigins,
+			TLSCert:      tlsCert,
+			TLSKey:       tlsKey,
+			AuditLogPath: auditLogPath,
 		})
 		if err != nil {
 			return fmt.Errorf("runtime error: %w", err)
@@ -140,6 +149,18 @@ func runServerLoop(ctx context.Context, files []string, port int, enableUI bool,
 		return watchWithPolling(ctx, watchDir, rt, reload, logger)
 	}
 
+	// Watch TLS cert/key directories for hot-reload
+	if tlsCert != "" {
+		certDir := filepath.Dir(tlsCert)
+		if certDir != watchDir {
+			_ = watcher.Add(certDir)
+		}
+		keyDir := filepath.Dir(tlsKey)
+		if keyDir != watchDir && keyDir != certDir {
+			_ = watcher.Add(keyDir)
+		}
+	}
+
 	// Debounce timer — only trigger reload after 100ms of quiet
 	debounce := time.NewTimer(0)
 	if !debounce.Stop() {
@@ -162,8 +183,19 @@ func runServerLoop(ctx context.Context, files []string, port int, enableUI bool,
 			if !ok {
 				return nil
 			}
-			// Only react to Write and Create events on .ias files
-			if filepath.Ext(event.Name) == ".ias" && (event.Op&(fsnotify.Write|fsnotify.Create)) != 0 {
+			if (event.Op & (fsnotify.Write | fsnotify.Create)) == 0 {
+				continue
+			}
+			// Reload TLS cert on cert/key file changes
+			if tlsCert != "" && (event.Name == tlsCert || event.Name == tlsKey) {
+				if rt != nil {
+					logger.Info("TLS cert/key changed, reloading", "file", event.Name)
+					_ = rt.ReloadTLSCertificate()
+				}
+				continue
+			}
+			// Only react to .ias file changes for full reload
+			if filepath.Ext(event.Name) == ".ias" {
 				if debouncing {
 					debounce.Reset(100 * time.Millisecond)
 				} else {

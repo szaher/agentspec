@@ -139,6 +139,18 @@ const (
 	TokenTags      // eval case tags
 	TokenQuery     // http tool query params
 	TokenLoop      // agent loop strategy
+	TokenUser      // user block
+	TokenGuardrail // guardrail block
+	TokenModels    // models list (multi-model fallback)
+	TokenBudgetKw  // budget field (daily/monthly)
+	TokenAgents    // agents list in user block
+	TokenKeywords  // keywords list in guardrail block
+	TokenPatterns  // patterns list in guardrail block
+	TokenMode      // mode field in guardrail block
+	TokenKey       // key field in user block
+	TokenRole      // role field in user block
+	TokenDaily     // budget period
+	TokenMonthly   // budget period
 
 	// Expression operators (IntentLang 3.0)
 	TokenColon     // :
@@ -267,6 +279,18 @@ var tokenNames = map[TokenType]string{
 	TokenTags:         "tags",
 	TokenQuery:        "query",
 	TokenLoop:         "loop",
+	TokenUser:         "user",
+	TokenGuardrail:    "guardrail",
+	TokenModels:       "models",
+	TokenBudgetKw:     "budget",
+	TokenAgents:       "agents",
+	TokenKeywords:     "keywords",
+	TokenPatterns:     "patterns",
+	TokenMode:         "mode",
+	TokenKey:          "key",
+	TokenRole:         "role",
+	TokenDaily:        "daily",
+	TokenMonthly:      "monthly",
 	TokenColon:        ":",
 	TokenEqual:        "==",
 	TokenNotEqual:     "!=",
@@ -385,6 +409,18 @@ var keywords = map[string]TokenType{
 	"tags":          TokenTags,
 	"query":         TokenQuery,
 	"loop":          TokenLoop,
+	"user":          TokenUser,
+	"guardrail":     TokenGuardrail,
+	"models":        TokenModels,
+	"budget":        TokenBudgetKw,
+	"agents":        TokenAgents,
+	"keywords":      TokenKeywords,
+	"patterns":      TokenPatterns,
+	"mode":          TokenMode,
+	"key":           TokenKey,
+	"role":          TokenRole,
+	"daily":         TokenDaily,
+	"monthly":       TokenMonthly,
 }
 
 // LookupKeyword returns the keyword token type for ident, or TokenIdent.
