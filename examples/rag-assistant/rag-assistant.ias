@@ -1,4 +1,4 @@
-package "rag-chatbot" version "0.1.0" lang "2.0"
+package "rag-assistant" version "0.1.0" lang "2.0"
 
 prompt "rag" {
   content "You are a knowledge assistant. Answer questions using only\n           the retrieved context. Always cite your sources with\n           [Source: document_name] notation. If the context does not\n           contain enough information, say so honestly rather than\n           guessing."

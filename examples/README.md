@@ -27,14 +27,18 @@ Verify the build:
 | [Multi-Environment](multi-environment/) | `multi-environment.ias` | Environment overlays (dev/prod) |
 | [Plugin Usage](plugin-usage/) | `plugin-usage.ias` | WASM plugin references |
 | [Multi-Binding](multi-binding/) | `multi-binding.ias` | Deploying to multiple targets |
-| [Customer Support](customer-support/) | `customer-support.ias` | Secrets, environments, multi-skill agent |
+| [Support Bot](support-bot/) | `support-bot.ias` | Secrets, environments, multi-skill agent |
 | [Code Review Pipeline](code-review-pipeline/) | `code-review-pipeline.ias` | Multi-agent collaboration, MCP, dual deploy targets |
 | [Data Pipeline](data-pipeline/) | `data-pipeline.ias` | Policies, secrets, three environments |
-| [RAG Chatbot](rag-chatbot/) | `rag-chatbot.ias` | Vector search, MCP transport, secrets |
+| [RAG Assistant](rag-assistant/) | `rag-assistant.ias` | Vector search, MCP transport, secrets |
 | [Ollama Agent](ollama-agent/) | `ollama-agent.ias` | Local Ollama models, inline tools, multi-agent, no API keys |
 | [Compiled Agent](compiled-agent/) | `hello-agent.ias` | Config, validation, eval, deploy |
 | [Control Flow](control-flow-agent/) | `router-agent.ias` | If/else routing, on input blocks |
 | [Validated Agent](validated-agent/) | `support-agent.ias` | Imports, config, validation, eval |
+| [Research Swarm](research-swarm/) | `research-swarm.ias` | Multi-agent pipeline, parallel research, synthesis |
+| [Incident Response](incident-response/) | `incident-response.ias` | Alert triage, runbook execution, escalation |
+| [GPU Batch](gpu-batch/) | `gpu-batch.ias` | Async task dispatch, GPU inference, job polling |
+| [Multi-Agent Router](multi-agent-router/) | `multi-agent-router.ias` | Lang 3.0 control flow, if/else routing, specialist agents |
 
 ## Running Any Example
 

@@ -1,0 +1,53 @@
+package "{{.PackageName}}" version "0.1.0" lang "2.0"
+
+prompt "rag-system" {
+  content "You are an intelligent chatbot that answers questions using a knowledge base.\n           Always search the document store before answering. If you cannot find\n           relevant information, say so honestly rather than making up answers.\n           Cite your sources when possible."
+}
+
+skill "search-documents" {
+  description "Search the document store for relevant passages"
+  input {
+    query string required
+  }
+  output {
+    documents string
+  }
+  tool command {
+    binary "doc-search-tool"
+  }
+}
+
+skill "embed-query" {
+  description "Generate an embedding vector for a search query"
+  input {
+    query string required
+  }
+  output {
+    vector string
+  }
+  tool command {
+    binary "embed-tool"
+  }
+}
+
+agent "rag-bot" {
+  uses prompt "rag-system"
+  uses skill "search-documents"
+  uses skill "embed-query"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 5
+  stream true
+  memory {
+    strategy "sliding_window"
+    max_messages 20
+  }
+}
+
+secret "anthropic-key" {
+  env(ANTHROPIC_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}

@@ -42,6 +42,16 @@ via pluggable adapters, and generates SDKs for multiple languages.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return migrateStateFile()
 		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Println("AgentSpec — declarative language for AI agents")
+			fmt.Println()
+			fmt.Println("Get started:")
+			fmt.Println("  agentspec init              Create a new project from a template")
+			fmt.Println("  agentspec --help             Show all available commands")
+			fmt.Println()
+			fmt.Println("Quickstart guide: https://szaher.github.io/agentspec/quickstart/")
+			return nil
+		},
 	}
 
 	root.PersistentFlags().StringVar(&stateFile, "state-file", defaultStateFile, "Path to state file")

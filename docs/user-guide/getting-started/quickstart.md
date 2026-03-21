@@ -1,10 +1,82 @@
 # Quick Start
 
-This tutorial walks you through creating, validating, and applying your first AgentSpec file. By the end, you will have a working agent definition and understand the four core CLI commands.
+Get from zero to a running agent in under 5 minutes.
 
 ---
 
-## Step 1: Create Your First `.ias` File
+## Install
+
+=== "macOS (Homebrew)"
+
+    ```bash
+    brew install szaher/agentspec/agentspec
+    ```
+
+=== "Linux"
+
+    ```bash
+    # Download the latest release for your architecture
+    curl -sL https://github.com/szaher/agentspec/releases/latest/download/agentspec_$(uname -s)_$(uname -m).tar.gz | tar xz
+    sudo mv agentspec /usr/local/bin/
+    ```
+
+=== "Windows"
+
+    Download the latest `.zip` from [GitHub Releases](https://github.com/szaher/agentspec/releases/latest), extract it, and add the directory to your `PATH`.
+
+=== "Docker"
+
+    ```bash
+    docker pull ghcr.io/szaher/agentspec:latest
+    ```
+
+Verify the installation:
+
+```bash
+agentspec version
+```
+
+---
+
+## Scaffold a Project
+
+The fastest way to get started is with a template:
+
+```bash
+agentspec init
+```
+
+This shows an interactive template selector. Pick a template, and AgentSpec creates a project directory with a ready-to-run `.ias` file and a README.
+
+You can also select a template directly:
+
+```bash
+agentspec init --template basic-chatbot
+```
+
+### Configure
+
+Set your API key:
+
+```bash
+export ANTHROPIC_API_KEY="your-key-here"
+```
+
+### Run
+
+```bash
+agentspec run basic-chatbot/basic-chatbot.ias
+```
+
+Your agent is now running and ready for interaction.
+
+---
+
+## Manual Setup
+
+If you prefer to write your own `.ias` file from scratch, follow the steps below.
+
+### Step 1: Create Your First `.ias` File
 
 Create a file named `hello.ias` with the following content:
 
@@ -235,6 +307,40 @@ agent "assistant" {
   model "claude-sonnet-4-20250514"
 }
 ```
+
+### Missing API Key
+
+**Error:**
+
+```
+Error: ANTHROPIC_API_KEY environment variable is not set
+```
+
+**Fix:** Set the environment variable before running the agent:
+
+```bash
+export ANTHROPIC_API_KEY="your-key-here"
+```
+
+### Wrong Architecture Binary
+
+**Error:**
+
+```
+zsh: exec format error: ./agentspec
+```
+
+**Fix:** You downloaded a binary for a different CPU architecture. Check your architecture with `uname -m` and download the matching release (e.g., `amd64` for Intel, `arm64` for Apple Silicon / ARM).
+
+### Port Already in Use
+
+**Error:**
+
+```
+Error: listen tcp :8080: bind: address already in use
+```
+
+**Fix:** Another process is using port 8080. Either stop that process or specify a different port in your `.ias` file's deploy block.
 
 ### Invalid Model Format
 

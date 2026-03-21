@@ -1,0 +1,138 @@
+package "multi-agent-router" version "1.0.0" lang "3.0"
+
+prompt "router-system" {
+  content "You are a routing agent for a customer service platform.\n           Analyze the incoming message and delegate it to the\n           appropriate specialist: billing, technical support,\n           or general inquiries."
+}
+
+prompt "billing-system" {
+  content "You are a billing specialist. Help customers with invoices,\n           payment issues, refunds, and subscription changes.\n           Always verify the account before making changes."
+}
+
+prompt "technical-system" {
+  content "You are a technical support specialist. Help customers with\n           product bugs, configuration issues, API errors, and\n           integration problems. Ask for error logs when relevant."
+}
+
+prompt "general-system" {
+  content "You are a general customer service agent. Handle inquiries\n           about products, services, company policies, and anything\n           that does not fall under billing or technical support."
+}
+
+skill "classify-intent" {
+  description "Classify the intent of an incoming customer message"
+  input {
+    message string required
+  }
+  output {
+    intent string
+  }
+  tool command {
+    binary "intent-classifier"
+  }
+}
+
+skill "lookup-account" {
+  description "Look up a customer account by email or ID"
+  input {
+    identifier string required
+  }
+  output {
+    account string
+  }
+  tool command {
+    binary "account-lookup"
+  }
+}
+
+skill "process-refund" {
+  description "Process a refund for a customer order"
+  input {
+    order_id string required
+  }
+  output {
+    refund_id string
+    status string
+  }
+  tool command {
+    binary "refund-processor"
+  }
+}
+
+skill "search-docs" {
+  description "Search technical documentation for troubleshooting steps"
+  input {
+    query string required
+  }
+  output {
+    articles string
+  }
+  tool command {
+    binary "docs-search"
+  }
+}
+
+skill "create-ticket" {
+  description "Create a support ticket for follow-up"
+  input {
+    subject string required
+    description string required
+  }
+  output {
+    ticket_id string
+  }
+  tool command {
+    binary "ticket-creator"
+  }
+}
+
+agent "billing-agent" {
+  uses prompt "billing-system"
+  uses skill "lookup-account"
+  uses skill "process-refund"
+  uses skill "create-ticket"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "technical-agent" {
+  uses prompt "technical-system"
+  uses skill "search-docs"
+  uses skill "create-ticket"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "general-agent" {
+  uses prompt "general-system"
+  uses skill "create-ticket"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "router" {
+  uses prompt "router-system"
+  uses skill "classify-intent"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 5
+  on input {
+    if contains ( lower ( input.message ) , "billing" ) {
+      use skill classify-intent
+    } else if contains ( lower ( input.message ) , "invoice" ) {
+      use skill classify-intent
+    } else if contains ( lower ( input.message ) , "refund" ) {
+      use skill classify-intent
+    } else if contains ( lower ( input.message ) , "bug" ) {
+      use skill classify-intent
+    } else if contains ( lower ( input.message ) , "error" ) {
+      use skill classify-intent
+    } else if contains ( lower ( input.message ) , "api" ) {
+      use skill classify-intent
+    } else {
+      use skill classify-intent
+    }
+  }
+}
+
+secret "platform-api-key" {
+  env(PLATFORM_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}
