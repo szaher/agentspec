@@ -1,0 +1,78 @@
+package "gpu-batch" version "0.1.0" lang "2.0"
+
+prompt "batch-dispatcher" {
+  content "You are a batch inference dispatcher. Accept inference requests,\n           validate input data, submit jobs to the GPU cluster API, and\n           monitor job status until completion. Report results or errors\n           back to the caller."
+}
+
+skill "validate-input" {
+  description "Validate and preprocess input data for batch inference"
+  input {
+    payload string required
+  }
+  output {
+    validated_payload string
+    error string
+  }
+  tool command {
+    binary "input-validator"
+  }
+}
+
+skill "submit-job" {
+  description "Submit a batch inference job to the GPU cluster API"
+  input {
+    validated_payload string required
+    model_id string required
+  }
+  output {
+    job_id string
+  }
+  tool command {
+    binary "gpu-job-submit"
+  }
+}
+
+skill "poll-status" {
+  description "Check the status of a submitted GPU inference job"
+  input {
+    job_id string required
+  }
+  output {
+    status string
+    result string
+  }
+  tool command {
+    binary "gpu-job-status"
+  }
+}
+
+skill "fetch-results" {
+  description "Download the results of a completed inference job"
+  input {
+    job_id string required
+  }
+  output {
+    output_url string
+    summary string
+  }
+  tool command {
+    binary "gpu-results-fetch"
+  }
+}
+
+agent "batch-agent" {
+  uses prompt "batch-dispatcher"
+  uses skill "validate-input"
+  uses skill "submit-job"
+  uses skill "poll-status"
+  uses skill "fetch-results"
+  model "claude-sonnet-4-20250514"
+}
+
+secret "gpu-api-key" {
+  env(GPU_CLUSTER_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}

@@ -1,0 +1,100 @@
+package "{{.PackageName}}" version "0.1.0" lang "2.0"
+
+prompt "coordinator-system" {
+  content "You are a research coordinator. Your job is to synthesize findings from\n           multiple research agents into a clear, well-structured report. Combine\n           insights, resolve contradictions, and highlight key takeaways."
+}
+
+prompt "web-researcher-system" {
+  content "You are a web research specialist. Search the web for current information\n           on the given topic. Focus on recent, authoritative sources. Return\n           structured findings with source URLs."
+}
+
+prompt "academic-researcher-system" {
+  content "You are an academic research specialist. Search academic databases and\n           papers for peer-reviewed information on the given topic. Focus on\n           methodology, data quality, and citations. Return structured findings."
+}
+
+skill "web-search" {
+  description "Search the web for current information and news"
+  input {
+    query string required
+  }
+  output {
+    results string
+  }
+  tool command {
+    binary "web-search-tool"
+  }
+}
+
+skill "academic-search" {
+  description "Search academic databases for peer-reviewed papers"
+  input {
+    query string required
+  }
+  output {
+    papers string
+  }
+  tool command {
+    binary "academic-search-tool"
+  }
+}
+
+skill "report-formatter" {
+  description "Format research findings into a structured report"
+  input {
+    findings string required
+  }
+  output {
+    report string
+  }
+  tool command {
+    binary "report-formatter-tool"
+  }
+}
+
+agent "web-researcher" {
+  uses prompt "web-researcher-system"
+  uses skill "web-search"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 8
+  stream true
+}
+
+agent "academic-researcher" {
+  uses prompt "academic-researcher-system"
+  uses skill "academic-search"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 8
+  stream true
+}
+
+agent "coordinator" {
+  uses prompt "coordinator-system"
+  uses skill "report-formatter"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 5
+  stream true
+}
+
+pipeline "research-pipeline" {
+  step "web-research" {
+    agent "web-researcher"
+  }
+  step "academic-research" {
+    agent "academic-researcher"
+  }
+  step "synthesize" {
+    agent "coordinator"
+    depends_on ["web-research", "academic-research"]
+  }
+}
+
+secret "anthropic-key" {
+  env(ANTHROPIC_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}

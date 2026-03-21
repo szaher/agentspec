@@ -1,0 +1,91 @@
+package "{{.PackageName}}" version "0.1.0" lang "2.0"
+
+prompt "incident-system" {
+  content "You are an incident response agent for a production system. Your job is to:\n           1. Assess the severity of incoming alerts and incidents.\n           2. Gather diagnostic information using available tools.\n           3. Attempt automated remediation for known issues.\n           4. Escalate to on-call engineers when manual intervention is required.\n           Severity levels: SEV1 (outage, escalate immediately),\n           SEV2 (degraded, gather diagnostics then escalate),\n           SEV3 (minor, attempt automated remediation first).\n           Always log your actions and reasoning for post-incident review."
+}
+
+skill "query-metrics" {
+  description "Query the monitoring system for service metrics and health status"
+  input {
+    service string required
+  }
+  output {
+    metrics string
+  }
+  tool command {
+    binary "metrics-query-tool"
+  }
+}
+
+skill "fetch-logs" {
+  description "Fetch recent logs from the centralized logging system"
+  input {
+    service string required
+  }
+  output {
+    logs string
+  }
+  tool command {
+    binary "log-fetch-tool"
+  }
+}
+
+skill "create-ticket" {
+  description "Create or update an incident ticket in the ticketing system"
+  input {
+    title string required
+  }
+  output {
+    ticket_id string
+  }
+  tool command {
+    binary "ticket-create-tool"
+  }
+}
+
+skill "escalate" {
+  description "Send an escalation notification to the on-call engineer"
+  input {
+    severity string required
+  }
+  output {
+    escalation_id string
+  }
+  tool command {
+    binary "escalate-tool"
+  }
+}
+
+skill "run-remediation" {
+  description "Execute an automated remediation runbook for a known issue"
+  input {
+    runbook_id string required
+  }
+  output {
+    result string
+  }
+  tool command {
+    binary "runbook-tool"
+  }
+}
+
+agent "incident-responder" {
+  uses prompt "incident-system"
+  uses skill "query-metrics"
+  uses skill "fetch-logs"
+  uses skill "create-ticket"
+  uses skill "escalate"
+  uses skill "run-remediation"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 15
+  stream true
+}
+
+secret "anthropic-key" {
+  env(ANTHROPIC_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}

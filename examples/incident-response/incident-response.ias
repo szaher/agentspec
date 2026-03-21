@@ -1,0 +1,77 @@
+package "incident-response" version "0.1.0" lang "2.0"
+
+prompt "responder" {
+  content "You are an incident response agent for a cloud infrastructure team.\n           When an alert arrives, triage it by severity, look up the relevant\n           runbook, execute remediation steps, and escalate to on-call if the\n           issue is not resolved within the runbook's scope.\n           Always log your actions and reasoning."
+}
+
+skill "triage-alert" {
+  description "Classify an incoming alert by severity and category"
+  input {
+    alert_payload string required
+  }
+  output {
+    severity string
+    category string
+  }
+  tool command {
+    binary "alert-triage"
+  }
+}
+
+skill "lookup-runbook" {
+  description "Retrieve the remediation runbook for a given alert category"
+  input {
+    category string required
+  }
+  output {
+    runbook string
+  }
+  tool command {
+    binary "runbook-lookup"
+  }
+}
+
+skill "execute-runbook" {
+  description "Execute the steps defined in a remediation runbook"
+  input {
+    runbook string required
+  }
+  output {
+    execution_log string
+    resolved string
+  }
+  tool command {
+    binary "runbook-executor"
+  }
+}
+
+skill "escalate-oncall" {
+  description "Page the on-call engineer with incident details"
+  input {
+    incident_summary string required
+    severity string required
+  }
+  output {
+    page_id string
+  }
+  tool command {
+    binary "pagerduty-escalate"
+  }
+}
+
+agent "incident-responder" {
+  uses prompt "responder"
+  uses skill "triage-alert"
+  uses skill "lookup-runbook"
+  uses skill "execute-runbook"
+  uses skill "escalate-oncall"
+  model "claude-sonnet-4-20250514"
+}
+
+secret "pagerduty-key" {
+  env(PAGERDUTY_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}

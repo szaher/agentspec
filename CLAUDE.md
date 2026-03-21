@@ -21,6 +21,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-23
 - N/A (no schema changes) (011-product-completeness)
 - Go 1.25+ (existing) + `crypto/tls` (stdlib), `log/slog` (stdlib), `regexp` (stdlib), cobra v1.10.2 (existing), fsnotify (existing), GoReleaser (CI only — not a Go dependency) (012-production-readiness)
 - Local JSON state file (`.agentspec.state.json`) extended with `budgets` and `agent_versions` sections. Separate `agentspec-audit.log` file for audit entries. (012-production-readiness)
+- Go 1.25+ (existing) + cobra v1.10.2 (existing CLI), GoReleaser v2 (existing release tooling), `embed` (stdlib, existing for templates) (013-adoption-dev-experience)
+- N/A (no new state; templates embedded in binary, examples are static files) (013-adoption-dev-experience)
 
 ## Project Structure
 
@@ -68,9 +70,9 @@ Go 1.25+: Follow standard conventions
 - Go module path: `github.com/szaher/agentspec` (unchanged)
 
 ## Recent Changes
+- 013-adoption-dev-experience: Added Go 1.25+ (existing) + cobra v1.10.2 (existing CLI), GoReleaser v2 (existing release tooling), `embed` (stdlib, existing for templates)
 - 012-production-readiness: Added Go 1.25+ (existing) + `crypto/tls` (stdlib), `log/slog` (stdlib), `regexp` (stdlib), cobra v1.10.2 (existing), fsnotify (existing), GoReleaser (CI only — not a Go dependency)
 - 011-product-completeness: Added Go 1.25+ (backend), Vanilla JS (frontend) + cobra v1.10.2 (CLI), fsnotify (new — file watching), existing llm/loop/runtime packages
-- 010-memory-performance: Added Go 1.25+ + `log/slog` (structured logging), `sync` (RWMutex), `oklog/ulid` (correlation IDs), existing Redis client interface, `encoding/json` (state file)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

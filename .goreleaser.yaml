@@ -49,3 +49,60 @@ release:
     name: agentspec
   draft: false
   prerelease: auto
+
+brews:
+  - name: agentspec
+    repository:
+      owner: szaher
+      name: homebrew-agentspec
+    homepage: "https://github.com/szaher/agentspec"
+    description: "Declarative language for defining and deploying AI agents"
+    license: "Apache-2.0"
+    test: |
+      system "#{bin}/agentspec", "version"
+    install: |
+      bin.install "agentspec"
+
+dockers:
+  - id: agentspec-amd64
+    goos: linux
+    goarch: amd64
+    ids:
+      - agentspec
+    image_templates:
+      - "ghcr.io/szaher/agentspec:{{ .Version }}-amd64"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64"
+
+  - id: agentspec-arm64
+    goos: linux
+    goarch: arm64
+    ids:
+      - agentspec
+    image_templates:
+      - "ghcr.io/szaher/agentspec:{{ .Version }}-arm64"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/arm64"
+
+docker_manifests:
+  - name_template: "ghcr.io/szaher/agentspec:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/szaher/agentspec:{{ .Version }}-amd64"
+      - "ghcr.io/szaher/agentspec:{{ .Version }}-arm64"
+
+  - name_template: "ghcr.io/szaher/agentspec:{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/szaher/agentspec:{{ .Version }}-amd64"
+      - "ghcr.io/szaher/agentspec:{{ .Version }}-arm64"
+
+  - name_template: "ghcr.io/szaher/agentspec:{{ .Major }}"
+    image_templates:
+      - "ghcr.io/szaher/agentspec:{{ .Version }}-amd64"
+      - "ghcr.io/szaher/agentspec:{{ .Version }}-arm64"
+
+  - name_template: "ghcr.io/szaher/agentspec:latest"
+    image_templates:
+      - "ghcr.io/szaher/agentspec:{{ .Version }}-amd64"
+      - "ghcr.io/szaher/agentspec:{{ .Version }}-arm64"

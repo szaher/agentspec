@@ -1,0 +1,87 @@
+package "{{.PackageName}}" version "1.0.0" lang "3.0"
+
+prompt "router-system" {
+  content "You are an intelligent message router. Analyze incoming messages and\n           route them to the appropriate specialist handler based on their content.\n           Do not attempt to answer questions yourself — always delegate to the\n           correct handler skill."
+}
+
+skill "billing_handler" {
+  description "Handle billing-related inquiries including invoices, payments, and refunds"
+  input {
+    message string required
+  }
+  output {
+    response string
+  }
+  tool command {
+    binary "billing-handler-tool"
+  }
+}
+
+skill "technical_handler" {
+  description "Handle technical support requests including bugs, errors, and troubleshooting"
+  input {
+    message string required
+  }
+  output {
+    response string
+  }
+  tool command {
+    binary "technical-handler-tool"
+  }
+}
+
+skill "sales_handler" {
+  description "Handle sales inquiries including demos, pricing tiers, and enterprise plans"
+  input {
+    message string required
+  }
+  output {
+    response string
+  }
+  tool command {
+    binary "sales-handler-tool"
+  }
+}
+
+skill "general_handler" {
+  description "Handle general inquiries that do not fit other categories"
+  input {
+    message string required
+  }
+  output {
+    response string
+  }
+  tool command {
+    binary "general-handler-tool"
+  }
+}
+
+agent "router" {
+  uses prompt "router-system"
+  uses skill "billing_handler"
+  uses skill "technical_handler"
+  uses skill "sales_handler"
+  uses skill "general_handler"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 5
+  on input {
+    if input == "billing" {
+      use skill billing_handler
+    } else if input == "technical" {
+      use skill technical_handler
+    } else if input == "sales" {
+      use skill sales_handler
+    } else {
+      use skill general_handler
+    }
+  }
+}
+
+secret "anthropic-key" {
+  env(ANTHROPIC_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}

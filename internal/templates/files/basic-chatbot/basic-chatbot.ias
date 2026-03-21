@@ -1,0 +1,35 @@
+package "{{.PackageName}}" version "0.1.0" lang "2.0"
+
+prompt "chatbot-system" {
+  content "You are a friendly and helpful assistant. Answer user questions clearly\n           and concisely. If you are unsure about something, say so honestly."
+}
+
+skill "web-search" {
+  description "Search the web for current information"
+  input {
+    query string required
+  }
+  output {
+    results string
+  }
+  tool command {
+    binary "web-search-tool"
+  }
+}
+
+agent "chatbot" {
+  uses prompt "chatbot-system"
+  uses skill "web-search"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 5
+  stream true
+}
+
+secret "anthropic-key" {
+  env(ANTHROPIC_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}

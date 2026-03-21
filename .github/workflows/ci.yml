@@ -64,6 +64,17 @@ jobs:
             ./agentspec fmt --check "$f"
           done
 
+      - name: Validate all templates
+        run: |
+          for tmpl in basic-chatbot support-bot rag-assistant research-swarm incident-response multi-agent-router; do
+            echo "Testing template: $tmpl"
+            tmpdir=$(mktemp -d)
+            ./agentspec init --template "$tmpl" --output-dir "$tmpdir"
+            ./agentspec validate "$tmpdir/$tmpl/$tmpl.ias"
+            ./agentspec fmt --check "$tmpdir/$tmpl/$tmpl.ias"
+            rm -rf "$tmpdir"
+          done
+
       - name: Smoke test - plan
         run: |
           set +e

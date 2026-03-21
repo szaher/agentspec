@@ -1,0 +1,49 @@
+package "{{.PackageName}}" version "0.1.0" lang "2.0"
+
+prompt "support-system" {
+  content "You are a helpful customer support agent. You help customers with\n           their orders, answer questions about products, and resolve issues.\n           Always be polite, professional, and thorough in your responses.\n           When looking up orders, use the lookup-order tool.\n           When searching the knowledge base, use the search-kb tool."
+}
+
+skill "lookup-order" {
+  description "Look up an order by order ID"
+  input {
+    order_id string required
+  }
+  output {
+    order string
+  }
+  tool command {
+    binary "order-lookup-tool"
+  }
+}
+
+skill "search-kb" {
+  description "Search the knowledge base for product and policy information"
+  input {
+    query string required
+  }
+  output {
+    articles string
+  }
+  tool command {
+    binary "kb-search-tool"
+  }
+}
+
+agent "support-bot" {
+  uses prompt "support-system"
+  uses skill "lookup-order"
+  uses skill "search-kb"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 10
+  stream true
+}
+
+secret "anthropic-key" {
+  env(ANTHROPIC_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}

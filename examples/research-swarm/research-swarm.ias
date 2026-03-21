@@ -1,0 +1,105 @@
+package "research-swarm" version "0.1.0" lang "2.0"
+
+prompt "coordinator" {
+  content "You are a research coordinator. Break down complex research\n           questions into sub-tasks, delegate them to specialist agents,\n           and synthesize their findings into a coherent final report."
+}
+
+prompt "web-researcher" {
+  content "You are a web research specialist. Search the internet for\n           relevant information, evaluate source credibility, and return\n           structured findings with source URLs."
+}
+
+prompt "academic-researcher" {
+  content "You are an academic research specialist. Search scholarly\n           databases for peer-reviewed papers, extract key findings,\n           and summarize methodology and results."
+}
+
+prompt "synthesizer" {
+  content "You are a research synthesizer. Combine findings from multiple\n           sources into a well-structured report. Identify consensus,\n           contradictions, and gaps in the evidence."
+}
+
+skill "web-search" {
+  description "Search the web for information on a topic"
+  input {
+    query string required
+  }
+  output {
+    results string
+  }
+  tool command {
+    binary "web-search-tool"
+  }
+}
+
+skill "scholar-search" {
+  description "Search academic databases for peer-reviewed papers"
+  input {
+    query string required
+  }
+  output {
+    papers string
+  }
+  tool command {
+    binary "scholar-search-tool"
+  }
+}
+
+skill "summarize" {
+  description "Summarize and synthesize multiple research findings"
+  input {
+    findings string required
+  }
+  output {
+    report string
+  }
+  tool command {
+    binary "summarize-tool"
+  }
+}
+
+agent "coordinator" {
+  uses prompt "coordinator"
+  uses skill "summarize"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "web-agent" {
+  uses prompt "web-researcher"
+  uses skill "web-search"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "academic-agent" {
+  uses prompt "academic-researcher"
+  uses skill "scholar-search"
+  model "claude-sonnet-4-20250514"
+}
+
+agent "synthesis-agent" {
+  uses prompt "synthesizer"
+  uses skill "summarize"
+  model "claude-sonnet-4-20250514"
+}
+
+pipeline "research" {
+  step "gather-web" {
+    agent "web-agent"
+  }
+  step "gather-academic" {
+    agent "academic-agent"
+  }
+  step "synthesize" {
+    agent "synthesis-agent"
+    depends_on ["gather-web", "gather-academic"]
+  }
+  step "finalize" {
+    agent "coordinator"
+    depends_on ["synthesize"]
+  }
+}
+
+secret "search-api-key" {
+  env(SEARCH_API_KEY)
+}
+
+deploy "local" target "process" {
+  default true
+}
