@@ -133,10 +133,8 @@ agent "valid-agent" {
 	// Parse invalid file
 	invalidInput, _ := os.ReadFile(filepath.Join(dir, "invalid.ias"))
 	_, errs = parser.Parse(string(invalidInput), filepath.Join(dir, "invalid.ias"))
-	if errs != nil {
-		for _, e := range errs {
-			parseErrors = append(parseErrors, e.Message)
-		}
+	for _, e := range errs {
+		parseErrors = append(parseErrors, e.Message)
 	}
 
 	if len(files) == 0 {

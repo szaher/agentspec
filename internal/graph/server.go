@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 // Serve starts an HTTP server on 127.0.0.1:port serving the graph web UI.
@@ -44,12 +45,16 @@ func Serve(g *Graph, port int, theme string) error {
 	})
 
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
-	listener, err := net.Listen("tcp", addr)
+	lc := &net.ListenConfig{}
+	listener, err := lc.Listen(ctx, "tcp", addr)
 	if err != nil {
 		return fmt.Errorf("port %d is already in use. Try --port %d", port, port+1)
 	}
 
-	server := &http.Server{Handler: mux}
+	server := &http.Server{
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 
 	go func() {
 		<-ctx.Done()

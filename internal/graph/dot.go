@@ -82,8 +82,8 @@ func RenderDOT(g *Graph) string {
 		nodes := fileNodes[file]
 		sort.Slice(nodes, func(i, j int) bool { return nodes[i].ID < nodes[j].ID })
 
-		b.WriteString(fmt.Sprintf("  subgraph cluster_%d {\n", clusterIdx))
-		b.WriteString(fmt.Sprintf("    label=%q;\n", file))
+		fmt.Fprintf(&b, "  subgraph cluster_%d {\n", clusterIdx)
+		fmt.Fprintf(&b, "    label=%q;\n", file)
 		b.WriteString("    style=dashed;\n")
 		b.WriteString("    color=\"#475569\";\n")
 		for _, n := range nodes {
@@ -138,7 +138,7 @@ func RenderDOT(g *Graph) string {
 				b.WriteString("  { rank=same;")
 				sort.Slice(level, func(i, j int) bool { return level[i].ID < level[j].ID })
 				for _, n := range level {
-					b.WriteString(fmt.Sprintf(" %q;", n.ID))
+					fmt.Fprintf(&b, " %q;", n.ID)
 				}
 				b.WriteString(" }\n")
 			}
@@ -166,8 +166,8 @@ func RenderDOT(g *Graph) string {
 		if e.Style == "dashed" {
 			style = " style=dashed"
 		}
-		b.WriteString(fmt.Sprintf("  %q -> %q [label=%q%s];\n",
-			e.Source, e.Target, e.Label, style))
+		fmt.Fprintf(&b, "  %q -> %q [label=%q%s];\n",
+			e.Source, e.Target, e.Label, style)
 	}
 
 	b.WriteString("}\n")
@@ -238,6 +238,6 @@ func writeNode(b *strings.Builder, n GraphNode, indent string) {
 		style += ",rounded"
 	}
 
-	b.WriteString(fmt.Sprintf("%s%q [label=%q shape=%s style=%q fillcolor=%q color=%q];\n",
-		indent, n.ID, n.Name, shape, style, color+"20", color))
+	fmt.Fprintf(b, "%s%q [label=%q shape=%s style=%q fillcolor=%q color=%q];\n",
+		indent, n.ID, n.Name, shape, style, color+"20", color)
 }

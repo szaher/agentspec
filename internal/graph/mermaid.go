@@ -79,7 +79,7 @@ func RenderMermaid(g *Graph) string {
 		nodes := fileNodes[file]
 		sort.Slice(nodes, func(i, j int) bool { return nodes[i].ID < nodes[j].ID })
 
-		b.WriteString(fmt.Sprintf("  subgraph %s\n", mermaidID(file)))
+		fmt.Fprintf(&b, "  subgraph %s\n", mermaidID(file))
 		for _, n := range nodes {
 			writeMermaidNode(&b, n, "    ")
 		}
@@ -121,7 +121,7 @@ func RenderMermaid(g *Graph) string {
 				break
 			}
 		}
-		b.WriteString(fmt.Sprintf("  subgraph %s[%q]\n", mermaidID(pipeID), pipeName+" pipeline"))
+		fmt.Fprintf(&b, "  subgraph %s[%q]\n", mermaidID(pipeID), pipeName+" pipeline")
 		for _, s := range steps {
 			writeMermaidNode(&b, s, "    ")
 		}
@@ -148,8 +148,8 @@ func RenderMermaid(g *Graph) string {
 		if e.Style == "dashed" {
 			arrow = "-.->"
 		}
-		b.WriteString(fmt.Sprintf("  %s %s|%s| %s\n",
-			mermaidID(e.Source), arrow, e.Label, mermaidID(e.Target)))
+		fmt.Fprintf(&b, "  %s %s|%s| %s\n",
+			mermaidID(e.Source), arrow, e.Label, mermaidID(e.Target))
 	}
 
 	// classDef and class assignments
@@ -170,10 +170,10 @@ func RenderMermaid(g *Graph) string {
 		if color == "" {
 			color = "#9CA3AF"
 		}
-		b.WriteString(fmt.Sprintf("  classDef %s fill:%s20,stroke:%s,color:#fff\n", typ, color, color))
+		fmt.Fprintf(&b, "  classDef %s fill:%s20,stroke:%s,color:#fff\n", typ, color, color)
 		ids := usedTypes[typ]
 		sort.Strings(ids)
-		b.WriteString(fmt.Sprintf("  class %s %s\n", strings.Join(ids, ","), typ))
+		fmt.Fprintf(&b, "  class %s %s\n", strings.Join(ids, ","), typ)
 	}
 
 	return b.String()
@@ -191,7 +191,7 @@ func writeMermaidNode(b *strings.Builder, n GraphNode, indent string) {
 		label = "? " + label
 	}
 
-	b.WriteString(fmt.Sprintf("%s%s%s%q%s\n", indent, id, shape.open, label, shape.close))
+	fmt.Fprintf(b, "%s%s%s%q%s\n", indent, id, shape.open, label, shape.close)
 }
 
 // mermaidID converts a node ID to a valid Mermaid identifier.
