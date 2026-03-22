@@ -63,6 +63,7 @@ The binary is built as `./agentspec`.
 - **Agent versioning** — automatic version snapshots on apply, `rollback` and `history` commands
 - **Prometheus metrics** — `/v1/metrics` endpoint with invocation, token, cost, and error counters
 - **Release automation** — GoReleaser config for cross-platform binary builds
+- **Kubernetes operator** — deploy agents as native CRDs with automatic Deployment/Service provisioning
 
 ## CLI Commands
 
@@ -88,6 +89,7 @@ The binary is built as `./agentspec`.
 | `install <name>` | Install an AgentPack from a registry |
 | `rollback --agent <name>` | Rollback agent to previous version |
 | `history --agent <name>` | Show agent version history |
+| `generate crds <file>` | Generate Kubernetes CRD manifests from an IntentLang file |
 | `migrate [path]` | Rename `.az` files to `.ias` and rewrite v1 to v2 syntax |
 | `version` | Display version information |
 
@@ -154,6 +156,9 @@ The binary is built as `./agentspec`.
 ./agentspec package examples/basic-agent/basic-agent.ias
 ./agentspec publish
 ./agentspec install my-agent
+
+# Generate Kubernetes CRDs
+./agentspec generate crds examples/k8s-operator/k8s-operator.ias -o ./k8s-manifests
 ```
 
 ## IntentLang Syntax
@@ -341,6 +346,9 @@ Plugins are sandboxed WASM modules loaded from `~/.agentspec/plugins/`.
                                                           |              |
                                                           v              v
                                                        Export        State File
+                                                          |
+                                                          v
+                                                      K8s CRDs
 ```
 
 The toolchain processes `.ias` files through a pipeline:
@@ -381,13 +389,16 @@ internal/
   plugins/             WASM plugin system
   events/              Structured event emitter
   sdk/generator/       SDK code generation
+  operator/controller/ Kubernetes operator controllers
+  k8s/converter/       IntentLang IR to K8s CRD converter
+  api/v1alpha1/        CRD type definitions (11 resources)
 examples/              IntentLang example files
 integration_tests/     Integration test suite
 ```
 
 ## Examples
 
-The `examples/` directory contains 10 self-contained examples:
+The `examples/` directory contains 12 self-contained examples:
 
 | Example | Description |
 |---------|-------------|
@@ -401,6 +412,8 @@ The `examples/` directory contains 10 self-contained examples:
 | [data-pipeline](examples/data-pipeline/) | ETL with policies and secrets |
 | [rag-chatbot](examples/rag-chatbot/) | RAG with vector search and MCP |
 | [plugin-usage](examples/plugin-usage/) | WASM plugin integration |
+| [k8s-operator](examples/k8s-operator/) | Kubernetes operator CRD generation and deployment |
+| [production-agent](examples/production-agent/) | TLS, auth, audit, cost tracking, guardrails |
 
 ## Development
 

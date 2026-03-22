@@ -81,6 +81,107 @@ When you run `agentspec apply` with a `kubernetes` target, AgentSpec:
 
 ---
 
+## Deployment Modes
+
+AgentSpec supports three Kubernetes deployment modes:
+
+| Mode | Flag | Description |
+|------|------|-------------|
+| `auto` | (default) | Auto-detects whether the AgentSpec operator CRDs are installed. Uses operator mode if CRDs exist, otherwise falls back to direct mode. |
+| `direct` | `mode: "direct"` | Generates raw Kubernetes manifests (Deployment, Service, ConfigMap, HPA). No operator required. |
+| `operator` | `mode: "operator"` | Generates AgentSpec CRD resources (Agent, ToolBinding, Workflow, etc.) and delegates workload management to the operator. |
+
+---
+
+## Operator Mode
+
+When the AgentSpec operator is installed in your cluster, `agentspec apply` automatically detects the CRDs and creates native AgentSpec resources instead of raw Deployments.
+
+### Installing the Operator
+
+```bash
+# Build the operator binary
+GOARCH=amd64 GOOS=linux go build -o /tmp/agentspec-linux ./cmd/agentspec
+
+# Build and load the operator image
+docker build -t agentspec-operator:latest -f Dockerfile.operator /tmp/
+# For kind clusters:
+kind load docker-image agentspec-operator:latest --name <cluster-name>
+
+# Install CRDs and deploy the operator
+kubectl apply -f config/crd/bases/
+kubectl apply -f config/manager/manager.yaml
+kubectl apply -f config/rbac/
+```
+
+### Custom Resource Definitions
+
+The operator manages 11 CRDs:
+
+| CRD | Scope | Description |
+|-----|-------|-------------|
+| Agent | Namespaced | Defines an AI agent with model, strategy, skills, and policy |
+| Task | Namespaced | Single unit of work assigned to an agent |
+| Session | Namespaced | Conversational session with message history |
+| Workflow | Namespaced | DAG-based multi-step agent pipeline |
+| ToolBinding | Namespaced | Tool definition (command, HTTP, MCP) |
+| Policy | Namespaced | Cost budgets, rate limits, content filters |
+| ClusterPolicy | Cluster | Cluster-wide policy defaults |
+| MemoryClass | Cluster | Memory backend configuration |
+| Schedule | Namespaced | Cron-based agent task scheduling |
+| EvalRun | Namespaced | Agent evaluation test run |
+| Release | Namespaced | Agent version release tracking |
+
+### Generating CRDs from IntentLang
+
+```bash
+# Generate CRD manifests from an .ias file
+agentspec generate crds my-agent.ias -o ./k8s-manifests -n my-namespace
+
+# Apply to cluster
+kubectl apply --server-side -f ./k8s-manifests/
+```
+
+### How Operator Mode Works
+
+1. `agentspec apply` parses the `.ias` file through the standard pipeline (Parser → AST → IR)
+2. The IR is converted to AgentSpec CRD resources (Agent CR, ToolBinding CRs, Workflow CRs)
+3. Inline tools (`tool inline { ... }`) are mapped to `command` type ToolBindings with `sh -c "<code>"`
+4. Resources are applied to the cluster via `kubectl apply --server-side`
+5. The operator controller reconciles each Agent CR by creating:
+   - A **ConfigMap** containing a generated `.ias` runtime spec
+   - A **Deployment** running the agentspec runtime container
+   - A **Service** (ClusterIP) exposing the agent on port 8080
+6. The runtime pod loads the `.ias` from the mounted ConfigMap and serves the agent API
+
+### Querying Deployed Agents
+
+```bash
+# Check agent status
+kubectl get agents
+
+# Port-forward to an agent
+kubectl port-forward svc/agent-<name> 8080:8080
+
+# Query the agent API
+curl http://localhost:8080/healthz
+curl http://localhost:8080/v1/agents
+curl -X POST http://localhost:8080/v1/agents/<name>/invoke \
+  -H 'Content-Type: application/json' \
+  -d '{"input": "Hello!"}'
+```
+
+### Agent Lifecycle
+
+The operator manages the full lifecycle of agent workloads:
+
+- **Create**: When an Agent CR is created, the operator provisions ConfigMap + Deployment + Service
+- **Update**: Modifying the Agent CR triggers a rolling update of the Deployment
+- **Delete**: Deleting the Agent CR cascades deletion to all owned resources via owner references
+- **Cross-references**: The operator validates that referenced ToolBindings, Policies, and MemoryClasses exist before marking the agent Ready
+
+---
+
 ## Namespace
 
 The `namespace` attribute specifies which Kubernetes namespace the resources are deployed into:
@@ -503,3 +604,4 @@ This deletes the Deployment, Service, HPA, and Secrets from the target namespace
 - [Docker Compose Deployment](compose.md) -- Multi-agent stacks for staging
 - [Deploy Block Reference](../language/deploy.md) -- Full attribute reference
 - [Best Practices](best-practices.md) -- Production security, monitoring, and scaling guidance
+- [Operator Example](../../../examples/k8s-operator/) -- Example with CRD generation and operator deployment

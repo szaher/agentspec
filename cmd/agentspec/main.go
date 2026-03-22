@@ -71,6 +71,8 @@ via pluggable adapters, and generates SDKs for multiple languages.`,
 	root.AddCommand(newInstallCmd())
 	root.AddCommand(newRollbackCmd())
 	root.AddCommand(newHistoryCmd())
+	root.AddCommand(newOperatorCmd())
+	root.AddCommand(newGenerateCmd())
 
 	// Deprecation aliases for the run↔dev rename
 	// Old 'run' (one-shot) behavior is now 'dev'

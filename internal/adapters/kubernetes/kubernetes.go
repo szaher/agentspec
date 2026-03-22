@@ -6,11 +6,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/szaher/agentspec/internal/adapters"
 	"github.com/szaher/agentspec/internal/ir"
+	"github.com/szaher/agentspec/internal/k8s/converter"
+
+	"sigs.k8s.io/yaml"
 )
 
 func init() {
@@ -19,10 +24,26 @@ func init() {
 	})
 }
 
+// DeployMode controls whether the adapter uses raw manifests or the AgentSpec operator CRDs.
+type DeployMode string
+
+const (
+	// DeployModeDirect generates raw Deployments, Services, ConfigMaps (no operator needed).
+	DeployModeDirect DeployMode = "direct"
+
+	// DeployModeOperator generates AgentSpec CRDs (Agent, ToolBinding, Workflow, etc.) and
+	// delegates workload management to the operator controller.
+	DeployModeOperator DeployMode = "operator"
+
+	// DeployModeAuto detects whether the operator CRDs are installed and picks the right mode.
+	DeployModeAuto DeployMode = "auto"
+)
+
 // Adapter implements the Kubernetes adapter.
 type Adapter struct {
 	namespace string
 	config    map[string]interface{}
+	mode      DeployMode
 }
 
 // Name returns the adapter identifier.
@@ -32,6 +53,16 @@ func (a *Adapter) Name() string { return "kubernetes" }
 func (a *Adapter) SetConfig(config map[string]interface{}) {
 	a.config = config
 	a.namespace = stringFromConfig(config, "namespace", "default")
+
+	// Determine deploy mode from config (default: auto).
+	switch stringFromConfig(config, "mode", "auto") {
+	case "direct":
+		a.mode = DeployModeDirect
+	case "operator":
+		a.mode = DeployModeOperator
+	default:
+		a.mode = DeployModeAuto
+	}
 }
 
 // Validate checks whether resources can be deployed to Kubernetes.
@@ -51,7 +82,6 @@ func (a *Adapter) Validate(_ context.Context, resources []ir.Resource) error {
 
 // Apply generates manifests and applies them to the cluster using kubectl.
 func (a *Adapter) Apply(ctx context.Context, actions []adapters.Action) ([]adapters.Result, error) {
-	var results []adapters.Result
 	var resources []ir.Resource
 	for _, action := range actions {
 		if action.Resource != nil {
@@ -59,25 +89,18 @@ func (a *Adapter) Apply(ctx context.Context, actions []adapters.Action) ([]adapt
 		}
 	}
 
-	manifests := GenerateManifests(resources, a.config)
-
-	// Apply each manifest using kubectl
-	applyManifest := func(name string, manifest map[string]interface{}) error {
-		if manifest == nil {
-			return nil
-		}
-		cmd := exec.CommandContext(ctx, "kubectl", "apply", "-f", "-", "--server-side")
-		data, err := marshalJSON(manifest)
-		if err != nil {
-			return err
-		}
-		cmd.Stdin = strings.NewReader(string(data))
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("kubectl apply %s: %s: %w", name, string(out), err)
-		}
-		return nil
+	mode := a.resolveMode(ctx)
+	if mode == DeployModeOperator {
+		return a.applyOperatorCRDs(ctx, resources, actions)
 	}
+	return a.applyDirect(ctx, resources, actions)
+}
+
+// applyDirect applies raw Deployments/Services/ConfigMaps (no operator).
+func (a *Adapter) applyDirect(ctx context.Context, resources []ir.Resource, actions []adapters.Action) ([]adapters.Result, error) {
+	var results []adapters.Result
+
+	manifests := GenerateManifests(resources, a.config)
 
 	applyOrder := []struct {
 		name     string
@@ -94,7 +117,7 @@ func (a *Adapter) Apply(ctx context.Context, actions []adapters.Action) ([]adapt
 		if item.manifest == nil {
 			continue
 		}
-		if err := applyManifest(item.name, item.manifest); err != nil {
+		if err := a.kubectlApply(ctx, item.name, item.manifest); err != nil {
 			for _, action := range actions {
 				results = append(results, adapters.Result{
 					FQN:    action.FQN,
@@ -112,16 +135,141 @@ func (a *Adapter) Apply(ctx context.Context, actions []adapters.Action) ([]adapt
 			FQN:      action.FQN,
 			Action:   action.Type,
 			Status:   adapters.ResultSuccess,
-			Artifact: fmt.Sprintf("namespace=%s", a.namespace),
+			Artifact: fmt.Sprintf("namespace=%s,mode=direct", a.namespace),
 		})
 	}
 	return results, nil
 }
 
+// applyOperatorCRDs converts IR resources to AgentSpec CRDs and applies them.
+func (a *Adapter) applyOperatorCRDs(ctx context.Context, resources []ir.Resource, actions []adapters.Action) ([]adapters.Result, error) {
+	var results []adapters.Result
+
+	// Build an IR Document from the resources.
+	doc := &ir.Document{Resources: resources}
+	crds, err := converter.ConvertDocument(doc, a.namespace)
+	if err != nil {
+		for _, action := range actions {
+			results = append(results, adapters.Result{
+				FQN:    action.FQN,
+				Action: action.Type,
+				Status: adapters.ResultFailed,
+				Error:  fmt.Sprintf("CRD conversion: %v", err),
+			})
+		}
+		return results, nil
+	}
+
+	for _, crd := range crds {
+		yamlData, err := yaml.Marshal(crd.Raw)
+		if err != nil {
+			for _, action := range actions {
+				results = append(results, adapters.Result{
+					FQN:    action.FQN,
+					Action: action.Type,
+					Status: adapters.ResultFailed,
+					Error:  fmt.Sprintf("marshal %s/%s: %v", crd.Kind, crd.Name, err),
+				})
+			}
+			return results, nil
+		}
+		if err := a.kubectlApplyRaw(ctx, crd.Kind+"/"+crd.Name, yamlData); err != nil {
+			for _, action := range actions {
+				results = append(results, adapters.Result{
+					FQN:    action.FQN,
+					Action: action.Type,
+					Status: adapters.ResultFailed,
+					Error:  err.Error(),
+				})
+			}
+			return results, nil
+		}
+	}
+
+	for _, action := range actions {
+		results = append(results, adapters.Result{
+			FQN:      action.FQN,
+			Action:   action.Type,
+			Status:   adapters.ResultSuccess,
+			Artifact: fmt.Sprintf("namespace=%s,mode=operator,crds=%d", a.namespace, len(crds)),
+		})
+	}
+	return results, nil
+}
+
+// resolveMode determines whether to use operator or direct mode.
+func (a *Adapter) resolveMode(ctx context.Context) DeployMode {
+	if a.mode != DeployModeAuto {
+		return a.mode
+	}
+	// Auto-detect: check if the agents.agentspec.io CRD exists.
+	cmd := exec.CommandContext(ctx, "kubectl", "api-resources", "--api-group=agentspec.io", "-o", "name")
+	out, err := cmd.Output()
+	if err == nil && strings.Contains(string(out), "agents.agentspec.io") {
+		return DeployModeOperator
+	}
+	return DeployModeDirect
+}
+
+// kubectlApply applies a JSON manifest via kubectl.
+func (a *Adapter) kubectlApply(ctx context.Context, name string, manifest map[string]interface{}) error {
+	data, err := marshalJSON(manifest)
+	if err != nil {
+		return err
+	}
+	cmd := exec.CommandContext(ctx, "kubectl", "apply", "-f", "-", "--server-side")
+	cmd.Stdin = strings.NewReader(string(data))
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("kubectl apply %s: %s: %w", name, string(out), err)
+	}
+	return nil
+}
+
+// kubectlApplyRaw applies raw YAML data via kubectl.
+func (a *Adapter) kubectlApplyRaw(ctx context.Context, name string, data []byte) error {
+	cmd := exec.CommandContext(ctx, "kubectl", "apply", "-f", "-", "--server-side")
+	cmd.Stdin = strings.NewReader(string(data))
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("kubectl apply %s: %s: %w", name, string(out), err)
+	}
+	return nil
+}
+
 // Export generates Kubernetes manifests in the output directory.
-func (a *Adapter) Export(_ context.Context, resources []ir.Resource, outDir string) error {
+func (a *Adapter) Export(ctx context.Context, resources []ir.Resource, outDir string) error {
+	mode := a.resolveMode(ctx)
+	if mode == DeployModeOperator {
+		return a.exportOperatorCRDs(resources, outDir)
+	}
 	manifests := GenerateManifests(resources, a.config)
 	return WriteManifests(manifests, outDir)
+}
+
+// exportOperatorCRDs writes AgentSpec CRD manifests to the output directory.
+func (a *Adapter) exportOperatorCRDs(resources []ir.Resource, outDir string) error {
+	doc := &ir.Document{Resources: resources}
+	crds, err := converter.ConvertDocument(doc, a.namespace)
+	if err != nil {
+		return fmt.Errorf("CRD conversion: %w", err)
+	}
+
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return err
+	}
+
+	for _, crd := range crds {
+		yamlData, err := yaml.Marshal(crd.Raw)
+		if err != nil {
+			return fmt.Errorf("marshal %s/%s: %w", crd.Kind, crd.Name, err)
+		}
+		filename := fmt.Sprintf("%s_%s.yaml", crd.Kind, crd.Name)
+		if err := os.WriteFile(filepath.Join(outDir, filename), yamlData, 0644); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Status returns the status of Kubernetes deployments.

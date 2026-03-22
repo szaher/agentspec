@@ -1,0 +1,10 @@
+apiVersion: agentspec.io/v1alpha1
+kind: Release
+metadata:
+  name: sample-agent-v1-0-0
+  namespace: default
+spec:
+  agentRef: sample-agent
+  version: "1.0.0"
+  snapshot: {}
+  notes: "Initial stable release of the sample agent."

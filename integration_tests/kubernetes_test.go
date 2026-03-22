@@ -101,6 +101,7 @@ func TestKubernetesExport(t *testing.T) {
 		"replicas":  float64(2),
 		"port":      float64(9090),
 		"image":     "agentspec:test",
+		"mode":      "direct",
 	})
 
 	outDir := t.TempDir()
@@ -116,6 +117,28 @@ func TestKubernetesExport(t *testing.T) {
 	checkFileExists(t, outDir+"/service.json")
 	checkFileExists(t, outDir+"/configmap.json")
 	checkFileExists(t, outDir+"/namespace.json")
+}
+
+func TestKubernetesExportOperatorMode(t *testing.T) {
+	a := &kubernetes.Adapter{}
+	a.SetConfig(map[string]interface{}{
+		"namespace": "test-ns",
+		"mode":      "operator",
+	})
+
+	outDir := t.TempDir()
+	resources := []ir.Resource{
+		{Kind: "Agent", Name: "bot", FQN: "test/Agent/bot", Attributes: map[string]interface{}{"model": "claude-sonnet-4-20250514"}},
+		{Kind: "Prompt", Name: "sys", FQN: "test/Prompt/sys", Attributes: map[string]interface{}{"content": "You are helpful."}},
+	}
+
+	if err := a.Export(context.Background(), resources, outDir); err != nil {
+		t.Fatalf("export failed: %v", err)
+	}
+
+	// Operator mode generates CRD YAMLs instead of raw manifests.
+	checkFileExists(t, outDir+"/Agent_bot.yaml")
+	checkFileExists(t, outDir+"/ConfigMap_sys.yaml")
 }
 
 func TestKubernetesAdapterValidate(t *testing.T) {

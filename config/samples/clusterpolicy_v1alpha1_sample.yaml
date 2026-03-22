@@ -1,0 +1,29 @@
+apiVersion: agentspec.io/v1alpha1
+kind: ClusterPolicy
+metadata:
+  name: sample-clusterpolicy
+spec:
+  costBudget:
+    maxDailyCost: "50.00"
+    currency: USD
+  allowedModels:
+    - gpt-4
+    - claude-3-opus
+    - claude-3-sonnet
+  deniedModels:
+    - gpt-3.5-turbo
+  rateLimits:
+    requestsPerMinute: 120
+    tokensPerMinute: 500000
+  contentFilters:
+    - type: both
+      pattern: "(?i)ssn|social.security"
+    - type: output
+      pattern: "(?i)credit.card"
+  toolRestrictions:
+    deniedTools:
+      - shell-exec
+      - file-delete
+  targetSelector:
+    matchLabels:
+      environment: production

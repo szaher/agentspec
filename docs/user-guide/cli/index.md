@@ -24,6 +24,7 @@ The `agentspec` command-line interface provides tools for authoring, validating,
 | [migrate](migrate.md) | Migrate specs and state files to newer formats |
 | [export](export.md) | Export a spec to JSON or YAML |
 | [diff](diff.md) | Show differences between a spec and the current state |
+| [generate crds](generate-crds.md) | Generate Kubernetes CRD manifests from IntentLang |
 | [sdk](sdk.md) | Generate typed SDK bindings from a spec |
 | [rollback](rollback.md) | Rollback an agent to its previous version |
 | [history](history.md) | Show version history for an agent |

@@ -1,0 +1,9 @@
+apiVersion: agentspec.io/v1alpha1
+kind: MemoryClass
+metadata:
+  name: sliding-window-default
+spec:
+  strategy: sliding_window
+  maxMessages: 50
+  ttl: "24h"
+  backend: in-memory

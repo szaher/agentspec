@@ -1,0 +1,10 @@
+apiVersion: agentspec.io/v1alpha1
+kind: Session
+metadata:
+  name: sample-session
+  namespace: default
+spec:
+  agentRef: sample-agent
+  memoryClassRef: sliding-window-default
+  metadata:
+    purpose: demo

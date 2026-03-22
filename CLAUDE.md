@@ -21,6 +21,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-23
 - N/A (no schema changes) (011-product-completeness)
 - Go 1.25+ (existing) + `crypto/tls` (stdlib), `log/slog` (stdlib), `regexp` (stdlib), cobra v1.10.2 (existing), fsnotify (existing), GoReleaser (CI only — not a Go dependency) (012-production-readiness)
 - Local JSON state file (`.agentspec.state.json`) extended with `budgets` and `agent_versions` sections. Separate `agentspec-audit.log` file for audit entries. (012-production-readiness)
+- Go 1.25+ (existing project language) + controller-runtime (kubebuilder framework), client-go, apimachinery, cobra v1.10.2 (existing CLI), sigs.k8s.io/controller-tools (CRD generation) (014-k8s-operator-control-plane)
+- Kubernetes etcd (via CRDs), existing AgentSpec state file (`.agentspec.state.json`) for CLI bridge (014-k8s-operator-control-plane)
 
 ## Project Structure
 
@@ -68,9 +70,9 @@ Go 1.25+: Follow standard conventions
 - Go module path: `github.com/szaher/agentspec` (unchanged)
 
 ## Recent Changes
+- 014-k8s-operator-control-plane: Added Go 1.25+ (existing project language) + controller-runtime (kubebuilder framework), client-go, apimachinery, cobra v1.10.2 (existing CLI), sigs.k8s.io/controller-tools (CRD generation)
 - 012-production-readiness: Added Go 1.25+ (existing) + `crypto/tls` (stdlib), `log/slog` (stdlib), `regexp` (stdlib), cobra v1.10.2 (existing), fsnotify (existing), GoReleaser (CI only — not a Go dependency)
 - 011-product-completeness: Added Go 1.25+ (backend), Vanilla JS (frontend) + cobra v1.10.2 (CLI), fsnotify (new — file watching), existing llm/loop/runtime packages
-- 010-memory-performance: Added Go 1.25+ + `log/slog` (structured logging), `sync` (RWMutex), `oklog/ulid` (correlation IDs), existing Redis client interface, `encoding/json` (state file)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
