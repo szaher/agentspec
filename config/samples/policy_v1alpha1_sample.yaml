@@ -1,0 +1,29 @@
+apiVersion: agentspec.io/v1alpha1
+kind: Policy
+metadata:
+  name: sample-policy
+  namespace: default
+spec:
+  costBudget:
+    maxDailyCost: "10.00"
+    currency: USD
+  allowedModels:
+    - gpt-4
+    - claude-3-opus
+  deniedModels:
+    - gpt-3.5-turbo
+  rateLimits:
+    requestsPerMinute: 60
+    tokensPerMinute: 100000
+  contentFilters:
+    - type: output
+      pattern: "(?i)password|secret|api.?key"
+  toolRestrictions:
+    allowedTools:
+      - web-search
+      - calculator
+    deniedTools:
+      - shell-exec
+  targetSelector:
+    matchLabels:
+      team: backend

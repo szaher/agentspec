@@ -1,0 +1,96 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agentspec-operator-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - pods
+  - secrets
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - agentspec.io
+  resources:
+  - agents
+  - clusterpolicies
+  - evalruns
+  - memoryclasses
+  - policies
+  - releases
+  - schedules
+  - sessions
+  - tasks
+  - toolbindings
+  - workflows
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - agentspec.io
+  resources:
+  - agents/finalizers
+  - clusterpolicies/finalizers
+  - evalruns/finalizers
+  - memoryclasses/finalizers
+  - policies/finalizers
+  - releases/finalizers
+  - schedules/finalizers
+  - sessions/finalizers
+  - tasks/finalizers
+  - toolbindings/finalizers
+  - workflows/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - agentspec.io
+  resources:
+  - agents/status
+  - clusterpolicies/status
+  - evalruns/status
+  - memoryclasses/status
+  - policies/status
+  - releases/status
+  - schedules/status
+  - sessions/status
+  - tasks/status
+  - toolbindings/status
+  - workflows/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch

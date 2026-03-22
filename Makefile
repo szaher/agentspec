@@ -59,6 +59,21 @@ fmt-examples: build
 		./$(BINARY) fmt "$$f"; \
 	done
 
+## Operator / controller-gen
+
+CONTROLLER_GEN ?= $(shell go env GOPATH)/bin/controller-gen
+
+.PHONY: generate manifests controller-gen
+
+generate: controller-gen
+	$(CONTROLLER_GEN) object:headerFile="" paths="./internal/api/..."
+
+manifests: controller-gen
+	$(CONTROLLER_GEN) crd rbac:roleName=agentspec-operator-role webhook paths="./internal/api/..." paths="./internal/operator/..." output:crd:artifacts:config=config/crd/bases output:rbac:artifacts:config=config/rbac
+
+controller-gen:
+	@test -f $(CONTROLLER_GEN) || go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest
+
 ## Clean
 
 clean:

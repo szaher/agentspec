@@ -1,0 +1,16 @@
+apiVersion: agentspec.io/v1alpha1
+kind: ToolBinding
+metadata:
+  name: sample-toolbinding
+  namespace: default
+spec:
+  toolType: http
+  name: weather-api
+  description: Fetches current weather data for a given location
+  http:
+    url: https://api.weather.example.com/v1/current
+    method: GET
+  accessPolicy:
+    allowedNamespaces:
+      - default
+      - production

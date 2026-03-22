@@ -1,0 +1,29 @@
+apiVersion: agentspec.io/v1alpha1
+kind: EvalRun
+metadata:
+  name: sample-agent-eval
+  namespace: default
+spec:
+  agentRef: sample-agent
+  parallelism: 2
+  testCases:
+    - name: greeting-test
+      input: "Hello, how are you?"
+      expectedOutput: "Hello"
+      matchType: contains
+      timeout: "30s"
+    - name: exact-echo-test
+      input: "echo this"
+      expectedOutput: "echo this"
+      matchType: exact
+      timeout: "30s"
+    - name: pattern-test
+      input: "The answer is 42"
+      expectedOutput: "\\d+"
+      matchType: regex
+      timeout: "30s"
+    - name: open-ended-test
+      input: "Tell me something interesting"
+      expectedOutput: ""
+      matchType: contains
+      timeout: "60s"

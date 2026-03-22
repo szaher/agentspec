@@ -112,6 +112,7 @@ nav:
       - Docker: user-guide/deployment/docker.md
       - Docker Compose: user-guide/deployment/compose.md
       - Kubernetes: user-guide/deployment/kubernetes.md
+      - Kubernetes Operator: user-guide/deployment/operator.md
       - Best Practices: user-guide/deployment/best-practices.md
     - CLI Reference:
       - Overview: user-guide/cli/index.md
@@ -134,6 +135,7 @@ nav:
       - eval: user-guide/cli/eval.md
       - install: user-guide/cli/install.md
       - publish: user-guide/cli/publish.md
+      - generate crds: user-guide/cli/generate-crds.md
       - version: user-guide/cli/version.md
     - HTTP API:
       - Overview: user-guide/api/index.md
