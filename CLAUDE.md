@@ -26,6 +26,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-23
 - Go 1.25+ (existing project language) + controller-runtime (kubebuilder framework), client-go, apimachinery, cobra v1.10.2 (existing CLI), sigs.k8s.io/controller-tools (CRD generation) (014-k8s-operator-control-plane)
 - Kubernetes etcd (via CRDs), existing AgentSpec state file (`.agentspec.state.json`) for CLI bridge (014-k8s-operator-control-plane)
 - Local JSON file (existing), Kubernetes CRDs, etcd, PostgreSQL, S3-compatible object storage (015-distributed-state-reconciliation)
+- Go 1.25+ (existing project language) + cobra v1.10.2 (existing CLI), `embed` (stdlib, existing for web assets), `net/http` (stdlib, web server), `html/template` (stdlib, template rendering), `os/exec` (stdlib, browser launch), `encoding/json` (stdlib, API endpoint) (016-graph-visualization)
+- N/A (read-only command, no state) (016-graph-visualization)
 
 ## Project Structure
 
@@ -73,9 +75,9 @@ Go 1.25+: Follow standard conventions
 - Go module path: `github.com/szaher/agentspec` (unchanged)
 
 ## Recent Changes
+- 016-graph-visualization: Added Go 1.25+ (existing project language) + cobra v1.10.2 (existing CLI), `embed` (stdlib, existing for web assets), `net/http` (stdlib, web server), `html/template` (stdlib, template rendering), `os/exec` (stdlib, browser launch), `encoding/json` (stdlib, API endpoint)
 - 015-distributed-state-reconciliation: Added Go 1.25+ (existing)
 - 014-k8s-operator-control-plane: Added Go 1.25+ (existing project language) + controller-runtime (kubebuilder framework), client-go, apimachinery, cobra v1.10.2 (existing CLI), sigs.k8s.io/controller-tools (CRD generation)
-- 013-adoption-dev-experience: Added Go 1.25+ (existing) + cobra v1.10.2 (existing CLI), GoReleaser v2 (existing release tooling), `embed` (stdlib, existing for templates)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

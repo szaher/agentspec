@@ -94,6 +94,7 @@ via pluggable adapters, and generates SDKs for multiple languages.`,
 	root.AddCommand(newOperatorCmd())
 	root.AddCommand(newGenerateCmd())
 	root.AddCommand(newStateCmd())
+	root.AddCommand(newGraphCmd())
 
 	// Deprecation aliases for the run↔dev rename
 	// Old 'run' (one-shot) behavior is now 'dev'
