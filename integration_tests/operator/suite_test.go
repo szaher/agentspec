@@ -77,7 +77,7 @@ func TestMain(m *testing.M) {
 	if err := (&controller.AgentReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("agent-controller"),
+		Recorder: mgr.GetEventRecorderFor("agent-controller"), //nolint:staticcheck
 	}).SetupWithManager(mgr); err != nil {
 		panic("failed to setup agent controller: " + err.Error())
 	}

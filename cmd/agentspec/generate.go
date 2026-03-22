@@ -45,7 +45,7 @@ func newGenerateCRDsCmd() *cobra.Command {
 			astFile, parseErrors := parser.Parse(string(data), inputFile)
 			if len(parseErrors) > 0 {
 				for _, pe := range parseErrors {
-					fmt.Fprintf(cmd.ErrOrStderr(), "parse error: %s\n", pe)
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "parse error: %s\n", pe)
 				}
 				return fmt.Errorf("failed to parse %s: %d errors", inputFile, len(parseErrors))
 			}
@@ -78,10 +78,10 @@ func newGenerateCRDsCmd() *cobra.Command {
 					return fmt.Errorf("writing %s: %w", outPath, err)
 				}
 
-				fmt.Fprintf(cmd.OutOrStdout(), "Generated %s\n", outPath)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Generated %s\n", outPath)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Generated %d resources in %s\n", len(resources), outputDir)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Generated %d resources in %s\n", len(resources), outputDir)
 			return nil
 		},
 	}

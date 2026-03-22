@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -77,57 +78,57 @@ func newOperatorStartCmd() *cobra.Command {
 				&controller.AgentReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("agent-controller"),
+					Recorder: eventRecorder(mgr, "agent-controller"),
 				},
 				&controller.TaskReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("task-controller"),
+					Recorder: eventRecorder(mgr, "task-controller"),
 				},
 				&controller.WorkflowReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("workflow-controller"),
+					Recorder: eventRecorder(mgr, "workflow-controller"),
 				},
 				&controller.SessionReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("session-controller"),
+					Recorder: eventRecorder(mgr, "session-controller"),
 				},
 				&controller.MemoryClassReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("memoryclass-controller"),
+					Recorder: eventRecorder(mgr, "memoryclass-controller"),
 				},
 				&controller.ToolBindingReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("toolbinding-controller"),
+					Recorder: eventRecorder(mgr, "toolbinding-controller"),
 				},
 				&controller.PolicyReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("policy-controller"),
+					Recorder: eventRecorder(mgr, "policy-controller"),
 				},
 				&controller.ClusterPolicyReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("clusterpolicy-controller"),
+					Recorder: eventRecorder(mgr, "clusterpolicy-controller"),
 				},
 				&controller.ScheduleReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("schedule-controller"),
+					Recorder: eventRecorder(mgr, "schedule-controller"),
 				},
 				&controller.ReleaseReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("release-controller"),
+					Recorder: eventRecorder(mgr, "release-controller"),
 				},
 				&controller.EvalRunReconciler{
 					Client:   mgr.GetClient(),
 					Scheme:   mgr.GetScheme(),
-					Recorder: mgr.GetEventRecorderFor("evalrun-controller"),
+					Recorder: eventRecorder(mgr, "evalrun-controller"),
 				},
 			}
 			for _, rec := range reconcilers {
@@ -149,4 +150,9 @@ func newOperatorStartCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&enableLeaderElection, "leader-elect", false, "Enable leader election for controller manager")
 
 	return cmd
+}
+
+//nolint:staticcheck // GetEventRecorderFor is deprecated but GetEventRecorder returns a different type.
+func eventRecorder(mgr ctrl.Manager, name string) record.EventRecorder {
+	return mgr.GetEventRecorderFor(name)
 }

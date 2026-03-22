@@ -400,25 +400,25 @@ func (r *AgentReconciler) ensureSpecConfigMap(ctx context.Context, agent *v1alph
 // generateIAS produces a minimal IntentLang spec from the Agent CR fields.
 func (r *AgentReconciler) generateIAS(agent *v1alpha1.Agent) string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("package %q version \"1.0.0\" lang \"3.0\"\n\n", agent.Name))
+	fmt.Fprintf(&b, "package %q version \"1.0.0\" lang \"3.0\"\n\n", agent.Name)
 
 	// Emit prompt if promptRef is set (assumes the ConfigMap has a "system-prompt" key).
 	if agent.Spec.PromptRef != "" {
-		b.WriteString(fmt.Sprintf("prompt %q {\n", agent.Spec.PromptRef))
+		fmt.Fprintf(&b, "prompt %q {\n", agent.Spec.PromptRef)
 		b.WriteString("  content \"You are a helpful assistant.\"\n")
 		b.WriteString("}\n\n")
 	}
 
-	b.WriteString(fmt.Sprintf("agent %q {\n", agent.Name))
+	fmt.Fprintf(&b, "agent %q {\n", agent.Name)
 	if agent.Spec.PromptRef != "" {
-		b.WriteString(fmt.Sprintf("  uses prompt %q\n", agent.Spec.PromptRef))
+		fmt.Fprintf(&b, "  uses prompt %q\n", agent.Spec.PromptRef)
 	}
-	b.WriteString(fmt.Sprintf("  model %q\n", agent.Spec.Model))
+	fmt.Fprintf(&b, "  model %q\n", agent.Spec.Model)
 	if agent.Spec.Strategy != "" {
-		b.WriteString(fmt.Sprintf("  strategy %q\n", agent.Spec.Strategy))
+		fmt.Fprintf(&b, "  strategy %q\n", agent.Spec.Strategy)
 	}
 	if agent.Spec.MaxTurns > 0 {
-		b.WriteString(fmt.Sprintf("  max_turns %d\n", agent.Spec.MaxTurns))
+		fmt.Fprintf(&b, "  max_turns %d\n", agent.Spec.MaxTurns)
 	}
 	b.WriteString("}\n\n")
 

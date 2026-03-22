@@ -7,7 +7,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -155,19 +154,6 @@ func validatePolicySpec(spec *v1alpha1.PolicySpecFields) error {
 	}
 
 	return nil
-}
-
-// matchesSelector returns true if the given labels match the selector.
-// A nil selector matches everything.
-func matchesSelector(selector *metav1.LabelSelector, lbls map[string]string) (bool, error) {
-	if selector == nil {
-		return true, nil
-	}
-	sel, err := metav1.LabelSelectorAsSelector(selector)
-	if err != nil {
-		return false, err
-	}
-	return sel.Matches(labels.Set(lbls)), nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
