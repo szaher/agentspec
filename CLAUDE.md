@@ -25,6 +25,7 @@ Auto-generated from all feature plans. Last updated: 2026-02-23
 - N/A (no new state; templates embedded in binary, examples are static files) (013-adoption-dev-experience)
 - Go 1.25+ (existing project language) + controller-runtime (kubebuilder framework), client-go, apimachinery, cobra v1.10.2 (existing CLI), sigs.k8s.io/controller-tools (CRD generation) (014-k8s-operator-control-plane)
 - Kubernetes etcd (via CRDs), existing AgentSpec state file (`.agentspec.state.json`) for CLI bridge (014-k8s-operator-control-plane)
+- Local JSON file (existing), Kubernetes CRDs, etcd, PostgreSQL, S3-compatible object storage (015-distributed-state-reconciliation)
 
 ## Project Structure
 
@@ -72,10 +73,9 @@ Go 1.25+: Follow standard conventions
 - Go module path: `github.com/szaher/agentspec` (unchanged)
 
 ## Recent Changes
+- 015-distributed-state-reconciliation: Added Go 1.25+ (existing)
 - 014-k8s-operator-control-plane: Added Go 1.25+ (existing project language) + controller-runtime (kubebuilder framework), client-go, apimachinery, cobra v1.10.2 (existing CLI), sigs.k8s.io/controller-tools (CRD generation)
 - 013-adoption-dev-experience: Added Go 1.25+ (existing) + cobra v1.10.2 (existing CLI), GoReleaser v2 (existing release tooling), `embed` (stdlib, existing for templates)
-- 012-production-readiness: Added Go 1.25+ (existing) + `crypto/tls` (stdlib), `log/slog` (stdlib), `regexp` (stdlib), cobra v1.10.2 (existing), fsnotify (existing), GoReleaser (CI only — not a Go dependency)
-- 011-product-completeness: Added Go 1.25+ (backend), Vanilla JS (frontend) + cobra v1.10.2 (CLI), fsnotify (new — file watching), existing llm/loop/runtime packages
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

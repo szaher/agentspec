@@ -23,6 +23,12 @@ var (
 	verbose       bool
 	noColor       bool
 	correlationID string
+
+	// State backend flags (015-distributed-state-reconciliation)
+	stateBackend  string
+	stateDSN      string
+	stateBucket   string
+	stateEndpoint string
 )
 
 const (
@@ -58,6 +64,10 @@ via pluggable adapters, and generates SDKs for multiple languages.`,
 	root.PersistentFlags().BoolVar(&verbose, "verbose", false, "Enable verbose output")
 	root.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	root.PersistentFlags().StringVar(&correlationID, "correlation-id", "", "Set explicit correlation ID")
+	root.PersistentFlags().StringVar(&stateBackend, "state-backend", "", "Override state backend type (local, kubernetes, etcd, postgres, s3)")
+	root.PersistentFlags().StringVar(&stateDSN, "state-dsn", "", "Backend DSN (postgres, etcd endpoints)")
+	root.PersistentFlags().StringVar(&stateBucket, "state-bucket", "", "S3 bucket name")
+	root.PersistentFlags().StringVar(&stateEndpoint, "state-endpoint", "", "Custom endpoint (S3-compatible, etcd)")
 
 	root.AddCommand(newVersionCmd())
 	root.AddCommand(newFmtCmd())
@@ -83,6 +93,7 @@ via pluggable adapters, and generates SDKs for multiple languages.`,
 	root.AddCommand(newHistoryCmd())
 	root.AddCommand(newOperatorCmd())
 	root.AddCommand(newGenerateCmd())
+	root.AddCommand(newStateCmd())
 
 	// Deprecation aliases for the run↔dev rename
 	// Old 'run' (one-shot) behavior is now 'dev'

@@ -2,9 +2,20 @@ package ir
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/szaher/agentspec/internal/ast"
 )
+
+// validStateBackends lists the allowed backend type values.
+var validStateBackends = map[string]bool{
+	"local":      true,
+	"kubernetes": true,
+	"etcd":       true,
+	"postgres":   true,
+	"s3":         true,
+}
 
 // Lower converts an AST File to an IR Document by resolving
 // references, flattening resources, and computing FQNs.
@@ -617,6 +628,29 @@ func Lower(f *ast.File) (*Document, error) {
 			r.Hash = ComputeHash(r.Attributes)
 			doc.Resources = append(doc.Resources, r)
 
+		case *ast.StateConfig:
+			if doc.StateConfig != nil {
+				return nil, fmt.Errorf("%s:%d:%d: duplicate state block; at most one state block is allowed per package",
+					s.StartPos.File, s.StartPos.Line, s.StartPos.Column)
+			}
+			if !validStateBackends[s.Type] {
+				return nil, fmt.Errorf("%s:%d:%d: unknown state backend type %q; valid types: local, kubernetes, etcd, postgres, s3",
+					s.StartPos.File, s.StartPos.Line, s.StartPos.Column, s.Type)
+			}
+			resolved := make(map[string]string, len(s.Properties))
+			for k, v := range s.Properties {
+				rv, err := resolveEnvVars(v)
+				if err != nil {
+					return nil, fmt.Errorf("%s:%d:%d: state property %q: %w",
+						s.StartPos.File, s.StartPos.Line, s.StartPos.Column, k, err)
+				}
+				resolved[k] = rv
+			}
+			doc.StateConfig = &StateConfig{
+				Type:       s.Type,
+				Properties: resolved,
+			}
+
 		case *ast.DeployTarget:
 			cfg := map[string]interface{}{}
 			if s.Port > 0 {
@@ -746,6 +780,29 @@ func lowerOnInputStmts(stmts []ast.OnInputStmt) []interface{} {
 		}
 	}
 	return result
+}
+
+// resolveEnvVars replaces ${VAR} patterns with environment variable values.
+func resolveEnvVars(s string) (string, error) {
+	result := s
+	for {
+		start := strings.Index(result, "${")
+		if start == -1 {
+			break
+		}
+		end := strings.Index(result[start:], "}")
+		if end == -1 {
+			break
+		}
+		end += start
+		varName := result[start+2 : end]
+		val, ok := os.LookupEnv(varName)
+		if !ok {
+			return "", fmt.Errorf("unresolved environment variable %q", varName)
+		}
+		result = result[:start] + val + result[end+1:]
+	}
+	return result, nil
 }
 
 func strMapToInterface(m map[string]string) map[string]interface{} {

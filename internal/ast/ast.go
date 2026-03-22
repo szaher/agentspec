@@ -450,6 +450,19 @@ func (g *Guardrail) Pos() Pos  { return g.StartPos }
 func (g *Guardrail) End() Pos  { return g.EndPos }
 func (g *Guardrail) stmtNode() {}
 
+// StateConfig declares a state backend configuration.
+type StateConfig struct {
+	Name       string
+	Type       string
+	Properties map[string]string
+	StartPos   Pos
+	EndPos     Pos
+}
+
+func (s *StateConfig) Pos() Pos  { return s.StartPos }
+func (s *StateConfig) End() Pos  { return s.EndPos }
+func (s *StateConfig) stmtNode() {}
+
 // Delegate defines an agent delegation rule.
 type Delegate struct {
 	AgentRef  string // target agent name

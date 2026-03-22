@@ -71,9 +71,23 @@ func newApplyCmd() *cobra.Command {
 			}
 			adapter := factory()
 
-			backend := state.NewLocalBackend(stateFile).WithLockConfig(state.LockConfig{
-				LockTimeout: lockTimeout,
-			})
+			backend, err := resolveStateBackend(doc)
+			if err != nil {
+				return fmt.Errorf("resolving state backend: %w", err)
+			}
+			if c, ok := backend.(state.Closer); ok {
+				defer func() { _ = c.Close() }()
+			}
+
+			// Validate backend connectivity at startup
+			if hc, ok := backend.(state.HealthChecker); ok {
+				pingCtx, pingCancel := context.WithTimeout(cmd.Context(), 5*time.Second)
+				defer pingCancel()
+				if err := hc.Ping(pingCtx); err != nil {
+					return fmt.Errorf("state backend unreachable: %w", err)
+				}
+			}
+
 			current, err := backend.Load()
 			if err != nil {
 				return fmt.Errorf("loading state: %w", err)
@@ -137,31 +151,33 @@ func newApplyCmd() *cobra.Command {
 
 			fmt.Printf("\n%d created, %d updated, %d deleted, %d failed\n",
 				result.Created, result.Updated, result.Deleted, result.Failed)
-			fmt.Printf("State saved to %s\n", stateFile)
+			fmt.Println("State saved.")
 
-			// Record version snapshot for agents
+			// Record version snapshot for agents (if backend supports it)
 			if result.Failed == 0 {
-				for _, res := range doc.Resources {
-					if res.Kind != "Agent" {
-						continue
-					}
-					snapshot := make(map[string]string)
-					for k, v := range res.Attributes {
-						snapshot[k] = fmt.Sprintf("%v", v)
-					}
-					versions, _ := backend.GetVersions(res.Name)
-					nextVer := 1
-					if len(versions) > 0 {
-						nextVer = versions[len(versions)-1].Version + 1
-					}
-					entry := state.VersionEntry{
-						Version:   nextVer,
-						Timestamp: time.Now().UTC().Format(time.RFC3339),
-						Summary:   fmt.Sprintf("Applied version %d", nextVer),
-						Snapshot:  snapshot,
-					}
-					if vErr := backend.SaveVersion(res.Name, entry); vErr != nil {
-						fmt.Fprintf(os.Stderr, "Warning: failed to save version for agent %q: %v\n", res.Name, vErr)
+				if vs, ok := backend.(state.VersionStore); ok {
+					for _, res := range doc.Resources {
+						if res.Kind != "Agent" {
+							continue
+						}
+						snapshot := make(map[string]string)
+						for k, v := range res.Attributes {
+							snapshot[k] = fmt.Sprintf("%v", v)
+						}
+						versions, _ := vs.GetVersions(res.Name)
+						nextVer := 1
+						if len(versions) > 0 {
+							nextVer = versions[len(versions)-1].Version + 1
+						}
+						entry := state.VersionEntry{
+							Version:   nextVer,
+							Timestamp: time.Now().UTC().Format(time.RFC3339),
+							Summary:   fmt.Sprintf("Applied version %d", nextVer),
+							Snapshot:  snapshot,
+						}
+						if vErr := vs.SaveVersion(res.Name, entry); vErr != nil {
+							fmt.Fprintf(os.Stderr, "Warning: failed to save version for agent %q: %v\n", res.Name, vErr)
+						}
 					}
 				}
 			}

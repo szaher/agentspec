@@ -11,7 +11,6 @@ import (
 
 func newHistoryCmd() *cobra.Command {
 	var agentName string
-	var stateFilePath string
 
 	cmd := &cobra.Command{
 		Use:   "history",
@@ -21,8 +20,20 @@ func newHistoryCmd() *cobra.Command {
 				return fmt.Errorf("--agent flag is required")
 			}
 
-			backend := &state.LocalBackend{Path: stateFilePath}
-			versions, err := backend.GetVersions(agentName)
+			backend, _, err := resolveBackendFromArgs(args)
+			if err != nil {
+				return fmt.Errorf("resolving state backend: %w", err)
+			}
+			if c, ok := backend.(state.Closer); ok {
+				defer func() { _ = c.Close() }()
+			}
+
+			vs, ok := backend.(state.VersionStore)
+			if !ok {
+				return fmt.Errorf("current state backend does not support version history")
+			}
+
+			versions, err := vs.GetVersions(agentName)
 			if err != nil {
 				return fmt.Errorf("load versions: %w", err)
 			}
@@ -46,7 +57,6 @@ func newHistoryCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&agentName, "agent", "", "Agent name to show history for")
-	cmd.Flags().StringVar(&stateFilePath, "state", ".agentspec.state.json", "State file path")
 
 	return cmd
 }

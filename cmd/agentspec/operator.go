@@ -129,6 +129,11 @@ func newOperatorStartCmd() *cobra.Command {
 					Scheme:   mgr.GetScheme(),
 					Recorder: eventRecorder(mgr, "evalrun-controller"),
 				},
+				&controller.StateStoreReconciler{
+					Client:   mgr.GetClient(),
+					Scheme:   mgr.GetScheme(),
+					Recorder: eventRecorder(mgr, "statestore-controller"),
+				},
 			}
 			for _, rec := range reconcilers {
 				if err := rec.SetupWithManager(mgr); err != nil {

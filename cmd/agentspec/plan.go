@@ -37,7 +37,13 @@ func newPlanCmd() *cobra.Command {
 				return err
 			}
 
-			backend := state.NewLocalBackend(stateFile)
+			backend, err := resolveStateBackend(doc)
+			if err != nil {
+				return fmt.Errorf("resolving state backend: %w", err)
+			}
+			if c, ok := backend.(state.Closer); ok {
+				defer func() { _ = c.Close() }()
+			}
 			current, err := backend.Load()
 			if err != nil {
 				return fmt.Errorf("loading state: %w", err)

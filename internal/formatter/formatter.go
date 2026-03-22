@@ -73,6 +73,8 @@ func formatStatement(sb *strings.Builder, stmt ast.Statement) {
 		formatUser(sb, s)
 	case *ast.Guardrail:
 		formatGuardrail(sb, s)
+	case *ast.StateConfig:
+		formatStateConfig(sb, s)
 	}
 }
 
@@ -787,6 +789,20 @@ func formatGuardrail(sb *strings.Builder, g *ast.Guardrail) {
 	}
 	if g.FallbackMsg != "" {
 		fmt.Fprintf(sb, "  fallback %q\n", g.FallbackMsg)
+	}
+	sb.WriteString("}\n")
+}
+
+func formatStateConfig(sb *strings.Builder, s *ast.StateConfig) {
+	if s.Name != "" {
+		fmt.Fprintf(sb, "state %q {\n", s.Name)
+	} else {
+		sb.WriteString("state {\n")
+	}
+	fmt.Fprintf(sb, "  type %q\n", s.Type)
+	keys := sortedKeys(s.Properties)
+	for _, k := range keys {
+		fmt.Fprintf(sb, "  %s %q\n", k, s.Properties[k])
 	}
 	sb.WriteString("}\n")
 }
