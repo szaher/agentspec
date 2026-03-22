@@ -17,6 +17,7 @@ type Document struct {
 	Policies      []Policy       `json:"policies,omitempty"`
 	Bindings      []Binding      `json:"bindings,omitempty"`
 	DeployTargets []DeployTarget `json:"deploy_targets,omitempty"`
+	StateConfig   *StateConfig   `json:"state_config,omitempty"`
 }
 
 // Import represents a resolved import dependency.
@@ -71,6 +72,12 @@ type DeployTarget struct {
 	Target  string                 `json:"target"`
 	Default bool                   `json:"default,omitempty"`
 	Config  map[string]interface{} `json:"config,omitempty"`
+}
+
+// StateConfig holds resolved state backend configuration.
+type StateConfig struct {
+	Type       string            `json:"type"`
+	Properties map[string]string `json:"properties,omitempty"`
 }
 
 // SortResources sorts resources by kind then name for deterministic output.

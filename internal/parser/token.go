@@ -151,6 +151,7 @@ const (
 	TokenRole      // role field in user block
 	TokenDaily     // budget period
 	TokenMonthly   // budget period
+	TokenState     // state block
 
 	// Expression operators (IntentLang 3.0)
 	TokenColon     // :
@@ -291,6 +292,7 @@ var tokenNames = map[TokenType]string{
 	TokenRole:         "role",
 	TokenDaily:        "daily",
 	TokenMonthly:      "monthly",
+	TokenState:        "state",
 	TokenColon:        ":",
 	TokenEqual:        "==",
 	TokenNotEqual:     "!=",
@@ -421,6 +423,7 @@ var keywords = map[string]TokenType{
 	"role":          TokenRole,
 	"daily":         TokenDaily,
 	"monthly":       TokenMonthly,
+	"state":         TokenState,
 }
 
 // LookupKeyword returns the keyword token type for ident, or TokenIdent.

@@ -158,6 +158,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseGuardrail()
 	case p.check(TokenImport):
 		return p.parseImportAsStmt()
+	case p.check(TokenState):
+		return p.parseState()
 	default:
 		tok := p.current()
 		p.addError(fmt.Sprintf("unexpected token %s", tok.Type), "expected a resource declaration (agent, prompt, skill, etc.)")
@@ -2066,6 +2068,47 @@ func (p *Parser) parseGuardrail() *ast.Guardrail {
 	p.expectToken(TokenRBrace)
 	guard.EndPos = p.currentPos()
 	return guard
+}
+
+func (p *Parser) parseState() *ast.StateConfig {
+	startPos := p.currentPos()
+	p.expect(TokenState)
+
+	sc := &ast.StateConfig{
+		StartPos:   startPos,
+		Properties: make(map[string]string),
+	}
+
+	// Optional name
+	if p.check(TokenString) {
+		sc.Name = p.current().Literal
+		p.advance()
+	}
+
+	p.expectToken(TokenLBrace)
+	p.skipNewlines()
+
+	for !p.check(TokenRBrace) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(TokenRBrace) {
+			break
+		}
+
+		if p.check(TokenTypeKw) {
+			p.advance()
+			sc.Type = p.expectString("backend type")
+		} else {
+			// Generic property: key "value"
+			key := p.current().Literal
+			p.advance()
+			val := p.expectString(key + " value")
+			sc.Properties[key] = val
+		}
+		p.skipNewlines()
+	}
+	p.expectToken(TokenRBrace)
+	sc.EndPos = p.currentPos()
+	return sc
 }
 
 // AllNames returns all registered names for duplicate checking and suggestions.
