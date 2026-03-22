@@ -15,8 +15,7 @@ import (
 
 	v1alpha1 "github.com/szaher/agentspec/internal/api/v1alpha1"
 	"github.com/szaher/agentspec/internal/operator/controller"
-	// Import metrics package to register Prometheus collectors via init().
-	_ "github.com/szaher/agentspec/internal/operator/metrics"
+	_ "github.com/szaher/agentspec/internal/operator/metrics" // register Prometheus collectors
 )
 
 var operatorScheme = runtime.NewScheme()
