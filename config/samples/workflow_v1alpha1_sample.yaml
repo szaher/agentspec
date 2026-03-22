@@ -1,0 +1,25 @@
+apiVersion: agentspec.io/v1alpha1
+kind: Workflow
+metadata:
+  name: sample-workflow
+  namespace: default
+spec:
+  failFast: true
+  steps:
+    - name: research
+      agentRef: researcher-agent
+      input: "Gather information about Kubernetes operators"
+    - name: summarize
+      agentRef: summarizer-agent
+      input: "Summarize the research findings"
+      dependsOn:
+        - research
+    - name: review
+      agentRef: reviewer-agent
+      input: "Review the summary for accuracy"
+      dependsOn:
+        - summarize
+  finally:
+    - name: notify
+      agentRef: notifier-agent
+      input: "Send completion notification"

@@ -1,0 +1,72 @@
+package "k8s-operator" version "1.0.0" lang "3.0"
+
+prompt "devops-system" {
+  content "You are a DevOps assistant specializing in Kubernetes cluster operations. You can inspect cluster resources, check pod health, and help diagnose issues. Always provide clear, actionable guidance."
+}
+
+skill "kubectl-get" {
+  description "Query Kubernetes resources using kubectl"
+  input {
+    resource string required
+    namespace string
+  }
+  output {
+    result string required
+  }
+  tool command {
+    binary "kubectl"
+    args ["get"]
+  }
+}
+
+skill "check-pods" {
+  description "Check pod status and recent events for a namespace"
+  input {
+    namespace string required
+  }
+  output {
+    status string required
+  }
+  tool inline {
+    language "bash"
+    code "kubectl get pods -n ${INPUT_NAMESPACE:-default} -o wide 2>&1 && echo '---' && kubectl get events -n ${INPUT_NAMESPACE:-default} --sort-by=.lastTimestamp 2>&1 | tail -20"
+  }
+}
+
+agent "devops-assistant" {
+  uses prompt "devops-system"
+  uses skill "kubectl-get"
+  uses skill "check-pods"
+  model "claude-sonnet-4-20250514"
+  strategy "react"
+  max_turns 10
+  stream true
+  config {
+    default_namespace string default "default"
+      "Default Kubernetes namespace to operate in"
+  }
+  validate {
+    rule no_secrets warning
+      "Response should not expose secrets, tokens, or kubeconfig data"
+      when output != ""
+  }
+  eval {
+    case list_pods
+      input "What pods are running in the default namespace?"
+      expect "pod"
+      scoring contains
+    case check_health
+      input "Are there any pods in a CrashLoopBackOff state?"
+      expect "CrashLoopBackOff"
+      scoring contains
+  }
+}
+
+deploy "kubernetes" target "kubernetes" {
+  port 8080
+  namespace "agents"
+  replicas 2
+  health {
+    path "/healthz"
+  }
+}

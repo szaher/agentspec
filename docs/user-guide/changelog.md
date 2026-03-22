@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## v0.4.0 — Kubernetes Operator & Control Plane
+
+- **Kubernetes operator** with 11 CRDs for native agent lifecycle management
+- **`generate crds` command** to convert IntentLang files to Kubernetes CRD manifests
+- **Dual deployment modes** — operator (CRDs) or direct (raw Deployments), with auto-detection
+- **Inline tool mapping** — `tool inline {}` blocks map to `command` type ToolBindings with `sh -c`
+- **Agent workload provisioning** — operator auto-creates ConfigMap + Deployment + Service per Agent CR
+- **Workflow orchestration** — DAG-based multi-step pipelines with dependency resolution and finally steps
+- **Cross-reference validation** — operator validates ToolBinding, Policy, MemoryClass, and Secret references
+- **Cascade deletion** — deleting an Agent CR cleans up all owned resources via owner references
+
+---
+
 ## [Unreleased]
 
 ### Added

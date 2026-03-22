@@ -1,0 +1,16 @@
+apiVersion: agentspec.io/v1alpha1
+kind: Schedule
+metadata:
+  name: daily-report
+  namespace: default
+spec:
+  schedule: "0 9 * * *"
+  timezone: UTC
+  targetRef:
+    kind: Agent
+    name: sample-agent
+  taskTemplate:
+    input: "Generate the daily summary report"
+  concurrencyPolicy: Forbid
+  suspend: false
+  successfulTasksHistoryLimit: 3

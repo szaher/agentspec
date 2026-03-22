@@ -39,6 +39,7 @@ Verify the build:
 | [Incident Response](incident-response/) | `incident-response.ias` | Alert triage, runbook execution, escalation |
 | [GPU Batch](gpu-batch/) | `gpu-batch.ias` | Async task dispatch, GPU inference, job polling |
 | [Multi-Agent Router](multi-agent-router/) | `multi-agent-router.ias` | Lang 3.0 control flow, if/else routing, specialist agents |
+| [K8s Operator](k8s-operator/) | `k8s-operator.ias` | Kubernetes operator CRD generation, dual deploy modes, operator lifecycle |
 
 ## Running Any Example
 
@@ -84,6 +85,23 @@ For examples with multiple bindings, use the `--target` flag:
 ```bash
 ./agentspec export examples/multi-binding/multi-binding.ias --target compose --out-dir ./output
 ```
+
+### Kubernetes Operator Deployment
+
+The `k8s-operator` example demonstrates generating Kubernetes Custom Resource Definitions (CRDs) from an IntentLang file. Use the `generate crds` command to produce CRD manifests that can be applied to any Kubernetes cluster:
+
+```bash
+# Generate CRD manifests from an AgentSpec file
+./agentspec generate crds examples/k8s-operator/k8s-operator.ias -o ./k8s-manifests
+
+# Apply the generated CRDs to a cluster
+kubectl apply -f ./k8s-manifests/
+
+# Verify the custom resources are registered
+kubectl get crds | grep agentspec
+```
+
+The generated manifests include CRDs for all IntentLang resource types (agents, prompts, skills, servers, etc.) along with Deployment and Service resources provisioned automatically by the AgentSpec operator. See the [K8s Operator example](k8s-operator/) for a complete walkthrough.
 
 ## Important Notes
 

@@ -91,6 +91,31 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Register generate CRDs command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("agentspec.generateCrds", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor || editor.document.languageId !== "intentlang") {
+        vscode.window.showWarningMessage("No IntentLang file is open");
+        return;
+      }
+
+      const outputDir = await vscode.window.showInputBox({
+        prompt: "Output directory for generated CRDs",
+        value: "generated-crds",
+      });
+      if (!outputDir) {
+        return;
+      }
+
+      await runCliCommand(
+        `generate crds "${editor.document.fileName}" -o "${outputDir}"`,
+        editor.document,
+        true
+      );
+    })
+  );
+
   // Format on save
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async (document) => {
@@ -158,7 +183,11 @@ async function showPlan(document: vscode.TextDocument): Promise<void> {
   }
 }
 
-async function runCliCommand(command: string, document: vscode.TextDocument): Promise<void> {
+async function runCliCommand(
+  command: string,
+  document: vscode.TextDocument,
+  rawCommand: boolean = false
+): Promise<void> {
   const config = vscode.workspace.getConfiguration("agentspec");
   const execPath = config.get<string>("executablePath", "agentspec");
 
@@ -167,9 +196,13 @@ async function runCliCommand(command: string, document: vscode.TextDocument): Pr
     const { promisify } = await import("util");
     const execAsync = promisify(exec);
 
-    const { stdout } = await execAsync(`${execPath} ${command} "${document.fileName}"`);
+    const fullCommand = rawCommand
+      ? `${execPath} ${command}`
+      : `${execPath} ${command} "${document.fileName}"`;
+    const { stdout } = await execAsync(fullCommand);
 
-    const panel = vscode.window.createOutputChannel(`AgentSpec ${command}`);
+    const label = rawCommand ? command.split(" ").slice(0, 2).join(" ") : command;
+    const panel = vscode.window.createOutputChannel(`AgentSpec ${label}`);
     panel.clear();
     panel.appendLine(stdout);
     panel.show();

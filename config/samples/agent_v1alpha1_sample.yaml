@@ -1,0 +1,10 @@
+apiVersion: agentspec.io/v1alpha1
+kind: Agent
+metadata:
+  name: sample-agent
+  namespace: default
+spec:
+  model: gpt-4
+  strategy: react
+  maxTurns: 10
+  stream: false

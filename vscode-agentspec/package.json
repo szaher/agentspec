@@ -100,6 +100,10 @@
       {
         "command": "agentspec.package",
         "title": "AgentSpec: Package Agent"
+      },
+      {
+        "command": "agentspec.generateCrds",
+        "title": "AgentSpec: Generate Kubernetes CRDs"
       }
     ]
   },
