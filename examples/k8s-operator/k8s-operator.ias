@@ -15,7 +15,7 @@ skill "kubectl-get" {
   }
   tool command {
     binary "kubectl"
-    args "get"
+    args ["get"]
   }
 }
 
@@ -63,9 +63,9 @@ agent "devops-assistant" {
 }
 
 deploy "kubernetes" target "kubernetes" {
+  port 8080
   namespace "agents"
   replicas 2
-  port 8080
   health {
     path "/healthz"
   }
